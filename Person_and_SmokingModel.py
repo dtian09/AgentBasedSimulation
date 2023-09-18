@@ -1,4 +1,4 @@
-#to run the simulation on command line: python SmokingModel.py props/model.yaml
+#to run the simulation on command line: mpirun -n 1 python SmokingModel_v0_3.py props/model.yaml
     
 from mpi4py import MPI
 import numpy as np
@@ -110,7 +110,8 @@ class SmokingModel(Model):
         self.smoking_prevalenceL.append(p)
         (average_p,sd,min,max) = self.calculate_statistics_of_smoking_friends()
         self.statistics_of_smoking_friends.append((average_p,sd,min,max))
-        
+        self.generate_Gephi_network_files_and_nodes_colour_files()
+
     def do_situational_mechanisms(self):#macro entities change internal states of micro entities (agents)
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
@@ -139,6 +140,46 @@ class SmokingModel(Model):
         average_p=np.round(s/self.size_of_population,2)
         return (average_p,np.round(np.std(l),2),np.round(np.min(l),2),np.round(np.max(l),2))
 
+    def generate_Gephi_network_files_and_nodes_colour_files(self):#generate nodesi.csv, edgesi.csv and nodes_colouri.csv at a time step i
+        #input: self.context, self.graph
+        #output: nodesi.csv (nodes.csv at ith time step)
+        #        edgesi.csv (edges.csv at ith time step)
+        ###format of nodes.csv
+        #Id;Label;State
+        #name1;name1;smoker
+        #name2;name2;non-smoker
+        #name3;name3;smoker
+        ###format of edges.csv
+        #Source;Target;Type
+        #name1;Committee1;Undirected
+        #name2;Committee1;Undirected
+        #name3;Committee1;Undirected
+        agent=list(self.context.agents(count=1))[0]
+        nodesfile='nodes'+str(agent.get_current_time_step())+'.csv'
+        nodes_colour_file='nodes_colour'+str(agent.get_current_time_step())+'.csv'#input to visualize_gml_file.m
+        f=open(nodesfile,'w')
+        f.write("Id;Label;State\n")
+        for agent in self.context.agents(agent_type=self.type):
+            id=str(agent.id)
+            if agent.get_current_state()=='smoker':#the current state is at end of list of states
+               f.write(id+';'+id+';'+'smoker\n')
+               self.nodes_color[agent.id,:]=[1,0,0] #red
+            else:
+               f.write(id+';'+id+';'+'non-smoker\n')#non-smoker: ex-smoker, never smoker and quitter 
+               self.nodes_color[agent.id,:]=[0,0,1] #blue
+        f.close()
+        np.savetxt(nodes_colour_file,self.nodes_color,delimiter=',',fmt='%i')
+        edgesfile='edges'+str(agent.get_current_time_step())+'.csv'
+        f=open(edgesfile,'w')
+        f.write("Source;Target;Type\n")
+        for edge in list(nx.edges(self.graph)):
+            node1=edge[0]
+            node2=edge[1]
+            id=str(node1.id)
+            id2=str(node2.id)
+            f.write(id+";"+id2+";"+"Undirected\n")
+        f.close()
+
     def do_per_tick(self):
         self.do_situational_mechanisms()
         self.do_action_mechanisms()
@@ -149,6 +190,7 @@ class SmokingModel(Model):
         self.smoking_prevalenceL.append(p)
         average_p,sd,min,max = self.calculate_statistics_of_smoking_friends()
         self.statistics_of_smoking_friends.append((average_p,sd,min,max))
+        self.generate_Gephi_network_files_and_nodes_colour_files()
         self.context.synchronize(self.restore_Person)
 
     def display_statistics_of_smoking_friends(self):

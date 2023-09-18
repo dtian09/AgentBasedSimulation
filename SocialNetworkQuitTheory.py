@@ -5,7 +5,7 @@ import random
 
 class SocialNetworkQuitTheory(Theory):
 
-    def __init__(self, smokingModel: SmokingModel.SmokingModel):
+    def __init__(self, smokingModel: Person_and_SmokingModel.SmokingModel):
         super().__init__()
         self.capability=0 #capability of the agent of this theory
         self.opportunity=None #opportunity of the agent of this theory
