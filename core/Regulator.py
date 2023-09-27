@@ -1,16 +1,19 @@
-
-
 from __future__ import annotations
-from typing import Dict, Tuple, List
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABC
+from .MacroEntity import MacroEntity
 
-class Regulator(metaclass=ABCMeta):
+class Regulator(ABC):
 
     def __init__(self):
+        self.macroentity: MacroEntity = None
+    
+    def set_macroentity(self, macroentity: MacroEntity):
+        self.macroentity=macroentity
+
+    @abstractmethod
+    def do_transformation(self):
         pass
 
-    # update the adjustment level variable (private).
-	# Modeller should write getter function(s) to access to adjustment level variable, depending on the data structure (it can be a value or array)
     @abstractmethod
-    def update_adjustment_level(self):
+    def do_macro_to_macro(self):
         pass

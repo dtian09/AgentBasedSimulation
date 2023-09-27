@@ -1,25 +1,11 @@
 from __future__ import annotations
-from typing import Tuple
-from abc import abstractmethod, ABCMeta
-from repast4py import core
+#from typing import Tuple
+#from repast4py import core
 import repast4py
 
-
-class MicroAgent(repast4py.core.Agent, metaclass=ABCMeta):
-
-    @property
-    @abstractmethod
-    def TYPE(cls) -> int:
-        """ The type component used within repast4py's uids, which should be unique per agent type
-        This is annotated as @proprerty @abstractmethod to enforce derived classes to set a value, though the runtime error is not ideal
-        """
-        raise NotImplementedError
+class MicroAgent(repast4py.core.Agent):
 
     def __init__(self, id: int, rank:int, type:int = None):
-        # Call the parent class constructor, i.e. what makes this a repast4py agent
-        # Use the type of the agent, but allow it to be over-written by derived classes
-        if type is None:
-            type = cls.TYPE 
         super().__init__(id=id, type=type, rank=rank)
         # self.id is the id from the rank on which it was generated
         # self.type is the integer type of the agent within the simulation. I..e MicroAgent.TYPE, which should be distinct from a DerivedMicroAgent.TYPE.
@@ -44,7 +30,7 @@ class MicroAgent(repast4py.core.Agent, metaclass=ABCMeta):
     def do_action(self):
         if self.mediator is not None:
             self.mediator.mediate_action()
-
+    '''
     def save(self):
         """ Save the state of this MicroAgent as a Tuple.
         
@@ -55,7 +41,8 @@ class MicroAgent(repast4py.core.Agent, metaclass=ABCMeta):
             The saved state of this MicroAgent
         """
         return (self.id, self.mediator)
-
+    '''
+'''
 def restore_agent(agent_data:Tuple):
 
     """ 
@@ -63,6 +50,6 @@ def restore_agent(agent_data:Tuple):
     The MBSSM core is only implemented for single-rank simulations, i.e. this method is not implemented.
     """
     raise NotImplementedError
-
+'''
 # Include this at the end of the file to avoid circular import
 from .TheoryMediator import TheoryMediator

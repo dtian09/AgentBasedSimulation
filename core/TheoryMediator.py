@@ -1,9 +1,9 @@
 from typing import List
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABC
 from .MicroAgent import MicroAgent
 from .Theory import Theory
 
-class TheoryMediator(metaclass=ABCMeta):
+class TheoryMediator(ABC):
 
     def __init__(self, theory_list:List[Theory]):
         self.theory_list:List[Theory] = theory_list

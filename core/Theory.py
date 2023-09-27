@@ -1,7 +1,7 @@
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABC
 from .MicroAgent import MicroAgent
 
-class Theory(metaclass=ABCMeta):
+class Theory(ABC):
     
     def __init__(self):
         self.agent: MicroAgent = None
