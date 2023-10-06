@@ -1,5 +1,12 @@
 # Properties in yaml format
-stapm_data_file: hse2012_stapm.csv #
+stapm_data_file: "hse2012_stapm.csv"
+#theory: "ecigquittheory"
+theory: "regularsmokingtheory"
+#theory: "quitattempttheory"
+#theory: "quitsuccesstheory"
+#theory: "socialnetworkquittheory"
+k: 2 #k: each node is joined with its k nearest neighbors in a ring topology. minimum value of k: 2
+p: 0.25 #p: the probability of rewiring each edge
 stop.at: 12 #the final time step to stop simulation 
 #intervention: 0 #0 (no intervention) or 1 (use intervention)
 intervention: 1
@@ -9,7 +16,3 @@ intervention: 1
 intervention_effect: 2
 #intervention_effect: 3
 #intervention_effect: 4
-threshold: 0.1 #threshold of intention to quit; a low threshold creates many quitters at each time step and the smoking prevalence decreases fast.
-                 #                                a high threshold creates fewer quitters at each time step and the smoking prevalence decreases slowly. 
-#threshold: 0.5
-#threshold: 0.7 

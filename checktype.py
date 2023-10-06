@@ -45,13 +45,3 @@ def check_list_of_Level2M(test_list):
         print('indices of elements which are not Level2O attributes',indxL_notLevel2M)
         import sys
         sys.exit(-1)
-
-#test_list = [cAge('id0'), cEcigUse('id1'), oAge('id2')]
-e=oEaseOfAccess('is0')
-e.setValue(1)
-a=oAge('id1')
-a.setValue(30)
-test_list=[e,a]
-test_list=[mEnjoymentOfSmoking('id1'),mUseOfNRT('id0')]
-
-print(check_list_of_Level2C(test_list))

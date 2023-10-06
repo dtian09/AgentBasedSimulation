@@ -44,7 +44,8 @@ class SocialNetworkQuitTheory(Theory):
         if self.agent.get_current_state() == 'smoker' and self.capability * self.intention_to_quit >= self.threshold:
                self.agent.update_state(state='quitter')#quitter is an agent who is making a quit attempt
         else:
-             self.agent.update_state(state=self.agent.get_current_state()) #the state at T is same as the state at T-1 
+             self.agent.update_state(state=self.agent.get_current_state()) #the state at T is same as the state at T-1
+        self.agent.update_proportion_of_smoking_friends(proportion_of_smoking_friends=self.agent.proportion_of_smoking_friends)
         
     
         
