@@ -2,9 +2,9 @@ import sys
 import pandas as pd
 import networkx as nx
 from repast4py.network import write_network
-from core.StructuralEntity import StructuralEntity
+from core.MacroEntity import MacroEntity
 
-class SocialNetwork(StructuralEntity):
+class SocialNetwork(MacroEntity):
     def __init__(self, stapm_data_file:str=None, n_ranks:int=1, k:int=None, p:float=None, network_file:str=None):
         super().__init__()
         self.stapm_data_file=stapm_data_file
@@ -28,12 +28,16 @@ class SocialNetwork(StructuralEntity):
         return network_file
     
     def add_STAPM_data_to_network(self,fname,stapm_data_file):
-        #add STAPM data e.g. sex, age, imd quintile and state to the agents of the network
+        #STAPM data: sex, age, imd quintile and state is added to each node
+        #The following attributes of agents are also added to each node: 
+        #       proportion of smoking friends: None
+        #       COMB attributes (level2C, level2O, level2M attributes): None
+        #       eCigUse: None
         #e.g. 
         #friend_network 0
-        #1 0 1 {"age": 23, "sex": "male", "imd quintile": 5, "states": ["smoker"]}
-        #2 0 1 {"age": 24, "sex": "female", "imd quintile": 1, "states": ["non-smoker"]}
-        #3 0 0 {"age": 30, "sex": "male", "imd quintile": 5, "states": ["ex-smoker"]}
+        #1 0 1 {"age": 23, "sex": "male", "imd quintile": 5, "states": ["smoker"], "proportion_of_smoking_friends": "None", "level2C": "None", "level2O": "None", "level2M": "None", "eCigUse": "None"}
+        #2 0 1 {"age": 24, "sex": "female", "imd quintile": 1, "states": ["never_smoker"], "proportion_of_smoking_friends": "None", "level2C": "None", "level2O": "None", "level2M": "None", "eCigUse": "None"}
+        #3 0 0 {"age": 30, "sex": "male", "imd quintile": 5, "states": ["ex-smoker"], "proportion_of_smoking_friends": "None", "level2C": "None", "level2O": "None", "level2M": "None", "eCigUse": "None"}
         net_fileL = [line.strip() for line in open(fname)]
         f=open(fname,'w')
         data=pd.read_csv(stapm_data_file,header=0)
@@ -43,7 +47,7 @@ class SocialNetwork(StructuralEntity):
             sex=data.iat[i,1]
             qimd=float(data.iat[i,2])
             state=data.iat[i,3]
-            attrs=" {\"age\":"+str(age)+", \"sex\": \""+sex+"\", \"qimd\": "+str(qimd)+", \"states\": [\""+state+"\"]}"
+            attrs=" {\"age\":"+str(age)+", \"sex\": \""+sex+"\", \"qimd\": "+str(qimd)+", \"states\": [\""+state+"\"]"+", \"proportion_of_smoking_friends\": \"None\""+", \"level2C\": \"None\""+", \"level2O\": \"None\""+", \"level2M\": \"None\""+", \"eCigUse\": \"None\"}"
             net_fileL[i+1]=net_fileL[i+1]+attrs
         for j in range(len(net_fileL)):
             f.write(net_fileL[j]+'\n')

@@ -22,3 +22,7 @@ class Model(ABC):
     @abstractmethod
     def run(self):
         pass
+
+    @abstractmethod
+    def collect_data(self):
+        pass
