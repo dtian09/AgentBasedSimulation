@@ -1,0 +1,5 @@
+ABM software v0.5 simulates smoking behaviour using regular smoking theory, quit attempt theory, quit success theory, e-cigarette quit theory or social network quit theory.
+To run this simulation using the quit attempt theory, 
+1. Open model.yaml and uncomment the line "theory: "quitattempttheory"" by deleting the starting # and comment the other theories by adding a starting # to each line.
+2. Save model.yaml.
+3. Run the command: python main.py props/model.yaml
