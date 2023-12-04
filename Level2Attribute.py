@@ -1,175 +1,92 @@
-class Level2Attribute:
-    def __init__(self,ontologyID:str=None):
-        self.value=None
-        self.ontologyID: str=ontologyID
+from abc import abstractmethod, ABC
+from typing import List
     
+class Level2Attribute(ABC):
+    def __init__(self,ontologyID:str=None,name : str=None):
+        self.ontologyID: str=ontologyID
+        self.name : str = name
+ 
+    @abstractmethod
     def setValue(self,value):
+        self.value=value
+    
+    @abstractmethod
+    def getValue(self):
+        return self.value
+
+class Level2AttributeInt(Level2Attribute):
+    def __init__(self,ontologyID:str=None, name : str=None, value : int =None):
+        super().__init__(ontologyID,name)
+        self._value:int=value
+        
+    def setValue(self,value:int):
+        self._value=value
+    
+    def getValue(self):
+        return self._value
+
+class Level1Attribute:
+    def __init__(self, ontologyID:str=None, name : str=None):
+        self.value: float=None
+        self.ontologyID: str=ontologyID
+        self.name : str = name
+        self.list : List[Level2Attribute] = []
+        self.value = None
+
+    def addLevel2Attribute(self,attr : Level2Attribute):
+        self.list.append(attr)
+
+    def setValue(self,value:float):
         self.value=value
     
     def getValue(self):
         return self.value
+    
+class PersonalAttribute():
+    def __init__(self,ontologyID:str=None, name : str=None):
+        self.ontologyID: str=ontologyID
+        self.name : str = name 
+        self.list : List[Level2Attribute] = [] #list of the associated level 2 attributes
+        self.value=None
+    
+    def addLevel2Attribute(self,attr : Level2Attribute):
+        self.list.append(attr)
 
-class Level2C(Level2Attribute):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
+    def setValue(self,value):
+        self.value=value
+        if len(self.list)>0:
+            for i in range(len(self.list)):
+                self.list[i].setValue(self.value)
 
-class Level2O(Level2Attribute):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class Level2M(Level2Attribute):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-#Level2C attributes
-class EducationalLevel(Level2C,Level2O):
-    def __init__(self,ontologyID:str=None):
-        Level2Attribute.__init__(ontologyID)
-
-class Age(Level2C,Level2O,Level2M):
-    def __init__(self,ontologyID:str=None):
-        Level2Attribute.__init__(ontologyID)
-
-class cCigAddictionStrength(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cPsychoactiveSubstanceUse(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cEcigUse(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cImpulsivity(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cMentalHealthConditions(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cAlcoholConsumption(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cUnderstandingOfSmokingHarms(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cPrescriptionNRT(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cUseOfBehaviouralSupport(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cCigConsumptionPrequit(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cNoOfRecentQuitAttempts(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class cVareniclineUse(Level2C):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-#Level2O attributes
-class oEaseOfAccess(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oPercentOfPeerSmokersInSocialNetwork(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oPrevalenceOfSmokingInGeographicLocality(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oSmokingCessationPromptsOrTriggers(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oNoOfSmokersInSocialNetwork(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oSocialHousing(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oEducationalLevel(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oExpenditurePerStick(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class oParentalSmoking(Level2O):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-#Level2M attributes
-class mEnjoymentOfSmoking(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mMentalHealthConditions(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mUseOfNRT(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mSpendOnCig(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mIntentToQuit(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mProsmokingAttitude(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mSelfEfficacy(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mSmokerIdentity(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mExsmokerSelfIdentity(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mNoOfRecentQuitAttempts(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mDesireToStopSmoking(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mAge(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-class mExpenditurePerStick(Level2M):
-    def __init__(self,ontologyID:str=None):
-        super().__init__(ontologyID)
-
-
-
-
+    def getValue(self):
+        return self.value
+            
+if __name__ == '__main__':
+    o=Level2AttributeInt(name='oAge')
+    o2=Level2AttributeInt(name='cAge')
+    o3=Level2AttributeInt(name='mAge')
+    dict={}
+    dict['oAge']=o
+    dict['cAge']=o2
+    dict['mAge']=o3
+    p=PersonalAttribute(name='pAge')
+    p.addLevel2Attribute(o)
+    p.addLevel2Attribute(o2)
+    p.addLevel2Attribute(o3)
+    print('list')
+    for i in range(3):
+        print(p.l2att[i].getValue())
+    print('dict')
+    for key in ['oAge','cAge','mAge']:
+        print(dict[key].getValue())
+    p.setValue(65)
+    print('##########')
+    print('list')
+    for i in range(3):
+        print(p.l2att[i].getValue())
+    print('dict')
+    for key in ['oAge','cAge','mAge']:
+        print(dict[key].getValue())
+    
 
 

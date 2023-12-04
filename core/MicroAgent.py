@@ -30,26 +30,6 @@ class MicroAgent(repast4py.core.Agent):
     def do_action(self):
         if self.mediator is not None:
             self.mediator.mediate_action()
-    '''
-    def save(self):
-        """ Save the state of this MicroAgent as a Tuple.
-        
-        Used to move MicroAgents between Ranks in Repast4py.
-        This is analogous to AgentPackage::serialize int he RepastHPC implementation
 
-        Returns:
-            The saved state of this MicroAgent
-        """
-        return (self.id, self.mediator)
-    '''
-'''
-def restore_agent(agent_data:Tuple):
-
-    """ 
-    Repast4py uses save() and restore_agent to migrate agents between ranks.
-    The MBSSM core is only implemented for single-rank simulations, i.e. this method is not implemented.
-    """
-    raise NotImplementedError
-'''
 # Include this at the end of the file to avoid circular import
 from .TheoryMediator import TheoryMediator

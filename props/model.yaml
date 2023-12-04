@@ -1,18 +1,13 @@
-# Properties in yaml format
-stapm_data_file: "hse2012_stapm.csv"
-#theory: "ecigquittheory"
-theory: "regularsmokingtheory"
-#theory: "quitattempttheory"
-#theory: "quitsuccesstheory"
-#theory: "socialnetworkquittheory"
-k: 2 #k: each node is joined with its k nearest neighbors in a ring topology. minimum value of k: 2
-p: 0.25 #p: the probability of rewiring each edge
+###################setting of data file, final time step of simulation, use of intervention and effect of intervention###
+data_file: "testdata.csv"
 stop.at: 12 #the final time step to stop simulation 
-#intervention: 0 #0 (no intervention) or 1 (use intervention)
-intervention: 1
-#intervention_effect: 1.5 #positive number between 0, 10; >1 increases intention (probability) to quit; 
-                         #                               <1 decreases intention to quit smoking; 
-                         #                               =1 is no intervention used
-intervention_effect: 2
-#intervention_effect: 3
-#intervention_effect: 4
+#####################setting of betas (coefficients) of level 2 attributes in regular smoking uptake theory, quit attempt theory and quit success theory############################################################################## 
+#these are the betas of the level 2 attributes in UCL's latent composite slides, but some attributes in Harry's slides are not included e.g. 'smokers in network' and 'region prevalence' because STS has no data for these attributes
+regSmokLevel2AttributesBetas: cAlcoholConsumption, 0.46, cEcigaretteUse, 2.2, cMentalHealthConditions, 0.59, oSocialHousing, 0.57, oSEP, 0.69, oAge, 0.2
+regSmokCOMBetas: bias, 1, C, 0.6, O, 2.5
+attemptLevel2AttributesBetas: oSocialHousing, 0.18, mIntentionToQuit, 0.52, mSpendingOnCig, 0.02, mEnjoymentOfSmoking, -0.17, mAge, -0.04
+attemptCOMBetas: bias, 0.7, O, 0.6, M, 2.5
+successLevel2attributes_betas: cAlcoholConsumption, 0.08, cEcigaretteUse, 0.02, mUseOfNRT, -0.09, cVareniclineUse, 0.88, cCigAddictStrength, -0.20, cMentalHealthConditions, -0.67, cAge, 0.04, oSocialHousing, -0.11, oSEP, -0.15
+successCOMBetas: bias, 2.5, C, 0.6, O, 2.5
+###setting of threshold of state transition. For example, if an agent is a never smoker, run the regular smoking theory to calculate probability of uptaking regular smoking. If probability >= threshold, the new state of the agent is a smoker.
+threshold: 0.5
