@@ -1,4 +1,4 @@
-#create a test data for ABM simulation
+#create a synthetic population for ABM simulation
 #use hseclean library to pre-process HSE data. The pre-processed data is STAPM data.
 library(hseclean)
 library(tidyverse)
@@ -94,6 +94,7 @@ smoker_and_ex_smoker_and_never_smoker$pExpenditure=select_random_values_of_varia
 smoker_and_ex_smoker_and_never_smoker$pECigUse=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("allecig"))
 smoker_and_ex_smoker_and_never_smoker$pVareniclineUse=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("chac"))
 smoker_and_ex_smoker_and_never_smoker$pCigConsumptionPrequit=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("basecpd3"))
+smoker_and_ex_smoker_and_never_smoker$pYearsSinceQuit=rep('None',nrow(smoker_and_ex_smoker_and_never_smoker))
 #add associated level 2 attributes of the personal attributes to the test data
 #table of associated level 2 attributes: https://docs.google.com/document/d/1h8MFvetOZEOIcEHD7Bckfbc63AoQQZfFSNIA30HpCMw/edit
 smoker_and_ex_smoker_and_never_smoker<-smoker_and_ex_smoker_and_never_smoker %>%

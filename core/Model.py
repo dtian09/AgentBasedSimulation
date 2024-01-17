@@ -24,5 +24,5 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def collect_data(self):
+    def collectData(self):
         pass

@@ -6,13 +6,13 @@ class Theory(ABC):
     def __init__(self):
         self.agent: MicroAgent = None
 
-    def set_agent(self, agent:MicroAgent):
+    def setAgent(self, agent:MicroAgent):
         self.agent = agent
 
     @abstractmethod
-    def do_situation(self):
+    def doSituation(self):
         pass
 
     @abstractmethod
-    def do_action(self):
+    def doAction(self):
         pass

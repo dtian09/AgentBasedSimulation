@@ -13,6 +13,7 @@ from Level2Attribute import *
 import pandas as pd
 from checktype import *
 from abc import abstractmethod
+import random
 
 class Person(MicroAgent):
     def __init__(self, 
@@ -35,10 +36,11 @@ class Person(MicroAgent):
                  vareniclineUse:int=None,
                  cigConsumptionPrequit:int=None,
                  eCigUse:int=None,
-                 states: List=None, 
+                 states: List=None,
+                 yearsSinceQuit=None, 
                  regSmokeTheory=None,
                  quitAttemptTheory=None,
-                 quitSuccessTheory=None,
+                 quitSuccessTheory=None
                  ):
         super().__init__(id=id, type=type, rank=rank)
         self.smokingModel=smokingModel
@@ -95,74 +97,204 @@ class Person(MicroAgent):
         self.pECigUse.addLevel2Attribute(regSmokeTheory.level2Attributes['cEigUse'])
         self.pECigUse.addLevel2Attribute(quitSuccessTheory.level2Attributes['cEigUse'])
         self.pECigUse.setValue(eCigUse)
+        self.pNumberOfRecentQuitAttempts=PersonalAttribute(name='pNumberOfRecentQuitAttempts') #pNumberOfRecentQuitAttempts is an imputed variable (STPM does not have information on number of recent quit attempts)
+        self.pNumberOfRecentQuitAttempts.addLevel2Attribute(quitAttemptTheory.level2Attributes['mNumberOfRecentQuitAttempts'])
         self.states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation. 
+        self.initBehaviourBufferAndKAndpNumberOfRecentQuitAttempts()#initialize: 
+                                                                   #          behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months (13 ticks with each tick represents 4 weeks)
+                                                                   #          k: number of ticks of maintaining a quit attempt i.e. k counts the behaviours: quit attempt and consecutive quit successes following the quit attempt in the behaviourBuffer 
+                                                                   #          pNumberOfRecentQuitAttempts               
+        self.pYearsSinceQuit=PersonalAttribute(name='pYearsSinceQuit') #number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+        self.pYearsSinceQuit.setValue(yearsSinceQuit)
+        self.tickCounterExSmoker=None #count number of consecutive ticks when the agent stays as an ex-smoker
 
-    def update_eCigUse(self,eciguse: int):
+    def initBehaviourBufferAndKAndpNumberOfRecentQuitAttempts(self):
+        #The behaviour buffer stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months (13 ticks with each tick represents 4 weeks)
+        #COMB behaviours: 'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure'
+        #STPM behaviours: 'relapse', 'no relapse'
+        #At each tick, the behaviour buffer (a list) stores one of the 8 behaviours: 'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure', 'relapse' and 'no relapse'
+        #(behaviours of a quitter over last 12 months (13 ticks): random behaviour (tick 1)...,random behaviour (tick i-1),quit attempt (tick i), quit success,...,quit success (tick 13)
+        #                                                         or 
+        #                                                         random behaviour (tick 1),...,random behaviour (tick 12),quit attempt (tick 13))
+        #At tick 0, initialize the behaviour buffer of the agent to its historical behaviours as follows:
+        #for a quitter in the baseline population (i.e. at tick 0) {
+        #  select a random index i of the buffer (0=< i =< 12); 
+        #  set the cell at i to 'quit attempt';
+        #  set all the cells at i+1,i+2...,12 to 'quit success';
+        #  set the cells at 0,...,i-1 to random behaviours;
+        # }
+        #for a non-quitter in the baseline population {
+        #  set each cell of the behaviour buffer to a random behaviour;
+        # }
+        #Set k to the number of quit attempt and consecutive quit successes following the quit attempt in the behaviourBuffer        
+        behaviours=['uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure', 'relapse', 'no relapse']
+        self.behaviourBuffer=[i for i in range(0,13)]
+        self.k=0
+        if self.states[0]=='quitter':
+            i=random.randint(0, 12)
+            self.behaviourBuffer[i]='quit attempt'
+            self.k=1
+            for j in range(i+1,13):
+                self.behaviourBuffer[j]='quit success'
+                self.k+=1
+            for q in range(0,i):#set random behaviours to indices: 0, 1,..., i-1
+                self.behaviourBuffer[q]=behaviours[random.randint(0, len(behaviours)-1)]
+        elif self.states[0]=='never_smoker':
+            for i in range(0,13):
+                self.behaviourBuffer[i]='no uptake'
+        elif self.states[0]=='ex-smoker':
+            for i in range(0,13):
+                self.behaviourBuffer[i]='no relapse'
+        else:#smoker
+            for i in range(0,13):
+                self.behaviourBuffer[i]=behaviours[random.randint(0, len(behaviours)-1)]
+        self.pNumberOfRecentQuitAttempts.setValue(self.behaviourBuffer.count('quit attempt'))
+
+    def updateECigUse(self,eciguse: int):
         self.eCigUse=eciguse
 
-    def update_state(self,state=None):
+    def setStateOfNextTimeStep(self,state=None):
         self.states.append(state)
     
-    def update_proportion_of_smoking_friends(self,proportion_of_smoking_friends=None):
-        self.proportion_of_smoking_friends=proportion_of_smoking_friends
+    def getCurrentState(self):#get the agent's state at the current time step
+        return self.states[self.smokingModel.currentTimeStep]
     
-    def get_current_state(self):
-        return self.states[-1]
-    
-    def get_current_time_step(self):
-        return len(self.states)-1
+    def getCurrentTimeStep(self):
+        return self.smokingModel.currentTimeStep
     
     def incrementAge(self):
         self.pAge.setAttribute(self.pAge.value+1)
 
 class SmokingModel(Model):
         def __init__(self, comm, params : Dict):
+            super().__init__(comm,params)
             self.comm = comm
             self.context: SharedContext = SharedContext(comm)#create an agent population
-            self.size_of_population=None
+            self.sizeOfPopulation=None
             self.rank:int = self.comm.Get_rank()
             self.type:int=0 #type of agent in id (id is a tuple (id,rank,type))
             self.props = params
-            self.data_file: str = self.props["data_file"] #data file containing HSE2012 STAPM data
-            self.stop_at:int = self.props["stop.at"] #final time step (tick) of simulation
-            self.threshold=self.props["threshold"]
+            self.dataFile: str = self.props["data_file"] #data file containing HSE2012 STAPM data
+            self.relapseProbFile = self.props["relapse_prob_file"]
+            self.yearOfCurrentTimeStep=self.props["year_of_baseline"]
+            self.currentTimeStep=0
+            self.stopAt:int = self.props["stop.at"] #final time step (tick) of simulation
             self.runner: SharedScheduleRunner = init_schedule_runner(comm)
-            self.smoking_prevalenceL=list()
-            self.regSmokL2AttrBetas,self.regSmokCOMBetas,self.attemptL2AttrBetas,self.attemptCOMBetas,self.successL2AttrBetas,self.successCOMBetas=self.storeCoeffsOfLevel2AttributesAndCOMIntoMaps()
-            self.data=pd.read_csv(self.data_file,header=0)
+            self.smokingPrevalenceL=list()
+            self.uptakeBetas={}#hashmap (dictionary) to store betas (coefficients) of the COMB formula of regular smoking theory
+            self.attemptBetas={}#hashmap to store betas of the COMB formula of quit attempt theory
+            self.successBetas={}#hashmap to store betas of the COMB formula of quit success theory
+            self.storeBetasOfCOMBFormulaeIntoMaps()
+            self.level2AttributesOfUptakeFormula={'C':[],'O':[],'M':[]} #hashmap to store the level 2 attributes of the COMB formula of regular smoking theory
+            self.level2AttributesOfAttemptFormula={'C':[],'O':[],'M':[]} #hashmap to store the level 2 attributes of the COMB formula of quit attempt theory
+            self.level2AttributesOfSuccessFormula={'C':[],'O':[],'M':[]} #hashmap to store the level 2 attributes of the COMB formula of quit success theory
+            self.storeLevel2AttributesOfCOMBFormulaeIntoMaps()
+            self.data=pd.read_csv(self.dataFile,header=0)
+            self.relapseProb=pd.read_csv(self.relapseProbFile,header=0)
+            self.runningMode=self.props['ABM_mode'] #debug or normal mode
+            self.tickCounter=0
+            if self.runningMode=='debug':
+                self.logfile=open('logfile.txt','a')
+
+        def storeBetasOfCOMBFormulaeIntoMaps(self):
+            #store the betas (coefficients) of COMB formulae for regular smoking, quit attempt and quit success theories into hashmaps
+            #input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
+            #output: uptakeBetas, attemptBetas, successBetas hashmaps with key=level 2 or level 1 attribute, value=beta
+            import re
+            for key, value in self.pros.items():
+                m=re.match('^uptake\.(\w+)\.beta$',key)#uptake.cAlcoholConsumption.beta or uptake.C.beta
+                if m!=None:
+                   self.uptakeBetas[m.group(1)]=value
+                else:
+                    m=re.match('^uptake\.bias$', key)
+                    if m!=None:
+                        self.uptakeBetas['bias']=value
+                    else:
+                        m=re.match('^attempt\.(\w+)\.beta$',key)
+                        if m!=None:
+                            self.attemptBetas[m.group(1)]=value
+                        else:
+                            m=re.match('^attempt\.bias$', key)
+                            if m!=None:
+                                self.attemptBetas['bias']=value
+                            else: 
+                                m=re.match('^success\.(\w+)\.beta$',key)
+                                if m!=None:
+                                    self.successBetas[m.group(1)]=value
+                                else:
+                                    m=re.match('^success\.bias$', key)
+                                    if m!=None:
+                                        self.successBetas['bias']=value            
         
-        def storeCoeffsOfAttributesIntoMap(self,key):
-            betas={}
-            betas = self.pros[key]
-            l=betas.split(",")
-            i=0
-            while i <= len(l-2):
-                  l2attr=l[i]
-                  beta=l[i+1]
-                  betas[l2attr]=float(beta)
-                  i+=2
-            return betas
-        
-        def storeCoeffsOfLevel2AttributesAndCOMIntoMaps(self):
-            #store the betas (coefficients) of level 2 attributes into a hashmap data structure (dictionary) with key=level 2 attribute name, value=beta
-            regSmokL2AttrBetas=self.storeCoeffsOfAttributesIntoMap("regSmokLevel2AttributesBetas")
-            regSmokCOMBetas=self.storeCoeffsOfAttributesIntoMap("regSmokCOMBetas")
-            attemptL2AttrBetas=self.storeCoeffsOfAttributesIntoMap("attemptLevel2AttributesBetas")
-            attemptCOMBetas=self.storeCoeffsOfAttributesIntoMap("attemptCOMBetas")
-            successL2AttrBetas=self.storeCoeffsOfAttributesIntoMap("successLevel2attributes_betas")
-            successCOMBetas=self.storeCoeffsOfAttributesIntoMap("successCOMBetas")            
-            return regSmokL2AttrBetas,regSmokCOMBetas,attemptL2AttrBetas,attemptCOMBetas,successL2AttrBetas,successCOMBetas
-                        
-        def init_population(self):
+        def storeLevel2AttributesOfCOMBFormulaeIntoMaps(self):
+            #input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
+            #output: level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfSuccessFormula hashmaps key=C, O or M and value=list of level 2 attributes of key
+            import re
+            for key in self.pros.keys():
+                m=re.match('^uptake\.([com]{1}\w+)\.beta$',key)
+                if m!=None:#match uptake.cAlcoholConsumption.beta, uptake.oAlcoholConsumption.beta or uptake.mAlcoholConsumption.beta 
+                    level2attribute=m.group(1)
+                    m=re.match('^c\w+',level2attribute)
+                    if m!=None:#match cAlcoholConsumption
+                        self.level2AttributesOfUptakeFormula['C'].append(level2attribute)
+                    else:
+                        m=re.match('^o\w+',level2attribute)
+                        if m!=None:#match oAlcoholConsumption
+                            self.level2AttributesOfUptakeFormula['O'].append(level2attribute)
+                        else:
+                            m=re.match('^m\w+',level2attribute)
+                            if m!=None:#match oAlcoholConsumption
+                                self.level2AttributesOfUptakeFormula['M'].append(level2attribute)
+                            else:
+                                sys.exit(level2attribute+' does not match patterns of level2attributes of C, O and M in regular smoking (uptake) formula')
+                else:
+                    m=re.match('^attempt\.([com]{1}\w+)\.beta$',key)                
+                    if m!=None:#match attempt.cAlcoholConsumption.beta, attempt.oAlcoholConsumption.beta or attempt.mAlcoholConsumption.beta 
+                        level2attribute=m.group(1)
+                        m=re.match('^c\w+',level2attribute)
+                        if m!=None:#match cAlcoholConsumption
+                            self.level2AttributesOfUptakeFormula['C'].append(level2attribute)
+                        else:
+                            m=re.match('^o\w+',level2attribute)
+                            if m!=None:#match oAlcoholConsumption
+                                self.level2AttributesOfUptakeFormula['O'].append(level2attribute)
+                            else:
+                                m=re.match('^m\w+',level2attribute)
+                                if m!=None:#match oAlcoholConsumption
+                                    self.level2AttributesOfUptakeFormula['M'].append(level2attribute)
+                                else:
+                                    sys.exit(level2attribute+' does not match patterns of level2attributes of C, O and M in quit attempt forumla')
+                    else:
+                        m=re.match('^success\.([com]{1}\w+)\.beta$',key)                
+                        if m!=None:#match success.cAlcoholConsumption.beta, success.oAlcoholConsumption.beta or success.mAlcoholConsumption.beta 
+                            level2attribute=m.group(1)
+                            m=re.match('^c\w+',level2attribute)
+                            if m!=None:#match cAlcoholConsumption
+                                self.level2AttributesOfUptakeFormula['C'].append(level2attribute)
+                            else:
+                                m=re.match('^o\w+',level2attribute)
+                                if m!=None:#match oAlcoholConsumption
+                                    self.level2AttributesOfUptakeFormula['O'].append(level2attribute)
+                                else:
+                                    m=re.match('^m\w+',level2attribute)
+                                    if m!=None:#match oAlcoholConsumption
+                                        self.level2AttributesOfUptakeFormula['M'].append(level2attribute)
+                                    else:
+                                        sys.exit(level2attribute+' does not match patterns of level2attributes of C, O and M in quit success forumla')
+
+        def initPopulation(self):
             (r,_)=self.data.shape
             print('size of agent population:',r)
-            self.size_of_population=r
+            self.sizeOfPopulation=r
             for i in range(r):
-                regSmokTheory=RegSmokeTheory(self,i)
-                quitAttemptTheory=QuitAttemptTheory(self,i)
-                quitSuccessTheory=QuitSuccessTheory(self,i)                  
-                mediator=COMBTheoryMediator([regSmokTheory,quitAttemptTheory,quitSuccessTheory])
-                self.context.add(Person(i, 
+                regSmokTheory=RegSmokeTheory('regsmoketheory',self,i)
+                quitAttemptTheory=QuitAttemptTheory('quitattempttheory',self,i)
+                quitSuccessTheory=QuitSuccessTheory('quitsuccesstheory',self,i)
+                relapseSTPMTheory=RelapseSTPMTheory('relapseSTPMtheory',self,i)                  
+                mediator=COMBTheoryMediator([regSmokTheory,quitAttemptTheory,quitSuccessTheory,relapseSTPMTheory])
+                self.context.add(Person(
+                               self,
+                               i, 
                                self.type,
                                self.rank,
                                age=int(self.data.at[i,'pAge']),
@@ -180,6 +312,7 @@ class SmokingModel(Model):
                                vareniclineUse=self.data.at[i,'pVareniclineUse'],
                                eCigUse=self.data.at[i,'pECigUse'],
                                cigConsumptionPrequit=self.data.at[i,'pCigConsumptionPrequit'],
+                               yearsSinceQuit=self.data.at[i,'pYearsSinceQuit'],#number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
                                states=[self.data.at[i,'state']],
                                regSmokTheory=regSmokTheory,
                                quitAttemptTheory=quitAttemptTheory,
@@ -187,92 +320,105 @@ class SmokingModel(Model):
                                 ))
                 agent=self.context.agent((i,self.type,self.rank))
                 mediator.set_agent(agent)
-                agent.set_mediator(mediator)                
-            self.size_of_population=(self.context.size()).get(-1)
-            print('size of population:',self.size_of_population)
-            p=self.smoking_prevalence()
+                agent.setMediator(mediator)                
+            self.sizeOfPopulation=(self.context.size()).get(-1)
+            print('size of population:',self.sizeOfPopulation)
+            p=self.smokingPrevalence()
             print('===statistics of smoking prevalence===')
             print('Time step 0: smoking prevalence='+str(p)+'%.')
-            self.smoking_prevalenceL.append(p)
+            self.smokingPrevalenceL.append(p)
             
-        def do_situational_mechanisms(self):#macro entities change internal states of micro entities (agents)
+        def doSituationalMechanisms(self):#macro entities change internal states of micro entities (agents)
             for agent in self.context.agents(agent_type=self.type):
-                agent.do_situation()
+                agent.doSituation()
         
-        def do_action_mechanisms(self):#micro entities do actions based on their internal states
+        def doActionMechanisms(self):#micro entities do actions based on their internal states
             for agent in self.context.agents(agent_type=self.type):
-                agent.do_action()
+                agent.doAction()
 
-        def do_transformational_mechanisms(self):
+        def doTransformationalMechanisms(self):
             pass
 
-        def do_macro_to_macro_mechanisms(self):
+        def doMacroToMacroMechanisms(self):
             pass 
  
-        def smoking_prevalence(self):#smoking prevalence at the current time step
+        def smokingPrevalence(self):#smoking prevalence at the current time step
             smokers=0
             for agent in self.context.agents(agent_type=self.type):
-                if agent.get_current_state()=='smoker':
+                if agent.getCurrentState()=='smoker':
                     smokers+=1
-            prevalence=np.round(smokers/self.size_of_population*100,2) #percentage of smokers
+            prevalence=np.round(smokers/self.sizeOfPopulation*100,2) #percentage of smokers
             return prevalence
         
-        def eCig_prevalence(self):
-            eCigUers=0
-            for agent in self.context.agents(agent_type=self.type):
-                if agent.eCigUse:
-                    eCigUers+=1
-            prevalence=np.round(eCigUers/self.size_of_population*100,2) #percentage of e-Cig users
-            return prevalence
-
-        def do_per_tick(self):
-            self.do_situational_mechanisms()
-            self.do_action_mechanisms()
-            self.do_transformational_mechanisms()
-            self.do_macro_to_macro_mechanisms()
+        def doPerTick(self):
+            self.currentTimeStep+=1
+            self.tickCounter+=1
+            if self.tickCounter==13:
+               self.yearOfCurrentTimeStep+=1
+            self.doSituationalMechanisms()
+            self.doActionMechanisms()
+            self.doTransformationalMechanisms()
+            self.doMacroToMacroMechanisms()
             #display smoking prevalence at current time step on screen
             agent=list(self.context.agents(count=1))[0]
-            p=self.smoking_prevalence()
-            print('Time step '+str(agent.get_current_time_step())+': smoking prevalence='+str(p)+'%.')
-            self.smoking_prevalenceL.append(p)
+            p=self.smokingPrevalence()
+            print('Time step '+str(agent.getCurrentTimeStep())+': smoking prevalence='+str(p)+'%.')
+            self.smokingPrevalenceL.append(p)
+            if self.tickCounter==13:
+                self.tickCounter=0
+            if self.runningMode=='debug':
+                self.logfile.write('year: '+str(self.yearOfCurrentTimeStep)+'\n')
             
-        def init_schedule(self):
-            self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
-            self.runner.schedule_stop(self.stop_at)
+        def initSchedule(self):
+            self.runner.schedule_repeating_event(1, 1, self.doPerTick)
+            self.runner.schedule_stop(self.stopAt)
 
-        def collect_data(self):
+        def collectData(self):
             f=open('prevalence_of_smoking.csv','w')
-            for prev in self.smoking_prevalenceL:
+            for prev in self.smokingPrevalenceL:
                 f.write(str(prev)+',')
             f.close()
-        
+            if self.runningMode=='debug':#write states of each agent over the entire simulation period into a csv file               
+                self.logfile.write('###states of the agents over all time steps###\n')
+                self.logfile.write('id\n')
+                for i in range(self.currentTimeStep+1):
+                    self.logfile.write(','+str(i))
+                self.logfile.write('\n')
+                for agent in self.context.agents(agent_type=self.type):
+                    self.logfile.write(str(agent.get_id))
+                    for i in range(self.currentTimeStep+1):
+                        self.logfile.write(','+agent.states[i])
+                    self.logfile.write('\n')
+                self.logfile.close()
+
         def init(self):
-            self.init_population()
-            self.init_schedule()
+            self.initPopulation()
+            self.initSchedule()
 
         def run(self):
             self.runner.execute()
-            self.collect_data()
+            self.collectData()
 
 class COMBTheory(Theory):
 
-    def __init__(self,smokingModel: SmokingModel):
+    def __init__(self,name,smokingModel):
         self.smokingModel=smokingModel
         self.compC: Level1Attribute=None
         self.compO: Level1Attribute=None
         self.compM: Level1Attribute=None
-        self.behaviour : float=None
+        self.probBehaviour : float=None
         self.level2Attributes: Dict={}#a hashmap with keys=level 2 attribute names, values=Level2Attribute objects 
         self.power=0 #power within logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
-    
-    def storeLevel2AttributesIntoMap(self,indx_of_agent: int):
+        self.name=name
+        
+    def storeLevel2AttributesIntoMap(self,indxOfAgent: int):
         #store the level 2 attributes of agent i from level 2 attributes dataframe of smoking model class into a map <l2AttributeName : string, object : Level2Attribute>  
         level2attributesdata=self.data.filter(regex='^[com]')
         for level2AttributeName in level2attributesdata.columns:
-            self.level2Attributes.insert(level2AttributeName,Level2Attribute(name=level2AttributeName,value=self.smokingModel.data.at[indx_of_agent,level2AttributeName]))
+            self.level2Attributes.insert(level2AttributeName,Level2Attribute(name=level2AttributeName,value=self.smokingModel.data.at[indxOfAgent,level2AttributeName]))
 
     @abstractmethod
-    def do_situation(self):#run the situation mechanism of the agent of this theory
+    def doSituation(self):#run the situation mechanism of the agent of this theory
         pass
 
     @abstractmethod
@@ -296,227 +442,387 @@ class COMBTheory(Theory):
     def doLearning(self):
         pass
 
-    def do_action(self):#run the action mechanism of the agent of this theory
+    def doAction(self):#run the action mechanism of the agent of this theory
         self.makeCompC()
         self.makeCompO()
         self.makeCompM()
         self.doBehaviour()             
 
-class COMBTheoryMediator(TheoryMediator):
+class SmokingTheoryMediator(TheoryMediator):
         
-    def __init__(self, theory_list:List[COMBTheory]):
-        super().__init__(theory_list)
-        if len(self.theory_list) == 0: 
-            raise Exception(f"{__class__.__name__} require a theory_list with length > 0")
+    def __init__(self, theoryList:List[COMBTheory]):
+        super().__init__(theoryList)
+        if len(self.theoryList) == 0: 
+            raise Exception(f"{__class__.__name__} require a theoryList with length > 0")
+        self.theoryMap={}
+        for theory in theoryList:
+            self.theoryMap[theory.name]=theory
 
-    def mediate_situation(self):
-        for i in range(len(self.theory_list)):
-            self.theory_list[i].do_situation()
+    def mediateSituation(self):
+        if self.agent.getCurrentState() == 'never_smoker': 
+           self.theoryMap['regsmoketheory'].doSituation()
+        elif self.agent.getCurrentState() == 'smoker': 
+           self.theoryMap['quitattempttheory'].doSituation()
+        elif self.agent.getCurrentState() == 'quitter':
+           self.theoryMap['quitsuccesstheory'].doSituation()
+        elif self.agent.getCurrentState() == 'ex-smoker':
+            self.theoryMap['relapseSTPMtheory'].doSituation()
 
-    def mediate_action(self):
-        for i in range(len(self.theory_list)):
-            self.theory_list[i].do_action()
+    def mediateAction(self):
+        #definition of quitting smoking: a smoker transitions to an ex-smoker (i.e. achieve success in quitting) after maintaining a quit attempt for 13 consecutive ticks (52 weeks i.e. 12 months). 
+        #                        the sequence of the agent's behaviours when transitioning from smoker to ex-smoker: quit attempt (at t=i, i > 0, state=smoker), quit success (at t=i+1, state=quitter),..., quit success (at t=i+12, state=quitter), relapse or no relapse (at t=i+13, state=ex-smoker)
+        ###pseudocode of state transition###
+        #At tick t: 
+        #for a quitter A, if k < 13, run the quit success theory to calculate the probability of maintaining a quit attempt; if p >= threshold {A stays as a quitter at t+1; k=k+1} else { A transitions to a smoker at t+1}
+        #for a quitter A, if k==13, run the quit success theory to calculate the probability of maintaining a quit attempt; if p >= threshold { A transitions to an ex-smoker at t+1; k=0;} else {A transitions to a smoker at t+1}
+        #for a smoker A, run the quit attempt theory to calculate the probability of making a quit attempt. If p >= threshold, { A transitions to a quitter at t+1; k=1;} else {A stays as a smoker at t+1}
+        #for a never smoker, run the regular smoking theory to calculate the probability of regular smoking; if p >= threshold {A transitions to a smoker at t+1} else { A stays as never smoker or ex-smoker at t+1}
+        #for an ex-smoker A, run relapse theory of STPM theory to calculate the probability of relapse; if p>= threshold {A transitions to a smoker at t+1} else { A stays as ex-smoker at t+1}
+        #where threshold is a pseudo-random number drawn from uniform(0,1) and p is the probability from the latent composite model.
+        if self.agent.getCurrentState() == 'quitter':
+           self.theoryMap['quitsuccesstheory'].doAction()
+        elif self.agent.getCurrentState() == 'smoker':
+           self.theoryMap['quitattempttheory'].doAction()  
+        elif self.agent.getCurrentState() == 'never_smoker': 
+           self.theoryMap['regsmoketheory'].doAction()   
+        elif self.agent.getCurrentState() == 'ex-smoker':
+            self.theoryMap['relapseSTPMtheory'].doAction()
 
+class STPMTheory(Theory):
+    def __init__(self,name,smokingModel):
+        self.smokingModel=smokingModel
+        self.name=name
+
+    @abstractmethod
+    def doSituation(self):
+        pass
+
+    @abstractmethod
+    def doAction(self):
+        pass
+
+class RelapseSTPMTheory(STPMTheory):
+    def __init__(self,name,smokingModel: SmokingModel):
+      super().__init__(name,smokingModel)
+      self.probRelapse=None
+
+    def doSituation(self):
+        #increment age of the agent every 13 ticks
+       if self.smokingModel.tickCounter == 13:
+            self.agent.incrementAge()
+        #retrieve probability of relapse of the matching person from STPM transition probabilities file
+        matched=self.smokingModel.relapseProb[(self.smokingModel.relapseProb['age'] == self.agent.pAge.getValue()) & (self.smokingModel.relapseProb['year'] == self.smokingModel.yearOfCurrentTimeStep) & (self.smokingModel.relapseProb['sex']==self.agent.pGender.getValue()) & (self.smokingModel.relapseProb['imd_quintile']==self.agent.pIMDQuintile.getValue()) & (self.smokingModel.relapseProb['time_since_quit']==self.agent.pYearsSinceQuit.getValue())]
+        self.probRelapse=float(matched['p_relapse_4wk'])
+        
+    def doAction(self):
+        self.agent.tickCounterExSmoker+=1
+        if self.agent.tickCounterExSmoker == 13:
+           self.agent.pYearsSinceQuit.setValue(self.agent.pYearsSinceQuit.getValue()+1)
+           self.agent.tickCounterExSmoker=0
+        if self.probRelapse >=random.uniform(0,1):
+           del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+           self.agent.behaviourBuffer.append('relapse') #append the agent's new behaviour to its behaviour buffer 
+           self.agent.setStateOfNextTimeStep(state='smoker')
+           self.agent.tickCounterExSmoker=0
+           self.agent.pYearsSinceQuit.setValue(None)
+        else:
+           del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+           self.agent.behaviourBuffer.append('no relapse') #append the agent's new behaviour to its behaviour buffer 
+           self.agent.setStateOfNextTimeStep(state='ex-smoker')               
+        #count the number of quit attempts in the last 12 months and update the agent's variable pNumberOfRecentQuitAttempts
+        self.agent.pNumberOfRecentQuitAttempts.setValue(self.agent.behaviourBuffer.count('quit attempt'))
+        if self.smokingModel.runningMode=='debug':
+            self.smokingModel.logfile.writelines(['agent id: '+str(self.agent.getId())+'\n',
+                                                  'state: '+self.agent.getCurrentState()+'\n',
+                                                  'age: '+str(self.agent.pAge.getValue())+'\n',
+                                                  'buffer: '+str(self.agent.behaviourBuffer)+'\n',
+                                                  'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
+
+class RegularSmokingSTPMTheory(STPMTheory):
+    def __init__(self,name,smokingModel: SmokingModel,indxOfAgent : int):
+      super().__init__(name,smokingModel)
+
+    def doSituation(self):
+        pass
+
+    def doAction(self):
+        pass
+    
+class QuitSTPMTheory(STPMTheory):
+    def __init__(self,name,smokingModel: SmokingModel,indxOfAgent : int):
+      super().__init__(name,smokingModel)
+
+    def doSituation(self):
+        pass
+
+    def doAction(self):
+        pass
+    
 class RegSmokeTheory(COMBTheory):
 
-    def __init__(self,smokingModel: SmokingModel,indx_of_agent : int):
-      super().__init__(smokingModel)
-      self.storeLevel2AttributesIntoMap(indx_of_agent)
+    def __init__(self,name,smokingModel: SmokingModel,indxOfAgent : int):
+      super().__init__(name,smokingModel)
+      self.compC: Level1Attribute=None
+      self.compO: Level1Attribute=None
+      self.compM: Level1Attribute=None
+      self.level2Attributes: Dict={}#a hashmap with keys=level 2 attribute names, values=Level2Attribute objects   
+      self.storeLevel2AttributesIntoMap(indxOfAgent)
 
-    def do_situation(self):
-        pass
+    def doSituation(self):
+       #increment age of the agent every 13 ticks
+       if self.smokingModel.tickCounter == 13:
+            self.agent.incrementAge()
 
     def doLearning(self):
         pass
 
     def makeCompC(self):
-        if self.smokingModel.regSmokCOMBetas.get('C')!=None:
+        if self.smokingModel.uptakeBetas.get('C')!=None:
             self.compC=Level1Attribute('C')
-            self.compC.addLevel2Attribute(self.level2Attributes['cAlcoholConsumption'])
-            self.compC.addLevel2Attribute(self.level2Attributes['cEcigaretteUse'])
-            self.compC.addLevel2Attribute(self.level2Attributes['cMentalHealthConditions'])
             val=0
-            for level2Attribute in self.compC.list:
-                beta=self.smokingModel.regSmokL2AttrBetas[level2Attribute.name]
-                val+=beta*level2Attribute.getValue()
+            for level2AttributeName in self.smokingModel.level2AttributesOfUptakeFormula['C']:
+                self.compC.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.uptakeBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
             self.compC.setValue(val)
-            self.power+=val*self.smokingModel.regSmokCOMBetas.get('C')
+            self.power+=val*self.smokingModel.uptakeBetas.get('C')
         return self.power
     
     def makeCompO(self):
-        if self.smokingModel.regSmokCOMBetas.get('O')!=None:  
+        if self.smokingModel.uptakeBetas.get('O')!=None:  
             self.compO=Level1Attribute('O')
-            self.compO.addLevel2Attribute(self.level2Attributes['oSocialHousing'])
-            self.compO.addLevel2Attribute(self.level2Attributes['oSEP'])
-            self.compO.addLevel2Attribute(self.level2Attributes['oAge'])
             val=0
-            for level2Attribute in self.compO.list:
-                beta=self.smokingModel.regSmokL2AttrBetas[level2Attribute.name]
-                val+=beta*level2Attribute.getValue()
+            for level2AttributeName in self.smokingModel.level2AttributesOfUptakeFormula['O']:
+                self.compO.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.uptakeBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
             self.compO.setValue(val)
-            self.power+=val*self.smokingModel.regSmokCOMBetas.get('O')
+            self.power+=val*self.smokingModel.uptakeBetas.get('O')
         return self.power
     
     def makeCompM(self):
-        if self.smokingModel.regSmokCOMBetas.get('M')!=None:
-           print('create latent M')
-        else:
-           print('The regular smoking theory formula does not have latent composite O.')
+        if self.smokingModel.uptakeBetas.get('M')!=None:  
+            self.compM=Level1Attribute('M')
+            val=0
+            for level2AttributeName in self.smokingModel.level2AttributesOfUptakeFormula['M']:
+                self.compM.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.uptakeBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
+            self.compM.setValue(val)
+            self.power+=val*self.smokingModel.uptakeBetas.get('M')
         return self.power
-
-    def doBehaviour(self):
-        #calculate probability of behaviour using a logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
+        
+    def doBehaviour(self):    
+        #calculate probability of regular smoking uptake using the COMB formula: 
+        #prob=1/(1+e^power) where power = -1 * (C*beta1 + O*beta2 + M*beta3 + bias)
         #Notes on quitting: a smoker transitions to an ex-smoker (i.e. achieve success in quitting) after maintaining a quit attempt for 3 consecutive ticks (12 weeks).
-        ###pseudocode of state transition
-        #At tick t: 
-        #if an agent is a never smoker or an ex-smoker, run the regular smoking theory to calculate probability of uptaking regular smoking. If probability >= threshold, the new state of the agent is a smoker.
-        #if an agent is a smoker, run the quit attempt theory to calculate the probability of making a quit attempt. If probability >= threshold, the new state of the agent is a quitter. 
-        #if an agent is a quitter and was a quitter at ticks t-1 and t-2, run the quit success theory to calculate the probability of maintaining a quit attempt. If probability >= threshold, the new state of the agent is an ex-smoker.
-        self.power+=self.smokingModel.regSmokCOMBetas['bias']
+        self.power+=self.smokingModel.uptakeBetas['bias']
         self.power=-1*self.power
         e=2.71828 #Euler's number
-        p=1/(1+e^self.power)
-        #At tick t:
-        #if an agent is a never smoker or ex-smoker, run regular smoking theory to calculate probability of uptaking regular smoking. If probability >= threshold, the new state of the agent is a smoker.
-        if self.agent.get_current_state() == 'never_smoker' or self.agent.get_current_state() == 'ex-smoker': 
-           if p >= self.threshold:
-              self.agent.update_state(state='smoker')
-           else:
-              self.agent.update_state(state=self.agent.get_current_state())
-
+        self.probBehaviour=1/(1+e^self.power)
+        #for a never smoker, run the regular smoking theory to calculate the probability of regular smoking; if p >= threshold {A transitions to a smoker at t+1} else { A stays as never smoker or ex-smoker at t+1}
+        if self.probBehaviour >=random.uniform(0,1):
+            del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+            self.agent.behaviourBuffer.append('uptake') #append the agent's new behaviour to its behaviour buffer               
+            self.agent.setStateOfNextTimeStep(state='smoker')
+        else:
+            del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+            self.agent.behaviourBuffer.append('no uptake') #append the agent's new behaviour to its behaviour buffer               
+            self.agent.setStateOfNextTimeStep(state='never_smoker')
+        #count the number of quit attempts in the last 12 months and update the agent's variable pNumberOfRecentQuitAttempts
+        self.agent.pNumberOfRecentQuitAttempts.setValue(self.agent.behaviourBuffer.count('quit attempt'))
+        if self.smokingModel.runningMode=='debug':
+            self.smokingModel.logfile.writelines(['agent id: '+str(self.agent.getId())+'\n',
+                                                  'state: '+self.agent.getCurrentState()+'\n',
+                                                  'age: '+str(self.agent.pAge.getValue())+'\n',
+                                                  'buffer: '+str(self.agent.behaviourBuffer)+'\n',
+                                                  'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
+                
 class QuitAttemptTheory(COMBTheory):
 
-    def __init__(self,smokingModel: SmokingModel,indx_of_agent : int):
-      super().__init__(smokingModel)
-      self.storeLevel2AttributesIntoMap(indx_of_agent)
+    def __init__(self,name,smokingModel: SmokingModel,indxOfAgent : int):
+      super().__init__(name,smokingModel)
+      self.compC: Level1Attribute=None
+      self.compO: Level1Attribute=None
+      self.compM: Level1Attribute=None
+      self.level2Attributes: Dict={}#a hashmap with keys=level 2 attribute names, values=Level2Attribute objects   
+      self.storeLevel2AttributesIntoMap(indxOfAgent)
 
-    def do_situation(self):#agents use intervention to quit e.g. e-cigarette
-        pass
+    def doSituation(self):
+        #increment age of the agent every 13 ticks
+        if self.smokingModel.tickCounter == 13:
+            self.agent.incrementAge()
 
     def doLearning(self):
         pass 
 
     def makeCompC(self):
-        if self.smokingModel.attemptCOMBetas.get('C')!=None:
-           print('create latent C')
-        else:
-           print('The quit attempt theory formula does not have latent composite C.')
-        return self.power
-
-    def makeCompO(self):#STS has no data on these level 2 attributes: region smoking, GP advice and smokers in network. They are excluded from the formula.
-        if self.smokingModel.attemptCOMBetas.get('O')!=None:
-            self.compO=Level1Attribute('O')
-            self.compO.addLevel2Attribute(self.level2Attributes['oSocialHousing'])
+        if self.smokingModel.attemptBetas.get('C')!=None:
+            self.compC=Level1Attribute('C')
             val=0
-            for level2Attribute in self.compO.list:
-                beta=self.smokingModel.attemptL2AttrBetas[level2Attribute.name]
-                val+=beta*level2Attribute.getValue()
+            for level2AttributeName in self.smokingModel.level2AttributesOfAttemptFormula['C']:
+                self.compC.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.attemptBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
+            self.compC.setValue(val)
+            self.power+=val*self.smokingModel.attemptBetas.get('C')
+        return self.power
+    
+    def makeCompO(self):
+        if self.smokingModel.attemptBetas.get('O')!=None:  
+            self.compO=Level1Attribute('O')
+            val=0
+            for level2AttributeName in self.smokingModel.level2AttributesOfAttemptFormula['O']:
+                self.compO.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.attemptBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
             self.compO.setValue(val)
-            self.power+=val*self.smokingModel.attemptCOMBetas.get('O')
+            self.power+=val*self.smokingModel.attemptBetas.get('O')
         return self.power
     
     def makeCompM(self):
-        if self.smokingModel.attemptCOMBetas.get('M')!=None:  
+        if self.smokingModel.attemptBetas.get('M')!=None:  
             self.compM=Level1Attribute('M')
-            self.compM.addLevel2Attribute(self.level2Attributes['mIntentionToQuit'])
-            self.compM.addLevel2Attribute(self.level2Attributes['mSpendingOnCig'])
-            self.compM.addLevel2Attribute(self.level2Attributes['mEnjoymentOfSmoking'])
-            self.compM.addLevel2Attribute(self.level2Attributes['mAge'])
             val=0
-            for level2Attribute in self.compM.list:
-                beta=self.smokingModel.attemptL2AttrBetas[level2Attribute.name]
-                val+=beta*level2Attribute.getValue()
+            for level2AttributeName in self.smokingModel.level2AttributesOfAttemptFormula['M']:
+                self.compM.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.attemptBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
             self.compM.setValue(val)
-            self.power+=val*self.smokingModel.attemptCOMBetas.get('M')
+            self.power+=val*self.smokingModel.attemptBetas.get('M')
         return self.power
     
     def doBehaviour(self):
-        #calculate probability of behaviour using a logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
-        self.power+=self.smokingModel.attemptCOMBetas['bias']
+        #calculate probability of making quit attempt using using the COMB formula: 
+        #prob=1/(1+e^power) where power = -1 * (C*beta1 + O*beta2 + M*beta3 + bias)
+        self.power+=self.smokingModel.attemptBetas['bias']
         self.power=-1*self.power
         e=2.71828 #Euler's number
-        p=1/(1+e^self.power)
-        #At tick t:
-        #if an agent is a smoker, run the quit attempt theory to calculate the probability of making a quit attempt. If probability >= threshold, the new state of the agent is a quitter. 
-        if self.agent.get_current_state() == 'smoker':
-            if p >= self.threshold:
-               self.agent.update_state(state='quitter')
-            else:
-               self.agent.update_state(state='smoker')
+        self.probBehaviour=1/(1+e^self.power)
+        #for a smoker A, run the quit attempt theory to calculate the probability of making a quit attempt. If p >= threshold, { A transitions to a quitter at t+1; k=1;} else {A stays as a smoker at t+1}
+        if self.probBehaviour >= random.uniform(0,1):
+            del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+            self.agent.behaviourBuffer.append('quit attempt') #append the agent's new behaviour to its behaviour buffer
+            self.agent.setStateOfNextTimeStep(state='quitter')
+            self.agent.k=1
+        else:
+            del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+            self.agent.behaviourBuffer.append('no quit attempt') #append the agent's new behaviour to its behaviour buffer
+            self.agent.setStateOfNextTimeStep(state='smoker')
+        #count the number of quit attempts in the last 12 months and update the agent's variable pNumberOfRecentQuitAttempts
+        self.agent.pNumberOfRecentQuitAttempts.setValue(self.agent.behaviourBuffer.count('quit attempt'))
+        if self.smokingModel.runningMode=='debug':
+            self.smokingModel.logfile.writelines(['agent id: '+str(self.agent.getId())+'\n',
+                                                  'state: '+self.agent.getCurrentState()+'\n',
+                                                  'age: '+str(self.agent.pAge.getValue())+'\n',
+                                                  'buffer: '+str(self.agent.behaviourBuffer)+'\n',
+                                                  'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
 
 class QuitSuccessTheory(COMBTheory):
 
-    def __init__(self,smokingModel: SmokingModel,indx_of_agent : int):
-      super().__init__(smokingModel)
-      self.storeLevel2AttributesIntoMap(indx_of_agent)
+    def __init__(self,name, smokingModel: SmokingModel,indxOfAgent : int):
+      super().__init__(name, smokingModel)
+      self.compC: Level1Attribute=None
+      self.compO: Level1Attribute=None
+      self.compM: Level1Attribute=None
+      self.level2Attributes: Dict={}#a hashmap with keys=level 2 attribute names, values=Level2Attribute objects   
+      self.storeLevel2AttributesIntoMap(indxOfAgent)
 
-    def do_situation(self):
-        pass
+    def doSituation(self):
+        #increment age of the agent every 13 ticks
+        if self.smokingModel.tickCounter == 13:
+            self.agent.incrementAge()
 
     def doLearning(self):
         pass
 
-    def makeCompC(self):#STS does not have data on the level 2 attribute 'cigarettes per day'. This is excluded from the formula.
-        if self.smokingModel.successCOMBetas.get('C')!=None:
+    def makeCompC(self):
+        if self.smokingModel.successBetas.get('C')!=None:
             self.compC=Level1Attribute('C')
-            self.compC.addLevel2Attribute(self.level2Attributes['cAlcoholConsumption'])
-            self.compC.addLevel2Attribute(self.level2Attributes['cEcigaretteUse'])
-            self.compC.addLevel2Attribute(self.level2Attributes['mUseOfNRT'])
-            self.compC.addLevel2Attribute(self.level2Attributes['cVareniclineUse'])
-            self.compC.addLevel2Attribute(self.level2Attributes['cCigAddictStrength'])            
-            self.compC.addLevel2Attribute(self.level2Attributes['cMentalHealthConditions'])
-            self.compC.addLevel2Attribute(self.level2Attributes['cAge'])
             val=0
-            for level2Attribute in self.compC.list:
-                beta=self.smokingModel.successL2AttrBetas[level2Attribute.name]
-                val+=beta*level2Attribute.getValue()
+            for level2AttributeName in self.smokingModel.level2AttributesOfSuccessFormula['C']:
+                self.compC.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.successBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
             self.compC.setValue(val)
-            self.power+=val*self.smokingModel.successCOMBetas.get('C')
+            self.power+=val*self.smokingModel.successBetas.get('C')
         return self.power
     
-    def makeCompO(self):#STS has no data on level 2 attributes: smokers in network and region prevalence. They are excluded from the formula.
-        if self.smokingModel.successCOMBetas.get('O')!=None:  
+    def makeCompO(self):
+        if self.smokingModel.successBetas.get('O')!=None:  
             self.compO=Level1Attribute('O')
-            self.compO.addLevel2Attribute(self.level2Attributes['oSocialHousing'])
-            self.compO.addLevel2Attribute(self.level2Attributes['oSEP'])
             val=0
-            for level2Attribute in self.compO.list:
-                beta=self.smokingModel.successL2AttrBetas[level2Attribute.name]
-                val+=beta*level2Attribute.getValue()
+            for level2AttributeName in self.smokingModel.level2AttributesOfSuccessFormula['O']:
+                self.compO.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.successBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
             self.compO.setValue(val)
-            self.power+=val*self.smokingModel.successCOMBetas.get('O')
+            self.power+=val*self.smokingModel.successBetas.get('O')
         return self.power
     
     def makeCompM(self):
-        if self.smokingModel.successCOMBetas.get('M')!=None:
-           print('create latent M')
-        else:
-           print('The quit success theory formula does not have latent composite M.')
+        if self.smokingModel.successBetas.get('M')!=None:  
+            self.compM=Level1Attribute('M')
+            val=0
+            for level2AttributeName in self.smokingModel.level2AttributesOfSuccessFormula['M']:
+                self.compM.addLevel2Attribute(self.level2Attributes[level2AttributeName])
+                beta=self.smokingModel.successBetas[level2AttributeName]
+                val+=beta*self.level2Attributes[level2AttributeName].getValue()
+            self.compM.setValue(val)
+            self.power+=val*self.smokingModel.successBetas.get('M')
         return self.power
-
+    
     def doBehaviour(self):
-        #calculate probability of quit success using a logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
-        #Notes on quitting: a smoker transitions to an ex-smoker (i.e. achieve success in quitting) after maintaining a quit attempt for 3 consecutive ticks (12 weeks).
-        ###pseudocode of state transition
-        #At tick t: 
-        #if an agent is a quitter and was a quitter at ticks t-1 and t-2 run the quit success theory to calculate the probability of maintaining a quit attempt. If probability >= threshold, the new state of the agent is an ex-smoker.
-        self.power+=self.smokingModel.successCOMBetas['bias']
+        #calculate probability of quit success using using the COMB formula:
+        #prob=1/(1+e^power) where power = -1 * (C*beta1 + O*beta2 + M*beta3 + bias) 
+        self.power+=self.smokingModel.successBetas['bias']
         self.power=-1*self.power
         e=2.71828 #Euler's number
-        p=1/(1+e^self.power)
-        current_tick=len(self.agent.states)-1
-        if self.agent.get_current_state() == 'quitter' and self.agent.states[current_tick-1] == 'quitter' and self.agent.states[current_tick-2] == 'quitter': 
-            if p >= self.threshold:
-               self.agent.update_state(state='ex-smoker')
+        self.probBehaviour=1/(1+e^self.power)
+        #for a quitter A, 
+        #  run the quit success theory to calculate the probability of maintaining a quit attempt; 
+        #  if k < 13
+        #     if p >= threshold
+        #       {A performs quit success behaviour at t and stays as a quitter at t+1;
+        #        k=k+1;} 
+        #     else {A performs quit failure behaviour at t and transitions to a smoker at t+1; 
+        #          k=0;}
+        #  elseif k==13
+        #     if p >= threshold 
+        #       {A performs quit success behaviour at t and transitions to an ex-smoker at t+1;} 
+        #     else {A transitions to a smoker at t+1; k=0;}    
+        if self.agent.k < 13:
+            if self.probBehaviour >= random.uniform(0,1):
+                del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+                self.agent.behaviourBuffer.append('quit success') #append the agent's new behaviour to its behaviour buffer
+                self.agent.setStateOfNextTimeStep(state='quitter')
+                self.agent.k+=1
             else:
-               self.agent.update_state(state='smoker')
-        elif self.agent.get_current_state() == 'quitter' and self.agent.states[current_tick-1] == 'quitter' and self.agent.states[current_tick-2] == 'smoker':
-             if p >= self.threshold:
-                self.agent.update_state(state='quitter')
-             else:
-                self.agent.update_state(state='smoker')
-        elif self.agent.get_current_state() == 'quitter' and self.agent.states[current_tick-1] = 'smoker':
-             if p >= self.threshold:
-                self.agent.update_state(state='quitter')
-             else:
-                self.agent.update_state(state='smoker')
+                del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+                self.agent.behaviourBuffer.append('quit failure') #append the agent's new behaviour to its behaviour buffer
+                self.agent.setStateOfNextTimeStep(state='smoker')
+                self.agent.k=0
+        elif self.agent.k == 13:
+            if self.probBehaviour >= random.uniform(0,1):
+                del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+                self.agent.behaviourBuffer.append('quit success') #append the agent's new behaviour to its behaviour buffer
+                self.agent.setStateOfNextTimeStep(state='ex-smoker')
+                self.agent.pYearsSinceQuit.setValue(self.agent.pYearsSinceQuit.getValue()+1)
+                self.agent.tickCounterExSmoker=1
+            else:
+                del self.agent.behaviourBuffer[0] #delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
+                self.agent.behaviourBuffer.append('quit failure') #append the agent's new behaviour to its behaviour buffer
+                self.agent.setStateOfNextTimeStep(state='smoker')
+                self.agent.k=0
+        #count the number of quit attempts in the last 12 months and update the agent's variable pNumberOfRecentQuitAttempts
+        self.agent.pNumberOfRecentQuitAttempts.setValue(self.agent.behaviourBuffer.count('quit attempt'))
+        if self.smokingModel.runningMode=='debug':
+            self.smokingModel.logfile.writelines(['agent id: '+str(self.agent.getId())+'\n',
+                                                  'state: '+self.agent.getCurrentState()+'\n',
+                                                  'age: '+str(self.agent.pAge.getValue())+'\n',
+                                                  'buffer: '+str(self.agent.behaviourBuffer)+'\n',
+                                                  'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]

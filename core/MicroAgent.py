@@ -13,23 +13,23 @@ class MicroAgent(repast4py.core.Agent):
         # self.uid is the unique 3-tuple of (id, type, rank)
         self.mediator = None
 
-    def get_id(self):
+    def getId(self):
         return self.id
 
-    def set(self, current_rank):
-        self.rank = current_rank
+    def set(self, currentRank):
+        self.rank = currentRank
         pass
 
-    def set_mediator(self, mediator: TheoryMediator):
+    def setMediator(self, mediator: TheoryMediator):
         self.mediator = mediator
     
-    def do_situation(self):
+    def doSituation(self):
         if self.mediator is not None:
-            self.mediator.mediate_situation()
+            self.mediator.mediateSituation()
 
-    def do_action(self):
+    def doAction(self):
         if self.mediator is not None:
-            self.mediator.mediate_action()
+            self.mediator.mediateAction()
 
 # Include this at the end of the file to avoid circular import
 from .TheoryMediator import TheoryMediator

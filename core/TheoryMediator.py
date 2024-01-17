@@ -5,23 +5,23 @@ from .Theory import Theory
 
 class TheoryMediator(ABC):
 
-    def __init__(self, theory_list:List[Theory]):
-        self.theory_list:List[Theory] = theory_list
+    def __init__(self, theoryList:List[Theory]):
+        self.theoryList:List[Theory] = theoryList
         self.agent:MicroAgent = None
 
     # link agent to this mediator and all theories in the theory list
-    def set_agent(self, agent:MicroAgent):
+    def setAgent(self, agent:MicroAgent):
         # Link this mediator to the agent
         self.agent = agent
 
         # Link each theory to agent
-        for theory in self.theory_list:
-            theory.set_agent(agent)
+        for theory in self.theoryList:
+            theory.setAgent(agent)
 
     @abstractmethod
-    def mediate_situation(self):
+    def mediateSituation(self):
         pass
 
     @abstractmethod
-    def mediate_action(self):
+    def mediateAction(self):
         pass

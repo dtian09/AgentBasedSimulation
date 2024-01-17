@@ -6,50 +6,50 @@ from .MicroAgent import MicroAgent
 class MacroEntity():
 
     def __init__(self):
-        self.macromediator = None
+        self.macroMediator = None
 
-    def set_mediator(self, macromediator: MacroMediator):
-        self.macromediator = macromediator
+    def setMediator(self, macromediator: MacroMediator):
+        self.macroMediator = macromediator
     
-    def do_transformation(self):
-        if self.macromediator is not None:
-            self.macromediator.mediate_transformation()
+    def doTransformation(self):
+        if self.macroMediator is not None:
+            self.macroMediator.mediateTransformation()
 
-    def do_macro_macro(self):
-        if self.macromediator is not None:
-            self.macromediator.mediate_macro_to_macro()
+    def doMacroMacro(self):
+        if self.macroMediator is not None:
+            self.macroMediator.mediateMacroToMacro()
 
 class MacroMediator(ABC):
-    def __init__(self, regulator_list:List[Regulator]):
-        self.regulator_list:List[Regulator] = regulator_list
-        self.macroentity:MacroEntity = None
+    def __init__(self, regulatorList:List[Regulator]):
+        self.regulatorList:List[Regulator] = regulatorList
+        self.macroEntity:MacroEntity = None
 
     # link macro entity to this mediator and all regulators in the regulator list
-    def set_macro_entity(self, macroentity:MacroEntity):
-        self.macroentity = macroentity
-        for regulator in self.regulator_list:
-            regulator.set_macroentity(macroentity)
+    def setMacroEntity(self, macroEntity:MacroEntity):
+        self.macroEntity = macroentity
+        for regulator in self.regulatorList:
+            regulator.setMacroEntity(macroEntity)
 
     @abstractmethod
-    def mediate_transformation(self):
+    def mediateTransformation(self):
         pass
 
     @abstractmethod
-    def mediate_macro_to_macro(self):
+    def mediateMacroToMacro(self):
         pass
 
 class Regulator(ABC):
 
     def __init__(self):
-        self.macroentity: MacroEntity = None
+        self.macroEntity: MacroEntity = None
     
-    def set_macroentity(self, macroentity: MacroEntity):
-        self.macroentity=macroentity
+    def setMacroEntity(self, macroEntity: MacroEntity):
+        self.macroEntity=macroEntity
 
     @abstractmethod
-    def do_transformation(self):
+    def doTransformation(self):
         pass
 
     @abstractmethod
-    def do_macro_to_macro(self):
+    def doMacroToMacro(self):
         pass
