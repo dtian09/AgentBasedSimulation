@@ -508,7 +508,7 @@ class RelapseSTPMTheory(STPMTheory):
 
     def doSituation(self):
         #increment age of the agent every 13 ticks
-       if self.smokingModel.tickCounter == 13:
+        if self.smokingModel.tickCounter == 13:
             self.agent.incrementAge()
         #retrieve probability of relapse of the matching person from STPM transition probabilities file
         matched=self.smokingModel.relapseProb[(self.smokingModel.relapseProb['age'] == self.agent.pAge.getValue()) & (self.smokingModel.relapseProb['year'] == self.smokingModel.yearOfCurrentTimeStep) & (self.smokingModel.relapseProb['sex']==self.agent.pGender.getValue()) & (self.smokingModel.relapseProb['imd_quintile']==self.agent.pIMDQuintile.getValue()) & (self.smokingModel.relapseProb['time_since_quit']==self.agent.pYearsSinceQuit.getValue())]
@@ -537,7 +537,7 @@ class RelapseSTPMTheory(STPMTheory):
                                                   'age: '+str(self.agent.pAge.getValue())+'\n',
                                                   'buffer: '+str(self.agent.behaviourBuffer)+'\n',
                                                   'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
-                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())])
 
 class RegularSmokingSTPMTheory(STPMTheory):
     def __init__(self,name,smokingModel: SmokingModel,indxOfAgent : int):
