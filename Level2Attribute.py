@@ -25,6 +25,17 @@ class Level2AttributeInt(Level2Attribute):
     def getValue(self):
         return self._value
 
+class Level2AttributeFloat(Level2Attribute):
+    def __init__(self,ontologyID:str=None, name : str=None, value : float =None):
+        super().__init__(ontologyID,name)
+        self._value:float=value
+        
+    def setValue(self,value:float):
+        self._value=value
+    
+    def getValue(self):
+        return self._value
+
 class Level1Attribute:
     def __init__(self, ontologyID:str=None, name : str=None):
         self.value: float=None

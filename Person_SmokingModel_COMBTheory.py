@@ -201,7 +201,7 @@ class SmokingModel(Model):
             #input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
             #output: uptakeBetas, attemptBetas, successBetas hashmaps with key=level 2 or level 1 attribute, value=beta
             import re
-            for key, value in self.pros.items():
+            for key, value in self.props.items():
                 m=re.match('^uptake\.(\w+)\.beta$',key)#uptake.cAlcoholConsumption.beta or uptake.C.beta
                 if m!=None:
                    self.uptakeBetas[m.group(1)]=value
@@ -230,7 +230,7 @@ class SmokingModel(Model):
             #input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
             #output: level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfSuccessFormula hashmaps key=C, O or M and value=list of level 2 attributes of key
             import re
-            for key in self.pros.keys():
+            for key in self.props.keys():
                 m=re.match('^uptake\.([com]{1}\w+)\.beta$',key)
                 if m!=None:#match uptake.cAlcoholConsumption.beta, uptake.oAlcoholConsumption.beta or uptake.mAlcoholConsumption.beta 
                     level2attribute=m.group(1)
@@ -413,10 +413,13 @@ class COMBTheory(Theory):
         
     def storeLevel2AttributesIntoMap(self,indxOfAgent: int):
         #store the level 2 attributes of agent i from level 2 attributes dataframe of smoking model class into a map <l2AttributeName : string, object : Level2Attribute>  
-        level2attributesdata=self.data.filter(regex='^[com]')
+        level2attributesdata=self.smokingModel.data.filter(regex='^[com]')
         for level2AttributeName in level2attributesdata.columns:
-            self.level2Attributes.insert(level2AttributeName,Level2Attribute(name=level2AttributeName,value=self.smokingModel.data.at[indxOfAgent,level2AttributeName]))
-
+            if isinstance(self.smokingModel.data.at[indxOfAgent,level2AttributeName],int):
+                self.level2Attributes[level2AttributeName]=Level2AttributeInt(name=level2AttributeName,value=self.smokingModel.data.at[indxOfAgent,level2AttributeName])
+            elif isinstance(self.smokingModel.data.at[indxOfAgent,level2AttributeName],float):
+                self.level2Attributes[level2AttributeName]=Level2AttributeFloat(name=level2AttributeName,value=self.smokingModel.data.at[indxOfAgent,level2AttributeName])
+                
     @abstractmethod
     def doSituation(self):#run the situation mechanism of the agent of this theory
         pass
@@ -638,7 +641,7 @@ class RegSmokeTheory(COMBTheory):
                                                   'age: '+str(self.agent.pAge.getValue())+'\n',
                                                   'buffer: '+str(self.agent.behaviourBuffer)+'\n',
                                                   'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
-                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())])
                 
 class QuitAttemptTheory(COMBTheory):
 
@@ -719,7 +722,7 @@ class QuitAttemptTheory(COMBTheory):
                                                   'age: '+str(self.agent.pAge.getValue())+'\n',
                                                   'buffer: '+str(self.agent.behaviourBuffer)+'\n',
                                                   'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
-                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())])
 
 class QuitSuccessTheory(COMBTheory):
 
@@ -825,4 +828,4 @@ class QuitSuccessTheory(COMBTheory):
                                                   'age: '+str(self.agent.pAge.getValue())+'\n',
                                                   'buffer: '+str(self.agent.behaviourBuffer)+'\n',
                                                   'pNumberOfRecentQuitAttempts: '+str(self.agent.pNumberOfRecentQuitAttempts.getValue())+'\n',
-                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())]
+                                                  'pYearsSinceQuit: '+str(self.agent.pYearsSinceQuit.getValue())])
