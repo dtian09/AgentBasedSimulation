@@ -1,0 +1,53 @@
+ABM_mode: "debug" #'debug' or 'normal' (running mode of the ABM software)
+data_file: "testdata.csv" #baseline (synthetic) population
+relapse_prob_file: "relapse_prob4wk.csv" #STPM relapse probability file (4-week probability)
+year_of_baseline: 2012 #year of the baseline popultion at t=0
+stop.at: 13 #the final time step when the simulation stops 
+###formula of regular smoking theory###
+#C=cAlcoholConsumption*beta1 + cEcigaretteUse*beta2 + cMentalHealthConditions*beta3
+#O=oSocialHousing*beta4 + oSEP *beta5 + oAge*beta6
+#M=mAge*beta7 + mGender*beta8
+#probability of regular smoking = 1/(1+e^power) where power = -1 * (C*beta9 + O*beta10 + M*beta11 + bias)
+uptake.cAlcoholConsumption.beta: 0.46
+uptake.cEcigaretteUse.beta: 2.2
+uptake.cMentalHealthConditions.beta: 0.59
+uptake.oSocialHousing.beta: 0.57
+uptake.oSEP.beta: 0.69
+uptake.oAge.beta: 0.2
+uptake.mGender.beta: 0.8
+uptake.mAge.beta: 0.1
+uptake.C.beta: 0.6
+uptake.O.beta: 2.5
+uptake.M.beta: 3.0
+uptake.bias: 1
+###formula of quit attempt theory###
+#C=cAge*beta1 + cPrescriptionNRT*beta2
+#O=oSocialHousing*beta3
+#M=mIntentionToQuit*beta4 + mSpendingOnCig*beta5 + mEnjoymentOfSmoking*beta6 + mEnjoymentOfSmoking*beta7 + mAge*beta8
+#probability of quit attempt = 1/(1+e^power) where power = -1 * (C*beta9 + O*beta10 + M*beta11 + bias) 
+attempt.cAge.beta: 2
+attempt.cPrescriptionNRT.beta: 3.9
+attempt.oSocialHousing.beta: 0.18
+attempt.mIntentionToQuit.beta: 0.52
+attempt.mSpendingOnCig.beta: 0.02
+attempt.mEnjoymentOfSmoking: -0.17
+attempt.mAge.beta: -0.04
+attempt.C.beta: -3.5
+attempt.O.beta: 0.6
+attempt.M.beta: 2.5
+attempt.bias: 0.7
+###formula of quit success theory###
+#C=cAlcoholConsumption*beta1 + cEcigaretteUse*beta2 + cVareniclineUse*beta3 + cCigAddictStrength*beta4 + cMentalHealthConditions*beta5 + cAge*beta6
+#M=mUseOfNRT*beta7
+#probability of quit success = 1/(1+e^power) where power = -1 * (C*beta8 + M*beta9 + bias) 
+success.cAlcoholConsumption.beta: 0.08
+success.cEcigaretteUse.beta: 0.02
+success.cVareniclineUse.beta: 0.88
+success.cCigAddictStrength.beta: -0.20
+success.cMentalHealthConditions.beta: -0.67
+success.cAge.beta: 0.04
+success.mUseOfNRT.beta: -0.09
+success.C.beta: 0.6
+success.O.beta: 2.5
+success.M.beta: 3
+success.bias: 2.5

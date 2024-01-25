@@ -13,9 +13,9 @@ uptake.cMentalHealthConditions.beta: 0.59
 uptake.oSocialHousing.beta: 0.57
 uptake.oSEP.beta: 0.69
 uptake.oAge.beta: 0.2
-uptake.bias: 1
 uptake.C.beta: 0.6
 uptake.O.beta: 2.5
+uptake.bias: 1
 ###formula of quit attempt theory###
 #O=oSocialHousing*beta1
 #M=mIntentionToQuit*beta2 + mSpendingOnCig*beta3 + mEnjoymentOfSmoking*beta4 + mEnjoymentOfSmoking*beta5 + mAge*beta6
@@ -25,9 +25,9 @@ attempt.mIntentionToQuit.beta: 0.52
 attempt.mSpendingOnCig.beta: 0.02
 attempt.mEnjoymentOfSmoking: -0.17
 attempt.mAge.beta: -0.04
-attempt.bias: 0.7
 attempt.O.beta: 0.6
 attempt.M.beta: 2.5
+attempt.bias: 0.7
 ###formula of quit success theory###
 #C=cAlcoholConsumption*beta1 + cEcigaretteUse*beta2 + cVareniclineUse*beta3 + cCigAddictStrength*beta4 + cMentalHealthConditions*beta5 + cAge*beta6
 #O=oSocialHousing*beta7 + oSEP*beta8
@@ -42,7 +42,7 @@ success.cAge.beta: 0.04
 success.oSocialHousing.beta: -0.11
 success.oSEP.beta: -0.15
 success.mUseOfNRT.beta: -0.09
-success.bias: 2.5
 success.C.beta: 0.6
 success.O.beta: 2.5
 success.M.beta: 3
+success.bias: 2.5

@@ -39,14 +39,14 @@ cohortcuts=c(1900,
 n<-length(cohortcuts)-1
 cohortlabs=c()
 for(i in 1:n){
-  cohortlabs[i]<-toString(i-1)#cohort labels: 0, 1, 2,...
+  cohortlabs[i]<-i-1 #toString(i-1)#cohort labels: 0, 1, 2,...
 }
 #select the personal attributes and the state variable
 smoker_and_ex_smoker_and_never_smoker<-hse2012_stapm %>%
         drop_na(cigst1) %>%
         filter(age>=16) %>%
-        mutate(state = as.factor(ifelse(cigst1==4,'smoker',ifelse(cigst1 %in% c(2,3),'ex-smoker',ifelse(cigst1==1,'never_smoker','NA')))),
-               sex = recode(sex,"1"="male","2"="female")
+        mutate(state = as.factor(ifelse(cigst1==4,'smoker',ifelse(cigst1 %in% c(2,3),'ex-smoker',ifelse(cigst1==1,'never_smoker','NA'))))
+               #sex = recode(sex,"1"="male","2"="female")
                ) %>%
         drop_na(state) %>%
         dplyr::select(age,
@@ -60,7 +60,8 @@ smoker_and_ex_smoker_and_never_smoker<-hse2012_stapm %>%
                       tenureb,
                       illaff7,
                       alcbase,
-                      nicot
+                      nicot,
+                      endsmoke #How long ago stopped smoking cigarettes (years)
                       ) %>%
         mutate(cohort = cut(cohort, breaks=cohortcuts, labels=cohortlabs)) %>%
         dplyr::rename(pAge=age,
@@ -72,10 +73,11 @@ smoker_and_ex_smoker_and_never_smoker<-hse2012_stapm %>%
                       pRegion=gor1,
                       pSocialHousing=tenureb,
                       pMentalHealthCondition=illaff7,
-                      pAlcohol=alcbase,
-                      pNRTUse=nicot
+                      pAlcoholConsumption=alcbase,
+                      pNRTUse=nicot,
+                      pYearsSinceQuit=endsmoke
                       )
-#add pExpenditure: HSE has no expenditure variable, STS has variable qspend_1 (spending on cigarette per week)
+#Enrich the selected data with the personal attributes (e.g. pExpenditure) which are not in HSE data by random sampling the values of the corresponding variables in STS data
 d<-read_rds(file="X:/Shared/STS data/STS and ATS files August 23/STS and ATS files August 23/Latest omnibus SPSS data file/wave202.rds")
 df2012 <- d %>% filter(xyear==2012) %>% mutate(ids=1:nrow(.))
 
@@ -84,18 +86,18 @@ select_random_values_of_variable <-function(df,df2,vars) {
   vals<-unique(df2[[vars[1]]])
   vals2<-na.omit(vals)
   if(is_empty(vals2)==F) {
-    return(sample(vals2,replace=T,size=nrow(df)))
+    return(base::sample(vals2,replace=T,size=nrow(df)))
   }
   else
-  {print('all NAN')
+  {print('empty vector')
    return(vals)}
 }
+#HSE has no expenditure variable, STS has variable qspend_1 (spending on cigarette per week)
 smoker_and_ex_smoker_and_never_smoker$pExpenditure=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("qspend_1"))
 smoker_and_ex_smoker_and_never_smoker$pECigUse=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("allecig"))
 smoker_and_ex_smoker_and_never_smoker$pVareniclineUse=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("chac"))
 smoker_and_ex_smoker_and_never_smoker$pCigConsumptionPrequit=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("basecpd3"))
-smoker_and_ex_smoker_and_never_smoker$pYearsSinceQuit=rep('None',nrow(smoker_and_ex_smoker_and_never_smoker))
-#add associated level 2 attributes of the personal attributes to the test data
+#add the associated level 2 attributes of the personal attributes to the selected data
 #table of associated level 2 attributes: https://docs.google.com/document/d/1h8MFvetOZEOIcEHD7Bckfbc63AoQQZfFSNIA30HpCMw/edit
 smoker_and_ex_smoker_and_never_smoker<-smoker_and_ex_smoker_and_never_smoker %>%
         mutate(cAge=pAge,
@@ -107,8 +109,8 @@ smoker_and_ex_smoker_and_never_smoker<-smoker_and_ex_smoker_and_never_smoker %>%
                oGeographicLocality=pRegion,
                oSocialHousing=pSocialHousing,
                cMentalHealthConditions=pMentalHealthCondition,
-               cAlcoholConsumption=pAlcohol,
-               oAlcoholConsumption=pAlcohol,
+               cAlcoholConsumption=pAlcoholConsumption,
+               oAlcoholConsumption=pAlcoholConsumption,
                cPrescriptionNRT=pNRTUse,
                mUseOfNRT=pNRTUse,
                cEcigaretteUse=pECigUse,
@@ -139,5 +141,16 @@ smoker_and_ex_smoker_and_never_smoker$mDesireToStopSmoking=select_random_values_
 smoker_and_ex_smoker_and_never_smoker$mNumberOfRecentQuitAttempts=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2012,c("q632b7_1"))
 df2008 <- d %>% filter(xyear==2008) %>% mutate(ids=1:nrow(.))#q632e9 is in waves 6 to 28 only
 smoker_and_ex_smoker_and_never_smoker$mSmokerIdentity=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2008,c("q632e9"))
+convert_to_integer_type <-function(df,vars) {
+  #convert vars of factor type to integer type so that the integer values won't have double quotes when written to a csv file
+  n<-length(vars)
+  for(i in 1:n){
+    print(vars[i])
+    df[[vars[i]]]<-as.integer(df[[vars[i]]])  
+  }
+  return(df)
+}
+vars<-c("pAge","pGender","pIMDquintile","pCohort","pEducationalLevel","pSEP","pRegion","pSocialHousing","pMentalHealthCondition","pAlcoholConsumption","pNRTUse","pExpenditure","pECigUse","pVareniclineUse","pYearsSinceQuit","cAge","oAge","mAge","mGender","oEducationalLevel","oSEP","oGeographicLocality","oSocialHousing","cMentalHealthConditions","cAlcoholConsumption","oAlcoholConsumption","cPrescriptionNRT","mUseOfNRT","cEcigaretteUse","cCigConsumptionPrequit","mSpendingOnCig","cVareniclineUse","cCigAddictStrength","mEnjoymentOfSmoking","cUseOfBehaviourSupport","mIntentionToQuit","mDesireToStopSmoking","mNumberOfRecentQuitAttempts","mSmokerIdentity")
+smoker_and_ex_smoker_and_never_smoker<-convert_to_integer_type(smoker_and_ex_smoker_and_never_smoker,vars)
 write.csv(smoker_and_ex_smoker_and_never_smoker,file="X:/Shared/code/ABM_software/repositorysept23/testdata.csv",row.names=F)
 
