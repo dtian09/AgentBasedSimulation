@@ -1,4 +1,4 @@
-ABM software simulates smoking behaviour using regular smoking theory, quit attempt theory, quit success theory and relapse theory (STPM).
+ABM software v0.6 simulates the smoking behaviours of agents using regular smoking theory, quit attempt theory, quit success theory and relapse probabilities (STPM).
 
 To run the simulation: python main.py props/model.yaml
 
