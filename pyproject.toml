@@ -1,0 +1,21 @@
+[build-system]
+requires = ['setuptools']
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smokingcessation"
+description = ""
+requires-python = ">=3.8"
+readme = 'README.md'
+version = '0.5'
+dynamic = ['dependencies']
+authors = [
+    {name = "David Tian", email = "d.tian@sheffield.ac.uk"},
+]
+license = {file = "LICENSE"}
+
+[tool.setuptools]
+packages = ['smokingcessation', 'config', 'mbssm']
+
+[tool.setuptools.dynamic]
+dependencies = {file = ['requirements.txt']}
