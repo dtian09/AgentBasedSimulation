@@ -1,18 +1,20 @@
 from abc import abstractmethod, ABC
-from .MicroAgent import MicroAgent
+
+from mbssm.micro_agent import MicroAgent
+
 
 class Theory(ABC):
     
     def __init__(self):
         self.agent: MicroAgent = None
 
-    def setAgent(self, agent:MicroAgent):
+    def set_agent(self, agent: MicroAgent):
         self.agent = agent
 
     @abstractmethod
-    def doSituation(self):
+    def do_situation(self):
         pass
 
     @abstractmethod
-    def doAction(self):
+    def do_action(self):
         pass

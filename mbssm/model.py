@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Dict, List
 from abc import ABC, abstractmethod
 import repast4py
-from .MacroEntity import MacroEntity
-from .MicroAgent import MicroAgent
+from mbssm.macro_entity import MacroEntity
+
 
 class Model(ABC):
 
@@ -24,5 +24,5 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def collectData(self):
+    def collect_data(self):
         pass
