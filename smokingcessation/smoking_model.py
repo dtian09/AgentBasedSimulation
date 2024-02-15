@@ -8,15 +8,10 @@ from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 
 from mbssm.model import Model
 from mbssm.theory import Theory
-from smokingcessation.person import Person
-from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
-from smokingcessation.combined_theory import RegSmokeTheory
-from smokingcessation.combined_theory import QuitAttemptTheory
-from smokingcessation.combined_theory import QuitSuccessTheory
-from smokingcessation.stpm_theory import RelapseSTPMTheory
 
 
 class SmokingModel(Model):
+
     def __init__(self, comm, params: Dict):
         super().__init__(comm, params)
         self.comm = comm
@@ -46,8 +41,8 @@ class SmokingModel(Model):
         # hashmap to store the level 2 attributes of the COMB formula of quit success theory
         self.level2_attributes_of_success_formula = {'C': [], 'O': [], 'M': []}
         self.store_level2_attributes_of_comb_formulae_into_maps()
-        self.level2_attributes_names = list(
-            self.data.filter(regex='^[com]').columns)  # get the list of level 2 attribute names
+        # get the list of level 2 attribute names
+        self.level2_attributes_names = list(self.data.filter(regex='^[com]').columns)
         self.relapse_prob = pd.read_csv(self.relapse_prob_file, header=0)  # read in STPM relapse probabilities
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
         self.tick_counter = 0
@@ -162,12 +157,20 @@ class SmokingModel(Model):
         print('size of agent population:', r)
         self.size_of_population = r
         for i in range(r):
+
+            from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
+            from smokingcessation.combined_theory import RegSmokeTheory
+            from smokingcessation.combined_theory import QuitAttemptTheory
+            from smokingcessation.combined_theory import QuitSuccessTheory
+            from smokingcessation.stpm_theory import RelapseSTPMTheory
+
             reg_smoke_theory = RegSmokeTheory('regsmoketheory', self, i)
             quit_attempt_theory = QuitAttemptTheory('quitattempttheory', self, i)
             quit_success_theory = QuitSuccessTheory('quitsuccesstheory', self, i)
             relapse_stpm_theory = RelapseSTPMTheory('relapseSTPMtheory', self, i)
             mediator = SmokingTheoryMediator([reg_smoke_theory, quit_attempt_theory, quit_success_theory,
                                               relapse_stpm_theory])
+            from smokingcessation.person import Person
             self.context.add(Person(
                 self,
                 i,

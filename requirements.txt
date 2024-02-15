@@ -1,2 +1,4 @@
-repast4py
+numpy
 pandas
+repast4py
+

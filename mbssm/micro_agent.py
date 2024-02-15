@@ -30,9 +30,10 @@ class MicroAgent(repast4py.core.Agent):
     
     def do_situation(self):
         if self.mediator is not None:
-            self.mediator.mediate_situation()
+            self.mediator.mediate_situation(self)
 
     def do_action(self):
         if self.mediator is not None:
-            self.mediator.mediate_action()
+            self.mediator.mediate_action(self)
+
 

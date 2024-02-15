@@ -2,10 +2,11 @@ from typing import List
 
 from mbssm.theory_mediator import TheoryMediator
 from smokingcessation.combined_theory import COMBTheory
+from mbssm.micro_agent import MicroAgent
 
 
 class SmokingTheoryMediator(TheoryMediator):
-        
+
     def __init__(self, theory_list: List[COMBTheory]):
         super().__init__(theory_list)
         if len(self.theory_list) == 0:
@@ -14,17 +15,17 @@ class SmokingTheoryMediator(TheoryMediator):
         for theory in theory_list:
             self.theory_map[theory.name] = theory
 
-    def mediate_situation(self):
-        if self.agent.getCurrentState() == 'never_smoker': 
-           self.theory_map['regsmoketheory'].do_situation()
-        elif self.agent.getCurrentState() == 'smoker': 
-           self.theory_map['quitattempttheory'].do_situation()
-        elif self.agent.getCurrentState() == 'quitter':
-           self.theory_map['quitsuccesstheory'].do_situation()
-        elif self.agent.getCurrentState() == 'ex-smoker':
-            self.theory_map['relapseSTPMtheory'].do_situation()
+    def mediate_situation(self, agent: MicroAgent):
+        if agent.getCurrentState() == 'never_smoker':
+            self.theory_map['regsmoketheory'].do_situation(agent)
+        elif agent.getCurrentState() == 'smoker':
+            self.theory_map['quitattempttheory'].do_situation(agent)
+        elif agent.getCurrentState() == 'quitter':
+            self.theory_map['quitsuccesstheory'].do_situation(agent)
+        elif agent.getCurrentState() == 'ex-smoker':
+            self.theory_map['relapseSTPMtheory'].do_situation(agent)
 
-    def mediate_action(self):
+    def mediate_action(self, agent: MicroAgent):
         """
         definition of quitting smoking: a smoker transitions to an ex-smoker (i.e. achieve success in quitting) after
         maintaining a quit attempt for 13 consecutive ticks (52 weeks i.e. 12 months).
@@ -46,11 +47,11 @@ class SmokingTheoryMediator(TheoryMediator):
             where threshold is a pseudo-random number drawn from uniform(0,1) and p is the probability from the latent
             composite model.
         """
-        if self.agent.getCurrentState() == 'quitter':
-            self.theory_map['quitsuccesstheory'].do_action()
-        elif self.agent.getCurrentState() == 'smoker':
-            self.theory_map['quitattempttheory'].do_action()
-        elif self.agent.getCurrentState() == 'never_smoker': 
-            self.theory_map['regsmoketheory'].do_action()
-        elif self.agent.getCurrentState() == 'ex-smoker':
-            self.theory_map['relapseSTPMtheory'].do_action()
+        if agent.getCurrentState() == 'quitter':
+            self.theory_map['quitsuccesstheory'].do_action(agent)
+        elif agent.getCurrentState() == 'smoker':
+            self.theory_map['quitattempttheory'].do_action(agent)
+        elif agent.getCurrentState() == 'never_smoker':
+            self.theory_map['regsmoketheory'].do_action(agent)
+        elif agent.getCurrentState() == 'ex-smoker':
+            self.theory_map['relapseSTPMtheory'].do_action(agent)
