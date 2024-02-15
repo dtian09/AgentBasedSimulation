@@ -8,6 +8,7 @@ from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 
 from mbssm.model import Model
 from mbssm.theory import Theory
+from config.definitions import ROOT_DIR
 
 
 class SmokingModel(Model):
@@ -21,9 +22,9 @@ class SmokingModel(Model):
         self.type: int = 0  # type of agent in id (id is a tuple (id,rank,type))
         self.props = params
         self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2012 data)
-        self.data = pd.read_csv(self.data_file, header=0)
+        self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
-        self.relapse_prob_file = self.props["relapse_prob_file"]
+        self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
         self.year_of_current_time_step = self.props["year_of_baseline"]
         self.current_time_step = 0
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
@@ -167,7 +168,7 @@ class SmokingModel(Model):
             reg_smoke_theory = RegSmokeTheory('regsmoketheory', self, i)
             quit_attempt_theory = QuitAttemptTheory('quitattempttheory', self, i)
             quit_success_theory = QuitSuccessTheory('quitsuccesstheory', self, i)
-            relapse_stpm_theory = RelapseSTPMTheory('relapseSTPMtheory', self, i)
+            relapse_stpm_theory = RelapseSTPMTheory('relapseSTPMtheory', self)
             mediator = SmokingTheoryMediator([reg_smoke_theory, quit_attempt_theory, quit_success_theory,
                                               relapse_stpm_theory])
             from smokingcessation.person import Person
@@ -176,22 +177,22 @@ class SmokingModel(Model):
                 i,
                 self.type,
                 self.rank,
-                age=self.data.at[i, 'p_age'],
-                gender=self.data.at[i, 'p_gender'],
-                cohort=self.data.at[i, 'p_cohort'],
-                qimd=self.data.at[i, 'p_imd_quintile'],
-                educational_level=self.data.at[i, 'p_educational_level'],
-                sep=self.data.at[i, 'p_sep'],
-                region=self.data.at[i, 'p_region'],
-                social_housing=self.data.at[i, 'p_social_housing'],
-                mental_health_conds=self.data.at[i, 'p_mental_health_condition'],
-                alcohol=self.data.at[i, 'p_alcohol_consumption'],
-                expenditure=self.data.at[i, 'p_expenditure'],
-                nrt_use=self.data.at[i, 'p_nrt_use'],
-                varenicline_use=self.data.at[i, 'p_varenicline_use'],
-                ecig_use=self.data.at[i, 'p_ecig_use'],
-                cig_consumption_prequit=self.data.at[i, 'p_cig_consumption_prequit'],
-                years_since_quit=self.data.at[i, 'p_years_since_quit'],
+                age=self.data.at[i, 'pAge'],
+                gender=self.data.at[i, 'pGender'],
+                cohort=self.data.at[i, 'pCohort'],
+                qimd=self.data.at[i, 'pIMDquintile'],
+                educational_level=self.data.at[i, 'pEducationalLevel'],
+                sep=self.data.at[i, 'pSEP'],
+                region=self.data.at[i, 'pRegion'],
+                social_housing=self.data.at[i, 'pSocialHousing'],
+                mental_health_conds=self.data.at[i, 'pMentalHealthCondition'],
+                alcohol=self.data.at[i, 'pAlcoholConsumption'],
+                expenditure=self.data.at[i, 'pExpenditure'],
+                nrt_use=self.data.at[i, 'pNRTUse'],
+                varenicline_use=self.data.at[i, 'pVareniclineUse'],
+                ecig_use=self.data.at[i, 'pECigUse'],
+                cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
+                years_since_quit=self.data.at[i, 'pYearsSinceQuit'],
                 # number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
                 states=[self.data.at[i, 'state'], self.data.at[i, 'state']],
                 # state at tick 1 is the same as state at tick 0.
@@ -200,7 +201,7 @@ class SmokingModel(Model):
                 quit_success_theory=quit_success_theory
             ))
             agent = self.context.agent((i, self.type, self.rank))
-            mediator.set_agent(agent)
+            # mediator.set_agent(agent)
             agent.set_mediator(mediator)
         self.size_of_population = (self.context.size()).get(-1)
         print('size of population:', self.size_of_population)
@@ -213,11 +214,15 @@ class SmokingModel(Model):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
+            ag_theory = agent.get_mediator().get_agent_current_theory(agent)
+            self.write_to_log_file(agent=agent, theory=ag_theory)
 
     def do_action_mechanisms(self):
         """micro entities do actions based on their internal states"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_action()
+            ag_theory = agent.get_mediator().get_agent_current_theory(agent)
+            self.write_to_log_file(agent=agent, theory=ag_theory)
 
     def do_transformational_mechanisms(self):
         pass
@@ -281,16 +286,24 @@ class SmokingModel(Model):
         self.runner.execute()
         self.collect_data()
 
-    def write_to_log_file(self, theory: Theory):
-        self.logfile.writelines(
-            ['agent id: ' + str(theory.agent.get_id()) + '\n',
-             'time step: ' + str(self.current_time_step) + '\n',
-             'state: ' + theory.agent.getCurrentState() + '\n',
-             'age: ' + str(theory.agent.p_age.get_value()) + '\n',
-             'probability of behaviour: ' + str(theory.prob_behaviour) + '\n',
-             'threshold: ' + str(theory.threshold) + '\n',
-             'behaviour: ' + str(theory.agent.behaviour_buffer[len(theory.agent.behaviour_buffer) - 1]) + '\n',
-             'buffer: ' + str(theory.agent.behaviour_buffer) + '\n',
-             'p_number_of_recent_quit_attempts: ' + str(theory.agent.p_number_of_recent_quit_attempts.get_value()) + '\n',
-             'p_years_since_quit: ' + str(theory.agent.p_years_since_quit.get_value()) + '\n\n']
-        )
+    def model_info(self):
+        return ['time step: ' + str(self.current_time_step) + '\n']
+
+    def write_to_log_file(self, theory: Theory, agent):
+
+        from smokingcessation.model_logging import log_data
+        debug_list = log_data(model=self, theory=theory, agent=agent)
+        self.logfile.writelines(debug_list)
+
+        # self.logfile.writelines(
+        #     ['agent id: ' + str(agent.get_id()) + '\n',
+        #      'time step: ' + str(self.current_time_step) + '\n',
+        #      'state: ' + agent.get_current_state() + '\n',
+        #      'age: ' + str(agent.p_age.get_value()) + '\n',
+        #      'probability of behaviour: ' + str(theory.prob_behaviour) + '\n',
+        #      'threshold: ' + str(theory.threshold) + '\n',
+        #      'behaviour: ' + str(agent.behaviour_buffer[len(agent.behaviour_buffer) - 1]) + '\n',
+        #      'buffer: ' + str(agent.behaviour_buffer) + '\n',
+        #      'p_number_of_recent_quit_attempts: ' + str(agent.p_number_of_recent_quit_attempts.get_value()) + '\n',
+        #      'p_years_since_quit: ' + str(agent.p_years_since_quit.get_value()) + '\n\n']
+        # )

@@ -98,6 +98,9 @@ class Person(MicroAgent):
         # list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with
         # t=0 representing the beginning of the simulation.
         self.states = states
+        self.behaviour_buffer = None
+        self.k = None
+        self.ecig_use = None
         self.init_behaviour_buffer_and_k_and_p_number_of_recent_quit_attempts()  # initialize:
 
         # behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months
@@ -175,3 +178,14 @@ class Person(MicroAgent):
 
     def increment_age(self):
         self.p_age.set_value(self.p_age.value + 1)
+
+    def agent_info(self):
+
+        res = ['agent id: ' + str(self.get_id()) + '\n',
+               'state: ' + self.get_current_state() + '\n',
+               'age: ' + str(self.p_age.get_value()) + '\n',
+               'behaviour: ' + str(self.behaviour_buffer[len(self.behaviour_buffer) - 1]) + '\n',
+               'buffer: ' + str(self.behaviour_buffer) + '\n',
+               'p_number_of_recent_quit_attempts: ' + str(self.p_number_of_recent_quit_attempts.get_value()) + '\n',
+               'p_years_since_quit: ' + str(self.p_years_since_quit.get_value()) + '\n']
+        return res

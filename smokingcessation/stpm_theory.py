@@ -8,10 +8,9 @@ from mbssm.micro_agent import MicroAgent
 
 
 class STPMTheory(Theory):
-    def __init__(self, name, smoking_model):
-        super().__init__()
+    def __init__(self, name, smoking_model: SmokingModel):
+        super().__init__(name)
         self.smoking_model = smoking_model
-        self.name = name
 
     @abstractmethod
     def do_situation(self, agent: MicroAgent):
@@ -25,13 +24,12 @@ class STPMTheory(Theory):
 class RelapseSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name, smoking_model)
-        self.prob_behaviour = None
         self.years_since_quit = None
 
     def do_situation(self, agent: MicroAgent):
         # increment age of the agent every 13 ticks
         if self.smoking_model.tick_counter == 13:
-            agent.incrementAge()
+            agent.increment_age()
         # retrieve probability of relapse of the matching person from STPM transition probabilities file
         self.years_since_quit = agent.p_years_since_quit.get_value()
         if (agent.p_years_since_quit.get_value() > 0) and (agent.p_years_since_quit.get_value() < 10):
@@ -83,12 +81,12 @@ class RelapseSTPMTheory(STPMTheory):
         if agent.tick_counter_ex_smoker == 13:
             agent.p_years_since_quit.set_value(agent.p_years_since_quit.get_value() + 1)
             agent.tick_counter_ex_smoker = 0
-        threshold = random.uniform(0, 1)
-        if self.prob_behaviour >= threshold:
+        self.threshold = random.uniform(0, 1)
+        if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             del agent.behaviour_buffer[0]
             agent.behaviour_buffer.append('relapse')  # append the agent's new behaviour to its behaviour buffer
-            agent.setStateOfNextTimeStep(state='smoker')
+            agent.set_state_of_next_time_step(state='smoker')
             agent.tick_counter_ex_smoker = 0
             agent.p_years_since_quit.set_value(-1)  # -1 denotes item not applicable in HSE data.
         else:
@@ -96,13 +94,13 @@ class RelapseSTPMTheory(STPMTheory):
             del agent.behaviour_buffer[0]
             # append the agent's new behaviour to its behaviour buffer
             agent.behaviour_buffer.append('no relapse')
-            agent.setStateOfNextTimeStep(state='ex-smoker')
+            agent.set_state_of_next_time_step(state='ex-smoker')
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
-        if self.smoking_model.running_mode == 'debug':
-            self.smoking_model.write_to_log_file(self)
+        # if self.smoking_model.running_mode == 'debug':
+        #     self.smoking_model.write_to_log_file(self)
 
 
 class RegularSmokingSTPMTheory(STPMTheory):

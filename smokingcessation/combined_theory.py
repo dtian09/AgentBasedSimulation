@@ -16,16 +16,13 @@ import random
 class COMBTheory(Theory):
 
     def __init__(self, name, smoking_model: SmokingModel):
-        super().__init__()
+        super().__init__(name)
         self.smoking_model = smoking_model
         self.comp_c: Level1Attribute = None
         self.comp_o: Level1Attribute = None
         self.comp_m: Level1Attribute = None
-        self.prob_behaviour: float = None
-        self.threshold: float = None  # threshold
         self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
         self.power = 0  # power within logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
-        self.name = name
 
     def store_level2_attributes_into_map(self, indx_of_agent: int):
         """store the level 2 attributes of agent i from level 2 attributes dataframe of smoking model class into a map
@@ -97,7 +94,7 @@ class RegSmokeTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         """increment age of the agent every 13 ticks"""
         if self.smoking_model.tick_counter == 13:
-            agent.incrementAge()
+            agent.increment_age()
 
     def do_learning(self):
         pass
@@ -157,18 +154,18 @@ class RegSmokeTheory(COMBTheory):
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             del agent.behaviour_buffer[0]
             agent.behaviour_buffer.append('uptake')  # append the agent's new behaviour to its behaviour buffer
-            agent.setStateOfNextTimeStep(state='smoker')
+            agent.set_state_of_next_time_step(state='smoker')
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             del agent.behaviour_buffer[0]
             agent.behaviour_buffer.append('no uptake')  # append the agent's new behaviour to its behaviour buffer
-            agent.setStateOfNextTimeStep(state='never_smoker')
+            agent.set_state_of_next_time_step(state='never_smoker')
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
-        if self.smoking_model.running_mode == 'debug':
-            self.smoking_model.write_to_log_file(self)
+        # if self.smoking_model.running_mode == 'debug':
+        #     self.smoking_model.write_to_log_file(self, agent)
 
 
 class QuitAttemptTheory(COMBTheory):
@@ -184,7 +181,7 @@ class QuitAttemptTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         """increment age of the agent every 13 ticks"""
         if self.smoking_model.tick_counter == 13:
-            agent.incrementAge()
+            agent.increment_age()
 
     def do_learning(self):
         pass
@@ -241,19 +238,19 @@ class QuitAttemptTheory(COMBTheory):
             del agent.behaviour_buffer[0]
             # append the agent's new behaviour to its behaviour buffer
             agent.behaviour_buffer.append('quit attempt')
-            agent.setStateOfNextTimeStep(state='quitter')
+            agent.set_state_of_next_time_step(state='quitter')
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             del agent.behaviour_buffer[0]
             # append the agent's new behaviour to its behaviour buffer
             agent.behaviour_buffer.append('no quit attempt')
-            agent.setStateOfNextTimeStep(state='smoker')
+            agent.set_state_of_next_time_step(state='smoker')
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
-        if self.smoking_model.running_mode == 'debug':
-            self.smoking_model.write_to_log_file(self)
+        # if self.smoking_model.running_mode == 'debug':
+        #     self.smoking_model.write_to_log_file(self)
 
 
 class QuitSuccessTheory(COMBTheory):
@@ -269,7 +266,7 @@ class QuitSuccessTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         """increment age of the agent every 13 ticks"""
         if self.smoking_model.tick_counter == 13:
-            agent.incrementAge()
+            agent.increment_age()
 
     def do_learning(self):
         pass
@@ -338,20 +335,20 @@ class QuitSuccessTheory(COMBTheory):
             agent.behaviour_buffer.append('quit success')
             agent.k += 1
             if agent.k < 13:
-                agent.setStateOfNextTimeStep(state='quitter')
+                agent.set_state_of_next_time_step(state='quitter')
             else:  # k==13
-                agent.setStateOfNextTimeStep(state='ex-smoker')
+                agent.set_state_of_next_time_step(state='ex-smoker')
                 agent.k = 0
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             del agent.behaviour_buffer[0]
             # append the agent's new behaviour to its behaviour buffer
             agent.behaviour_buffer.append('quit failure')
-            agent.setStateOfNextTimeStep(state='smoker')
+            agent.set_state_of_next_time_step(state='smoker')
             agent.k = 0
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
-        if self.smoking_model.running_mode == 'debug':
-            self.smoking_model.write_to_log_file(self)
+        # if self.smoking_model.running_mode == 'debug':
+        #     self.smoking_model.write_to_log_file(self)

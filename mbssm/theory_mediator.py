@@ -20,6 +20,10 @@ class TheoryMediator(ABC):
     #         theory.set_agent(agent)
 
     @abstractmethod
+    def get_agent_current_theory(self, agent):
+        pass
+
+    @abstractmethod
     def mediate_situation(self, agent):
         pass
 

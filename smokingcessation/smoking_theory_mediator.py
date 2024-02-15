@@ -1,13 +1,13 @@
 from typing import List
 
 from mbssm.theory_mediator import TheoryMediator
-from smokingcessation.combined_theory import COMBTheory
+from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 
 
 class SmokingTheoryMediator(TheoryMediator):
 
-    def __init__(self, theory_list: List[COMBTheory]):
+    def __init__(self, theory_list: List[Theory]):
         super().__init__(theory_list)
         if len(self.theory_list) == 0:
             raise Exception(f"{__class__.__name__} require a theoryList with length > 0")
@@ -15,14 +15,24 @@ class SmokingTheoryMediator(TheoryMediator):
         for theory in theory_list:
             self.theory_map[theory.name] = theory
 
+    def get_agent_current_theory(self, agent: MicroAgent) -> Theory:
+        if agent.get_current_state() == 'never_smoker':
+            return self.theory_map['regsmoketheory']
+        elif agent.get_current_state() == 'smoker':
+            return self.theory_map['quitattempttheory']
+        elif agent.get_current_state() == 'quitter':
+            return self.theory_map['quitsuccesstheory']
+        elif agent.get_current_state() == 'ex-smoker':
+            return self.theory_map['relapseSTPMtheory']
+
     def mediate_situation(self, agent: MicroAgent):
-        if agent.getCurrentState() == 'never_smoker':
+        if agent.get_current_state() == 'never_smoker':
             self.theory_map['regsmoketheory'].do_situation(agent)
-        elif agent.getCurrentState() == 'smoker':
+        elif agent.get_current_state() == 'smoker':
             self.theory_map['quitattempttheory'].do_situation(agent)
-        elif agent.getCurrentState() == 'quitter':
+        elif agent.get_current_state() == 'quitter':
             self.theory_map['quitsuccesstheory'].do_situation(agent)
-        elif agent.getCurrentState() == 'ex-smoker':
+        elif agent.get_current_state() == 'ex-smoker':
             self.theory_map['relapseSTPMtheory'].do_situation(agent)
 
     def mediate_action(self, agent: MicroAgent):
@@ -47,11 +57,11 @@ class SmokingTheoryMediator(TheoryMediator):
             where threshold is a pseudo-random number drawn from uniform(0,1) and p is the probability from the latent
             composite model.
         """
-        if agent.getCurrentState() == 'quitter':
+        if agent.get_current_state() == 'quitter':
             self.theory_map['quitsuccesstheory'].do_action(agent)
-        elif agent.getCurrentState() == 'smoker':
+        elif agent.get_current_state() == 'smoker':
             self.theory_map['quitattempttheory'].do_action(agent)
-        elif agent.getCurrentState() == 'never_smoker':
+        elif agent.get_current_state() == 'never_smoker':
             self.theory_map['regsmoketheory'].do_action(agent)
-        elif agent.getCurrentState() == 'ex-smoker':
+        elif agent.get_current_state() == 'ex-smoker':
             self.theory_map['relapseSTPMtheory'].do_action(agent)
