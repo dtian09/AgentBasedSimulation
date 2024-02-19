@@ -160,17 +160,17 @@ class SmokingModel(Model):
         for i in range(r):
 
             from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
+            from smokingcessation.smoking_theory_mediator import Theories
             from smokingcessation.combined_theory import RegSmokeTheory
             from smokingcessation.combined_theory import QuitAttemptTheory
             from smokingcessation.combined_theory import QuitSuccessTheory
             from smokingcessation.stpm_theory import RelapseSTPMTheory
 
-            reg_smoke_theory = RegSmokeTheory('regsmoketheory', self, i)
-            quit_attempt_theory = QuitAttemptTheory('quitattempttheory', self, i)
-            quit_success_theory = QuitSuccessTheory('quitsuccesstheory', self, i)
-            relapse_stpm_theory = RelapseSTPMTheory('relapseSTPMtheory', self)
-            mediator = SmokingTheoryMediator([reg_smoke_theory, quit_attempt_theory, quit_success_theory,
-                                              relapse_stpm_theory])
+            rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
+            qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
+            qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
+            relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
+            mediator = SmokingTheoryMediator({rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory})
             from smokingcessation.person import Person
             self.context.add(Person(
                 self,
@@ -196,9 +196,9 @@ class SmokingModel(Model):
                 # number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
                 states=[self.data.at[i, 'state'], self.data.at[i, 'state']],
                 # state at tick 1 is the same as state at tick 0.
-                reg_smoke_theory=reg_smoke_theory,
-                quit_attempt_theory=quit_attempt_theory,
-                quit_success_theory=quit_success_theory
+                reg_smoke_theory=rsmoke_theory,
+                quit_attempt_theory=qattempt_theory,
+                quit_success_theory=qsuccess_theory
             ))
             agent = self.context.agent((i, self.type, self.rank))
             # mediator.set_agent(agent)
@@ -214,15 +214,13 @@ class SmokingModel(Model):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
-            ag_theory = agent.get_mediator().get_agent_current_theory(agent)
-            self.write_to_log_file(agent=agent, theory=ag_theory)
+            self.logfile.writelines(agent.agent_info())
 
     def do_action_mechanisms(self):
         """micro entities do actions based on their internal states"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_action()
-            ag_theory = agent.get_mediator().get_agent_current_theory(agent)
-            self.write_to_log_file(agent=agent, theory=ag_theory)
+            self.logfile.writelines(agent.agent_info())
 
     def do_transformational_mechanisms(self):
         pass
@@ -285,25 +283,3 @@ class SmokingModel(Model):
     def run(self):
         self.runner.execute()
         self.collect_data()
-
-    def model_info(self):
-        return ['time step: ' + str(self.current_time_step) + '\n']
-
-    def write_to_log_file(self, theory: Theory, agent):
-
-        from smokingcessation.model_logging import log_data
-        debug_list = log_data(model=self, theory=theory, agent=agent)
-        self.logfile.writelines(debug_list)
-
-        # self.logfile.writelines(
-        #     ['agent id: ' + str(agent.get_id()) + '\n',
-        #      'time step: ' + str(self.current_time_step) + '\n',
-        #      'state: ' + agent.get_current_state() + '\n',
-        #      'age: ' + str(agent.p_age.get_value()) + '\n',
-        #      'probability of behaviour: ' + str(theory.prob_behaviour) + '\n',
-        #      'threshold: ' + str(theory.threshold) + '\n',
-        #      'behaviour: ' + str(agent.behaviour_buffer[len(agent.behaviour_buffer) - 1]) + '\n',
-        #      'buffer: ' + str(agent.behaviour_buffer) + '\n',
-        #      'p_number_of_recent_quit_attempts: ' + str(agent.p_number_of_recent_quit_attempts.get_value()) + '\n',
-        #      'p_years_since_quit: ' + str(agent.p_years_since_quit.get_value()) + '\n\n']
-        # )

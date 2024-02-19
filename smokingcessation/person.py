@@ -181,11 +181,19 @@ class Person(MicroAgent):
 
     def agent_info(self):
 
+        current_theory = self.get_mediator().get_agent_current_theory(self)
+        prob_behaviour = current_theory.prob_behaviour
+        threshold = current_theory.threshold
+        current_time_step = self.smoking_model.current_time_step
+
         res = ['agent id: ' + str(self.get_id()) + '\n',
                'state: ' + self.get_current_state() + '\n',
                'age: ' + str(self.p_age.get_value()) + '\n',
                'behaviour: ' + str(self.behaviour_buffer[len(self.behaviour_buffer) - 1]) + '\n',
                'buffer: ' + str(self.behaviour_buffer) + '\n',
                'p_number_of_recent_quit_attempts: ' + str(self.p_number_of_recent_quit_attempts.get_value()) + '\n',
-               'p_years_since_quit: ' + str(self.p_years_since_quit.get_value()) + '\n']
+               'p_years_since_quit: ' + str(self.p_years_since_quit.get_value()) + '\n',
+               'probability of behaviour: ' + str(prob_behaviour) + '\n',
+               'threshold: ' + str(threshold) + '\n',
+               'time step: ' + str(current_time_step) + '\n\n']
         return res

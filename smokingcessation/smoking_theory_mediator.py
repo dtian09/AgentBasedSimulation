@@ -1,39 +1,52 @@
-from typing import List
+from typing import Set
+from enum import Enum
 
 from mbssm.theory_mediator import TheoryMediator
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 
 
+class Theories(Enum):
+    """
+    Enum class that lists the available theories
+    """
+    REGSMOKE = 'regsmoketheory'
+    QUITATTEMPT = 'quitattempttheory'
+    QUITSUCCESS = 'quitsuccesstheory'
+    RELAPSESSTPM = 'relapseSTPMtheory'
+
+
 class SmokingTheoryMediator(TheoryMediator):
 
-    def __init__(self, theory_list: List[Theory]):
+    def __init__(self, theory_list: Set[Theory]):
         super().__init__(theory_list)
         if len(self.theory_list) == 0:
             raise Exception(f"{__class__.__name__} require a theoryList with length > 0")
         self.theory_map = {}
         for theory in theory_list:
+            if not isinstance(theory.name, Theories):
+                raise ValueError("theory.name must be an instance of the class Theories.")
             self.theory_map[theory.name] = theory
 
     def get_agent_current_theory(self, agent: MicroAgent) -> Theory:
         if agent.get_current_state() == 'never_smoker':
-            return self.theory_map['regsmoketheory']
+            return self.theory_map[Theories.REGSMOKE]
         elif agent.get_current_state() == 'smoker':
-            return self.theory_map['quitattempttheory']
+            return self.theory_map[Theories.QUITATTEMPT]
         elif agent.get_current_state() == 'quitter':
-            return self.theory_map['quitsuccesstheory']
+            return self.theory_map[Theories.QUITSUCCESS]
         elif agent.get_current_state() == 'ex-smoker':
-            return self.theory_map['relapseSTPMtheory']
+            return self.theory_map[Theories.RELAPSESSTPM]
 
     def mediate_situation(self, agent: MicroAgent):
         if agent.get_current_state() == 'never_smoker':
-            self.theory_map['regsmoketheory'].do_situation(agent)
+            self.theory_map[Theories.REGSMOKE].do_situation(agent)
         elif agent.get_current_state() == 'smoker':
-            self.theory_map['quitattempttheory'].do_situation(agent)
+            self.theory_map[Theories.QUITATTEMPT].do_situation(agent)
         elif agent.get_current_state() == 'quitter':
-            self.theory_map['quitsuccesstheory'].do_situation(agent)
+            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
         elif agent.get_current_state() == 'ex-smoker':
-            self.theory_map['relapseSTPMtheory'].do_situation(agent)
+            self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
 
     def mediate_action(self, agent: MicroAgent):
         """
@@ -58,10 +71,10 @@ class SmokingTheoryMediator(TheoryMediator):
             composite model.
         """
         if agent.get_current_state() == 'quitter':
-            self.theory_map['quitsuccesstheory'].do_action(agent)
+            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
         elif agent.get_current_state() == 'smoker':
-            self.theory_map['quitattempttheory'].do_action(agent)
+            self.theory_map[Theories.QUITATTEMPT].do_action(agent)
         elif agent.get_current_state() == 'never_smoker':
-            self.theory_map['regsmoketheory'].do_action(agent)
+            self.theory_map[Theories.REGSMOKE].do_action(agent)
         elif agent.get_current_state() == 'ex-smoker':
-            self.theory_map['relapseSTPMtheory'].do_action(agent)
+            self.theory_map[Theories.RELAPSESSTPM].do_action(agent)

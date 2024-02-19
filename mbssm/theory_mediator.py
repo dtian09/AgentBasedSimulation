@@ -1,4 +1,4 @@
-from typing import List
+from typing import Set
 from abc import abstractmethod, ABC
 
 from mbssm.theory import Theory
@@ -6,18 +6,8 @@ from mbssm.theory import Theory
 
 class TheoryMediator(ABC):
 
-    def __init__(self, theory_list: List[Theory]):
-        self.theory_list: List[Theory] = theory_list
-        # self.agent: MicroAgent = None
-
-    # link agent to this mediator and all theories in the theory list
-    # def set_agent(self, agent: MicroAgent):
-    #     # Link this mediator to the agent
-    #     self.agent = agent
-    #
-    #     # Link each theory to agent
-    #     for theory in self.theory_list:
-    #         theory.set_agent(agent)
+    def __init__(self, theory_list: Set[Theory]):
+        self.theory_list: Set[Theory] = theory_list
 
     @abstractmethod
     def get_agent_current_theory(self, agent):
