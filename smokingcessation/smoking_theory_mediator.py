@@ -1,19 +1,10 @@
 from typing import Set
-from enum import Enum
 
+from config.definitions import Theories
+from config.definitions import AgentState
 from mbssm.theory_mediator import TheoryMediator
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
-
-
-class Theories(Enum):
-    """
-    Enum class that lists the available theories
-    """
-    REGSMOKE = 'regsmoketheory'
-    QUITATTEMPT = 'quitattempttheory'
-    QUITSUCCESS = 'quitsuccesstheory'
-    RELAPSESSTPM = 'relapseSTPMtheory'
 
 
 class SmokingTheoryMediator(TheoryMediator):
@@ -25,28 +16,34 @@ class SmokingTheoryMediator(TheoryMediator):
         self.theory_map = {}
         for theory in theory_list:
             if not isinstance(theory.name, Theories):
-                raise ValueError("theory.name must be an instance of the class Theories.")
+                raise ValueError(f'{theory.name} must be an instance of the class Theories.')
             self.theory_map[theory.name] = theory
 
     def get_agent_current_theory(self, agent: MicroAgent) -> Theory:
-        if agent.get_current_state() == 'never_smoker':
+        cstate = agent.get_current_state()
+        if cstate == AgentState.NEVERSMOKE:
             return self.theory_map[Theories.REGSMOKE]
-        elif agent.get_current_state() == 'smoker':
+        elif cstate == AgentState.SMOKER:
             return self.theory_map[Theories.QUITATTEMPT]
-        elif agent.get_current_state() == 'quitter':
+        elif cstate == AgentState.QUITTER:
             return self.theory_map[Theories.QUITSUCCESS]
-        elif agent.get_current_state() == 'ex-smoker':
+        elif cstate == AgentState.EXSMOKER:
             return self.theory_map[Theories.RELAPSESSTPM]
+        else:
+            raise ValueError(f'{cstate} is not an acceptable agent state')
 
     def mediate_situation(self, agent: MicroAgent):
-        if agent.get_current_state() == 'never_smoker':
+        cstate = agent.get_current_state()
+        if cstate == AgentState.NEVERSMOKE:
             self.theory_map[Theories.REGSMOKE].do_situation(agent)
-        elif agent.get_current_state() == 'smoker':
+        elif cstate == AgentState.SMOKER:
             self.theory_map[Theories.QUITATTEMPT].do_situation(agent)
-        elif agent.get_current_state() == 'quitter':
+        elif cstate == AgentState.QUITTER:
             self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif agent.get_current_state() == 'ex-smoker':
+        elif cstate == AgentState.EXSMOKER:
             self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
+        else:
+            raise ValueError(f'{cstate} is not an acceptable agent state')
 
     def mediate_action(self, agent: MicroAgent):
         """
@@ -70,11 +67,14 @@ class SmokingTheoryMediator(TheoryMediator):
             where threshold is a pseudo-random number drawn from uniform(0,1) and p is the probability from the latent
             composite model.
         """
-        if agent.get_current_state() == 'quitter':
+        cstate = agent.get_current_state()
+        if cstate == AgentState.QUITTER:
             self.theory_map[Theories.QUITSUCCESS].do_action(agent)
-        elif agent.get_current_state() == 'smoker':
+        elif cstate == AgentState.SMOKER:
             self.theory_map[Theories.QUITATTEMPT].do_action(agent)
-        elif agent.get_current_state() == 'never_smoker':
+        elif cstate == AgentState.NEVERSMOKE:
             self.theory_map[Theories.REGSMOKE].do_action(agent)
-        elif agent.get_current_state() == 'ex-smoker':
+        elif cstate == AgentState.EXSMOKER:
             self.theory_map[Theories.RELAPSESSTPM].do_action(agent)
+        else:
+            raise ValueError(f'{cstate} is not an acceptable agent state')

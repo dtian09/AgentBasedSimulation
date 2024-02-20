@@ -8,6 +8,9 @@ class Theory(ABC):
         self.threshold = None
         self.prob_behaviour = None
 
+    def name(self):
+        return self.name
+
     @abstractmethod
     def do_situation(self, agent):
         pass

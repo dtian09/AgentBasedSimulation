@@ -6,6 +6,7 @@ from typing import Dict
 from repast4py.context import SharedContext
 from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 
+from config.definitions import AgentState
 from mbssm.model import Model
 from mbssm.theory import Theory
 from config.definitions import ROOT_DIR
@@ -153,25 +154,35 @@ class SmokingModel(Model):
                                             ' formula')
                                     sys.exit(level2attribute + sstr)
 
-    def init_population(self):
-        (r, _) = self.data.shape
-        print('size of agent population:', r)
-        self.size_of_population = r
-        for i in range(r):
+    def init_agents(self):
 
-            from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
-            from smokingcessation.smoking_theory_mediator import Theories
-            from smokingcessation.combined_theory import RegSmokeTheory
-            from smokingcessation.combined_theory import QuitAttemptTheory
-            from smokingcessation.combined_theory import QuitSuccessTheory
-            from smokingcessation.stpm_theory import RelapseSTPMTheory
+        from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
+        from smokingcessation.smoking_theory_mediator import Theories
+        from smokingcessation.combined_theory import RegSmokeTheory
+        from smokingcessation.combined_theory import QuitAttemptTheory
+        from smokingcessation.combined_theory import QuitSuccessTheory
+        from smokingcessation.stpm_theory import RelapseSTPMTheory
+        from smokingcessation.person import Person
 
+        for i in range(self.size_of_population):
             rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
             qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
             qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             mediator = SmokingTheoryMediator({rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory})
-            from smokingcessation.person import Person
+
+            init_state = self.data.at[i, 'state']
+            if init_state == 'never_smoker':
+                states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
+            elif init_state == 'ex-smoker':
+                states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
+            elif init_state == 'smoker':
+                states = [AgentState.SMOKER, AgentState.SMOKER]
+            elif init_state == 'quitter':
+                states = [AgentState.QUITTER, AgentState.QUITTER]
+            else:
+                raise ValueError(f'{init_state} is not an acceptable agent state')
+
             self.context.add(Person(
                 self,
                 i,
@@ -194,7 +205,7 @@ class SmokingModel(Model):
                 cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
                 years_since_quit=self.data.at[i, 'pYearsSinceQuit'],
                 # number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
-                states=[self.data.at[i, 'state'], self.data.at[i, 'state']],
+                states=states,
                 # state at tick 1 is the same as state at tick 0.
                 reg_smoke_theory=rsmoke_theory,
                 quit_attempt_theory=qattempt_theory,
@@ -203,6 +214,12 @@ class SmokingModel(Model):
             agent = self.context.agent((i, self.type, self.rank))
             # mediator.set_agent(agent)
             agent.set_mediator(mediator)
+
+    def init_population(self):
+        (r, _) = self.data.shape
+        print('size of agent population:', r)
+        self.size_of_population = r
+        self.init_agents()
         self.size_of_population = (self.context.size()).get(-1)
         print('size of population:', self.size_of_population)
         p = self.smoking_prevalence()
@@ -232,7 +249,7 @@ class SmokingModel(Model):
         """smoking prevalence at the current time step"""
         smokers = 0
         for agent in self.context.agents(agent_type=self.type):
-            if agent.get_current_state() == 'smoker':
+            if agent.get_current_state() == AgentState.SMOKER:
                 smokers += 1
         prevalence = np.round(smokers / self.size_of_population * 100, 2)  # percentage of smokers
         return prevalence
@@ -272,7 +289,7 @@ class SmokingModel(Model):
             for agent in self.context.agents(agent_type=self.type):
                 self.logfile.write(str(agent.get_id()))
                 for i in range(self.current_time_step + 1):
-                    self.logfile.write(',' + agent.states[i])
+                    self.logfile.write(',' + agent.states[i].name.lower())
                 self.logfile.write('\n')
             self.logfile.close()
 

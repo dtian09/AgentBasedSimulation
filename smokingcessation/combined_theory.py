@@ -1,4 +1,6 @@
 
+from config.definitions import AgentState
+from config.definitions import AgentBehaviour
 from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import Level2AttributeInt, Level2AttributeFloat, Level1Attribute, Level2Attribute
 import sys
@@ -152,18 +154,20 @@ class RegSmokeTheory(COMBTheory):
         self.threshold = random.uniform(0, 1)  # threshold
         if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
-            del agent.behaviour_buffer[0]
-            agent.behaviour_buffer.append('uptake')  # append the agent's new behaviour to its behaviour buffer
-            agent.set_state_of_next_time_step(state='smoker')
+            agent.delete_oldest_behaviour()
+            # append the agent's new behaviour to its behaviour buffer
+            agent.add_behaviour(AgentBehaviour.UPTAKE)
+            agent.set_state_of_next_time_step(AgentState.SMOKER)
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
-            del agent.behaviour_buffer[0]
-            agent.behaviour_buffer.append('no uptake')  # append the agent's new behaviour to its behaviour buffer
-            agent.set_state_of_next_time_step(state='never_smoker')
+            agent.delete_oldest_behaviour()
+            # append the agent's new behaviour to its behaviour buffer
+            agent.add_behaviour(AgentBehaviour.NOUPTAKE)
+            agent.set_state_of_next_time_step(AgentState.NEVERSMOKE)
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
-        agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
+        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
         # if self.smoking_model.running_mode == 'debug':
         #     self.smoking_model.write_to_log_file(self, agent)
 
@@ -235,20 +239,20 @@ class QuitAttemptTheory(COMBTheory):
         self.threshold = random.uniform(0, 1)
         if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
-            del agent.behaviour_buffer[0]
+            agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
-            agent.behaviour_buffer.append('quit attempt')
-            agent.set_state_of_next_time_step(state='quitter')
+            agent.add_behaviour(AgentBehaviour.QUITATTEMPT)
+            agent.set_state_of_next_time_step(state=AgentState.QUITTER)
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
-            del agent.behaviour_buffer[0]
+            agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
-            agent.behaviour_buffer.append('no quit attempt')
-            agent.set_state_of_next_time_step(state='smoker')
+            agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
+            agent.set_state_of_next_time_step(state=AgentState.QUITTER)
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
-        agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
+        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
         # if self.smoking_model.running_mode == 'debug':
         #     self.smoking_model.write_to_log_file(self)
 
@@ -330,25 +334,25 @@ class QuitSuccessTheory(COMBTheory):
         self.threshold = random.uniform(0, 1)
         if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
-            del agent.behaviour_buffer[0]
+            agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
-            agent.behaviour_buffer.append('quit success')
+            agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
             agent.k += 1
             if agent.k < 13:
-                agent.set_state_of_next_time_step(state='quitter')
+                agent.set_state_of_next_time_step(AgentState.QUITTER)
             else:  # k==13
-                agent.set_state_of_next_time_step(state='ex-smoker')
+                agent.set_state_of_next_time_step(AgentState.EXSMOKER)
                 agent.k = 0
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
-            del agent.behaviour_buffer[0]
+            agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
-            agent.behaviour_buffer.append('quit failure')
-            agent.set_state_of_next_time_step(state='smoker')
+            agent.add_behaviour(AgentBehaviour.QUITFAILURE)
+            agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.k = 0
 
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
-        agent.p_number_of_recent_quit_attempts.set_value(agent.behaviour_buffer.count('quit attempt'))
+        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
         # if self.smoking_model.running_mode == 'debug':
         #     self.smoking_model.write_to_log_file(self)

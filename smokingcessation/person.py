@@ -1,4 +1,6 @@
 
+from config.definitions import AgentState
+from config.definitions import AgentBehaviour
 from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
@@ -27,7 +29,7 @@ class Person(MicroAgent):
                  varenicline_use: int = None,
                  cig_consumption_prequit: int = None,
                  ecig_use: int = None,
-                 states: List = None,
+                 states: List[AgentState] = None,
                  years_since_quit=None,
                  reg_smoke_theory=None,
                  quit_attempt_theory=None,
@@ -141,33 +143,40 @@ class Person(MicroAgent):
         to the end of the behaviourBuffer
         """
 
-        behaviours = ['uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure',
-                      'relapse', 'no relapse']
-        self.behaviour_buffer = [i for i in range(0, 13)]
+        behaviours = [e for e in AgentBehaviour]
+        # behaviours = ['uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure',
+        #              'relapse', 'no relapse']
+        # self.behaviour_buffer = [i for i in range(0, 13)]
+        self.behaviour_buffer = [random.randint(0, len(behaviours) - 1) for _ in range(0, 13)]
         self.k = 0
-        if self.states[0] == 'quitter':
+        if self.states[0] == AgentState.QUITTER:
             i = random.randint(0, 12)
-            self.behaviour_buffer[i] = 'quit attempt'
+            self.behaviour_buffer[i] = AgentBehaviour.QUITATTEMPT
             for j in range(i + 1, 13):
-                self.behaviour_buffer[j] = 'quit success'
+                self.behaviour_buffer[j] = AgentBehaviour.QUITSUCCESS
                 self.k += 1
             for q in range(0, i):  # set random behaviours to indices: 0, 1,..., i-1
                 self.behaviour_buffer[q] = behaviours[random.randint(0, len(behaviours) - 1)]
-        elif self.states[0] == 'never_smoker':
+        elif self.states[0] == AgentState.NEVERSMOKE:
             for i in range(0, 13):
-                self.behaviour_buffer[i] = 'no uptake'
-        elif self.states[0] == 'ex-smoker':
+                self.behaviour_buffer[i] = AgentBehaviour.NOUPTAKE
+        elif self.states[0] == AgentState.EXSMOKER:
             for i in range(0, 13):
-                self.behaviour_buffer[i] = 'no relapse'
-        else:  # smoker
+                self.behaviour_buffer[i] = AgentBehaviour.NORELAPSE
+        elif self.states[0] == AgentState.SMOKER:
             for i in range(0, 13):
                 self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]
-        self.p_number_of_recent_quit_attempts.set_value(self.behaviour_buffer.count('quit attempt'))
+        else:
+            raise ValueError(f'{self.states[0]} is not an acceptable agent state')
+
+        self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))
 
     def update_ec_ig_use(self, eciguse: int):
         self.ecig_use = eciguse
 
-    def set_state_of_next_time_step(self, state=None):
+    def set_state_of_next_time_step(self, state: AgentState):
+        if not isinstance(state, AgentState):
+            raise ValueError(f'{state} is not an acceptable agent state')
         self.states.append(state)
 
     def get_current_state(self):  # get the agent's state at the current time step
@@ -179,18 +188,33 @@ class Person(MicroAgent):
     def increment_age(self):
         self.p_age.set_value(self.p_age.value + 1)
 
-    def agent_info(self):
+    def add_behaviour(self, behaviour: AgentBehaviour):
+        if not isinstance(behaviour, AgentBehaviour):
+            raise ValueError(f'{behaviour} is not an acceptable agent behaviour')
+        self.behaviour_buffer.append(behaviour)
 
+    def delete_oldest_behaviour(self):
+        if len(self.behaviour_buffer) > 0:
+            del self.behaviour_buffer[0]
+        else:
+            raise ValueError('Attempting to delete a behaviour from an empty buffer')
+
+    def count_behaviour(self, behaviour: AgentBehaviour):
+        if not isinstance(behaviour, AgentBehaviour):
+            raise ValueError(f'{behaviour} is not an acceptable agent behaviour')
+        return self.behaviour_buffer.count(behaviour)
+
+    def agent_info(self):
         current_theory = self.get_mediator().get_agent_current_theory(self)
         prob_behaviour = current_theory.prob_behaviour
         threshold = current_theory.threshold
         current_time_step = self.smoking_model.current_time_step
 
         res = ['agent id: ' + str(self.get_id()) + '\n',
-               'state: ' + self.get_current_state() + '\n',
+               'state: ' + self.get_current_state().name.lower() + '\n',
                'age: ' + str(self.p_age.get_value()) + '\n',
-               'behaviour: ' + str(self.behaviour_buffer[len(self.behaviour_buffer) - 1]) + '\n',
-               'buffer: ' + str(self.behaviour_buffer) + '\n',
+               'behaviour: ' + self.behaviour_buffer[len(self.behaviour_buffer) - 1].name.lower() + '\n',
+               'buffer: ' + str([e.name.lower() for e in self.behaviour_buffer]) + '\n',
                'p_number_of_recent_quit_attempts: ' + str(self.p_number_of_recent_quit_attempts.get_value()) + '\n',
                'p_years_since_quit: ' + str(self.p_years_since_quit.get_value()) + '\n',
                'probability of behaviour: ' + str(prob_behaviour) + '\n',
