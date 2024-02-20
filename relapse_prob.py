@@ -14,3 +14,4 @@ p4wk.columns=['p_relapse_4wk']
 df=df.drop(columns=['p_relapse'])#delete probabilty of relapse of 1 year as it is not needed
 df=df.join([p4wk])
 df.to_csv('relapse_prob4wk.csv',index=False)
+

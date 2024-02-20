@@ -1,6 +1,6 @@
 ABM_mode: "debug" #'debug' or 'normal' (running mode of the ABM software)
-data_file: "testdata.csv" #baseline (synthetic) population
-relapse_prob_file: "relapse_prob4wk.csv" #STPM relapse probability file (4-week probability)
+data_file: "data/testdata.csv" #baseline (synthetic) population
+relapse_prob_file: "data/relapse_prob4wk.csv" #STPM relapse probability file (4-week probability)
 year_of_baseline: 2012 #year of the baseline popultion at t=0
 stop.at: 13 #the final time step when the simulation stops 
 ###formula of regular smoking theory###
