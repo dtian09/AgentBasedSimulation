@@ -17,14 +17,15 @@ import random
 
 class COMBTheory(Theory):
 
-    def __init__(self, name, smoking_model: SmokingModel):
+    def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name)
         self.smoking_model = smoking_model
-        self.comp_c: Level1Attribute = None
-        self.comp_o: Level1Attribute = None
-        self.comp_m: Level1Attribute = None
+        self.comp_c: Level1Attribute()
+        self.comp_o: Level1Attribute()
+        self.comp_m: Level1Attribute()
         self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
         self.power = 0  # power within logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
+        self.store_level2_attributes_into_map(indx_of_agent)
 
     def store_level2_attributes_into_map(self, indx_of_agent: int):
         """store the level 2 attributes of agent i from level 2 attributes dataframe of smoking model class into a map
@@ -86,12 +87,7 @@ class COMBTheory(Theory):
 class RegSmokeTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
-        super().__init__(name, smoking_model)
-        self.comp_c: Level1Attribute = None
-        self.comp_o: Level1Attribute = None
-        self.comp_m: Level1Attribute = None
-        self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
-        self.store_level2_attributes_into_map(indx_of_agent)
+        super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
         """increment age of the agent every 13 ticks"""
@@ -168,19 +164,12 @@ class RegSmokeTheory(COMBTheory):
         # count the number of quit attempts in the last 12 months and update the
         # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-        # if self.smoking_model.running_mode == 'debug':
-        #     self.smoking_model.write_to_log_file(self, agent)
 
 
 class QuitAttemptTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
-        super().__init__(name, smoking_model)
-        self.comp_c: Level1Attribute = None
-        self.comp_o: Level1Attribute = None
-        self.comp_m: Level1Attribute = None
-        self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
-        self.store_level2_attributes_into_map(indx_of_agent)
+        super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
         """increment age of the agent every 13 ticks"""
@@ -260,12 +249,7 @@ class QuitAttemptTheory(COMBTheory):
 class QuitSuccessTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
-        super().__init__(name, smoking_model)
-        self.comp_c: Level1Attribute = None
-        self.comp_o: Level1Attribute = None
-        self.comp_m: Level1Attribute = None
-        self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
-        self.store_level2_attributes_into_map(indx_of_agent)
+        super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
         """increment age of the agent every 13 ticks"""
