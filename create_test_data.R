@@ -154,4 +154,3 @@ vars<-c("pAge","pGender","pIMDquintile","pCohort","pEducationalLevel","pSEP","pR
 smoker_and_ex_smoker_and_never_smoker<-convert_to_integer_type(smoker_and_ex_smoker_and_never_smoker,vars)
 write.csv(smoker_and_ex_smoker_and_never_smoker,file="X:/Shared/code/ABM_software/repositorysept23/testdata.csv",row.names=F)
 
-
