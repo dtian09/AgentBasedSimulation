@@ -7,7 +7,7 @@ name = "smokingcessation"
 description = ""
 requires-python = ">=3.8"
 readme = 'README.md'
-version = '0.5'
+version = '0.6'
 dynamic = ['dependencies']
 authors = [
     {name = "David Tian", email = "d.tian@sheffield.ac.uk"},

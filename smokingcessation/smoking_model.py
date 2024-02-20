@@ -8,7 +8,6 @@ from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 
 from config.definitions import AgentState
 from mbssm.model import Model
-from mbssm.theory import Theory
 from config.definitions import ROOT_DIR
 
 
@@ -158,9 +157,9 @@ class SmokingModel(Model):
 
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
         from smokingcessation.smoking_theory_mediator import Theories
-        from smokingcessation.combined_theory import RegSmokeTheory
-        from smokingcessation.combined_theory import QuitAttemptTheory
-        from smokingcessation.combined_theory import QuitSuccessTheory
+        from smokingcessation.comb_theory import RegSmokeTheory
+        from smokingcessation.comb_theory import QuitAttemptTheory
+        from smokingcessation.comb_theory import QuitSuccessTheory
         from smokingcessation.stpm_theory import RelapseSTPMTheory
         from smokingcessation.person import Person
 
@@ -231,6 +230,7 @@ class SmokingModel(Model):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
+            theory = agent.get_current_theory_of_agent()
             self.logfile.writelines(agent.agent_info())
 
     def do_action_mechanisms(self):

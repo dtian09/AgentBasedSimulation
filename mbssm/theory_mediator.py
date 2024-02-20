@@ -10,7 +10,7 @@ class TheoryMediator(ABC):
         self.theory_list: Set[Theory] = theory_list
 
     @abstractmethod
-    def get_agent_current_theory(self, agent):
+    def get_current_theory_of_agent(self, agent):
         pass
 
     @abstractmethod

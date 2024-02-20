@@ -19,7 +19,7 @@ class SmokingTheoryMediator(TheoryMediator):
                 raise ValueError(f'{theory.name} must be an instance of the class Theories.')
             self.theory_map[theory.name] = theory
 
-    def get_agent_current_theory(self, agent: MicroAgent) -> Theory:
+    def get_current_theory_of_agent(self, agent: MicroAgent) -> Theory:
         cstate = agent.get_current_state()
         if cstate == AgentState.NEVERSMOKE:
             return self.theory_map[Theories.REGSMOKE]

@@ -147,7 +147,7 @@ class Person(MicroAgent):
         # behaviours = ['uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure',
         #              'relapse', 'no relapse']
         # self.behaviour_buffer = [i for i in range(0, 13)]
-        self.behaviour_buffer = [random.randint(0, len(behaviours) - 1) for _ in range(0, 13)]
+        self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 13)]
         self.k = 0
         if self.states[0] == AgentState.QUITTER:
             i = random.randint(0, 12)
@@ -204,8 +204,11 @@ class Person(MicroAgent):
             raise ValueError(f'{behaviour} is not an acceptable agent behaviour')
         return self.behaviour_buffer.count(behaviour)
 
+    def get_current_theory_of_agent(self):
+        return self.get_mediator().get_current_theory_of_agent(self)
+
     def agent_info(self):
-        current_theory = self.get_mediator().get_agent_current_theory(self)
+        current_theory = self.get_mediator().get_current_theory_of_agent(self)
         prob_behaviour = current_theory.prob_behaviour
         threshold = current_theory.threshold
         current_time_step = self.smoking_model.current_time_step
