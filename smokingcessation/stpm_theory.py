@@ -5,8 +5,8 @@ from abc import abstractmethod
 from config.definitions import AgentState
 from config.definitions import AgentBehaviour
 from mbssm.theory import Theory
-from smokingcessation.smoking_model import SmokingModel
 from mbssm.micro_agent import MicroAgent
+from smokingcessation.smoking_model import SmokingModel
 
 
 class STPMTheory(Theory):

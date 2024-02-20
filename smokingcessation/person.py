@@ -1,11 +1,11 @@
+import random
+from typing import List
 
 from config.definitions import AgentState
 from config.definitions import AgentBehaviour
 from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
-import random
-from typing import List
 
 
 class Person(MicroAgent):
@@ -144,9 +144,6 @@ class Person(MicroAgent):
         """
 
         behaviours = [e for e in AgentBehaviour]
-        # behaviours = ['uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure',
-        #              'relapse', 'no relapse']
-        # self.behaviour_buffer = [i for i in range(0, 13)]
         self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 13)]
         self.k = 0
         if self.states[0] == AgentState.QUITTER:

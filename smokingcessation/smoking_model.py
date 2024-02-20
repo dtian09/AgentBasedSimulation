@@ -6,9 +6,9 @@ from typing import Dict
 from repast4py.context import SharedContext
 from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 
+from config.definitions import ROOT_DIR
 from config.definitions import AgentState
 from mbssm.model import Model
-from config.definitions import ROOT_DIR
 
 
 class SmokingModel(Model):

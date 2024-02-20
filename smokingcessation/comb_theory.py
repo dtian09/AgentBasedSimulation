@@ -1,18 +1,16 @@
-
-from config.definitions import AgentState
-from config.definitions import AgentBehaviour
-from smokingcessation.smoking_model import SmokingModel
-from smokingcessation.attribute import Level2AttributeInt, Level2AttributeFloat, Level1Attribute, Level2Attribute
-import sys
-
-from mbssm.theory import Theory
-from mbssm.micro_agent import MicroAgent
-
 from typing import Dict
 from abc import abstractmethod
 import numpy as np
 import math
 import random
+import sys
+
+from config.definitions import AgentState
+from config.definitions import AgentBehaviour
+from mbssm.theory import Theory
+from mbssm.micro_agent import MicroAgent
+from smokingcessation.smoking_model import SmokingModel
+from smokingcessation.attribute import Level2AttributeInt, Level2AttributeFloat, Level1Attribute, Level2Attribute
 
 
 class COMBTheory(Theory):
