@@ -1,6 +1,7 @@
 #calculate relapse probability of 4 weeks from STPM relapse probability (1 year)
 import pandas as pd
 import numpy as np
+
 df=pd.read_excel('smoking_state_transition_probabilities_England.xlsx',sheet_name='Relapse')
 df['sex'] = df['sex'].replace({'Male': 1, 'Female': 2})
 df['imd_quintile'] = df['imd_quintile'].replace({'1_least_deprived': 1,'5_most_deprived': 5})
