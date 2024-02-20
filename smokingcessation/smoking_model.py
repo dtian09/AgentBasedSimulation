@@ -230,7 +230,6 @@ class SmokingModel(Model):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
-            theory = agent.get_current_theory_of_agent()
             self.logfile.writelines(agent.agent_info())
 
     def do_action_mechanisms(self):
