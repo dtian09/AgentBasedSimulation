@@ -39,6 +39,7 @@ python smokingcessation/run_abm.py props/model.yaml
 ```
 
 ## Licenses
+
 This software is Copyright (C) 2024 The University of Sheffield (www.sheffield.ac.uk)
 
 This program is free software (software libre); you can redistribute it and/or modify it under
