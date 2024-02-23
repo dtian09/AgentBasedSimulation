@@ -99,11 +99,6 @@ class RelapseSTPMTheory(STPMTheory):
             agent.add_behaviour(AgentBehaviour.NORELAPSE)
             agent.set_state_of_next_time_step(AgentState.EXSMOKER)
 
-        # count the number of quit attempts in the last 12 months and update the
-        # agent's variable pNumberOfRecentQuitAttempts
-        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-
-
 class RegularSmokingSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name, smoking_model)
