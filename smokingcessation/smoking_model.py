@@ -28,6 +28,12 @@ class SmokingModel(Model):
         self.year_of_current_time_step = self.props["year_of_baseline"]
         self.current_time_step = 0
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
+        self.tickInterval=self.props["tickInterval"] #time duration of a tick e.g. 4 weeks
+        #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
+        self.lambda=self.props["lambda"] 
+        #prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
+        self.alpha=self.props["alpha"]
+        self.beta=self.props["beta"]    
         self.runner: SharedScheduleRunner = init_schedule_runner(comm)
         self.smoking_prevalence_l = list()
         # hashmap (dictionary) to store betas (coefficients) of the COMB formula of regular smoking theory

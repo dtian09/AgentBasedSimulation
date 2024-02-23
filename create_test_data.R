@@ -142,15 +142,15 @@ smoker_and_ex_smoker_and_never_smoker$mNumberOfRecentQuitAttempts=select_random_
 df2008 <- d %>% filter(xyear==2008) %>% mutate(ids=1:nrow(.))#q632e9 is in waves 6 to 28 only
 smoker_and_ex_smoker_and_never_smoker$mSmokerIdentity=select_random_values_of_variable(smoker_and_ex_smoker_and_never_smoker,df2008,c("q632e9"))
 convert_to_integer_type <-function(df,vars) {
-  #convert vars of factor type to integer type so that the integer values won't have double quotes when written to a csv file
+  #convert vars of factor type to numeric type so that the numeric values won't have double quotes when written to a csv file
   n<-length(vars)
   for(i in 1:n){
     print(vars[i])
-    df[[vars[i]]]<-as.integer(df[[vars[i]]])  
+    df[[vars[i]]]<-as.numeric(as.character(df[[vars[i]]]))  
   }
   return(df)
 }
 vars<-c("pAge","pGender","pIMDquintile","pCohort","pEducationalLevel","pSEP","pRegion","pSocialHousing","pMentalHealthCondition","pAlcoholConsumption","pNRTUse","pExpenditure","pECigUse","pVareniclineUse","pYearsSinceQuit","cAge","oAge","mAge","mGender","oEducationalLevel","oSEP","oGeographicLocality","oSocialHousing","cMentalHealthConditions","cAlcoholConsumption","oAlcoholConsumption","cPrescriptionNRT","mUseOfNRT","cEcigaretteUse","cCigConsumptionPrequit","mSpendingOnCig","cVareniclineUse","cCigAddictStrength","mEnjoymentOfSmoking","cUseOfBehaviourSupport","mIntentionToQuit","mDesireToStopSmoking","mNumberOfRecentQuitAttempts","mSmokerIdentity")
 smoker_and_ex_smoker_and_never_smoker<-convert_to_integer_type(smoker_and_ex_smoker_and_never_smoker,vars)
-write.csv(smoker_and_ex_smoker_and_never_smoker,file="X:/Shared/code/ABM_software/repositorysept23/testdata.csv",row.names=F)
+write.csv(smoker_and_ex_smoker_and_never_smoker,file="X:/Shared/code/ABM_software/abm-software-all-versions/data/testdata.csv",row.names=F)
 

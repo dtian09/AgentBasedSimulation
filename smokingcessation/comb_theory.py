@@ -47,7 +47,13 @@ class COMBTheory(Theory):
             else:
                 sstr = ' is not int64 or float64 and not stored into the level2Attributes hashmap.'
                 sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)
-
+            if self.level2_attributes['mSmokerIdentity']==2: #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
+                self.level2_attributes['mNonSmokerSelfIdentity']=0
+            elif self.level2_attributes['mSmokerIdentity']==1:
+                self.level2_attributes['mNonSmokerSelfIdentity']=1
+            else:
+                self.level2_attributes['mNonSmokerSelfIdentity']=self.level2_attributes['mSmokerIdentity']#-1=’don’t know’ or 4=’not stated’.
+   
     @abstractmethod
     def do_situation(self, agent: MicroAgent):  # run the situation mechanism of the agent of this theory
         pass
@@ -158,9 +164,6 @@ class RegSmokeTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOUPTAKE)
             agent.set_state_of_next_time_step(AgentState.NEVERSMOKE)
-
-        # count the number of quit attempts in the last 12 months and update the
-        # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
 
 
@@ -237,12 +240,7 @@ class QuitAttemptTheory(COMBTheory):
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.QUITTER)
 
-        # count the number of quit attempts in the last 12 months and update the
-        # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-        # if self.smoking_model.running_mode == 'debug':
-        #     self.smoking_model.write_to_log_file(self)
-
 
 class QuitSuccessTheory(COMBTheory):
 
@@ -304,9 +302,9 @@ class QuitSuccessTheory(COMBTheory):
         #  if p >= threshold
         #  {A does quit success behaviour at t;
         #   k=k+1;
-        #   if k < 13
+        #   if k < 12
         #     {A stays as a quitter at t+1;}
-        #   else //k==13
+        #   else //k==12
         #     {A transitions to an ex-smoker at t+1;
         #      k=0;}
         #  }
@@ -320,9 +318,21 @@ class QuitSuccessTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
             agent.k += 1
-            if agent.k < 13:
+            #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
+            self.level2Attributes['cCigAddictStrength']=np.round(self.level2Attributes['cCigAddictStrength'] * np.exp(self.smokingModel.lambda*self.smokingModel.tickInterval))
+            #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
+            threshold=random.uniform(0,1)
+            successCount=self.agent.behaviourBuffer.count('quit success')
+            probOfSmokerSelfIdentity=1/(1+self.smokingModel.alpha*(successCount*self.smokingModel.tickInterval)**self.smokingModel.beta)
+            if probOfSmokerSelfIdentity >= threshold:
+                self.level2Attributes['mSmokerIdentity']=2 #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
+                self.level2Attributes['mNonSmokerSelfIdentity']=0
+            else:
+                self.level2Attributes['mSmokerIdentity']=1
+                self.level2Attributes['mNonSmokerSelfIdentity']=1
+            if agent.k < 12:
                 agent.set_state_of_next_time_step(AgentState.QUITTER)
-            else:  # k==13
+            else:  # k==12
                 agent.set_state_of_next_time_step(AgentState.EXSMOKER)
                 agent.k = 0
         else:
@@ -332,9 +342,5 @@ class QuitSuccessTheory(COMBTheory):
             agent.add_behaviour(AgentBehaviour.QUITFAILURE)
             agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.k = 0
-
-        # count the number of quit attempts in the last 12 months and update the
-        # agent's variable pNumberOfRecentQuitAttempts
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-        # if self.smoking_model.running_mode == 'debug':
-        #     self.smoking_model.write_to_log_file(self)
+       
