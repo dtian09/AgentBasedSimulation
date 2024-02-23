@@ -3,6 +3,12 @@ data_file: "data/testdata.csv" #baseline (synthetic) population
 relapse_prob_file: "data/relapse_prob4wk.csv" #STPM relapse probability file (4-week probability)
 year_of_baseline: 2012 #year of the baseline popultion at t=0
 stop.at: 13 #the final time step when the simulation stops 
+###cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
+lambda: 0.0368 
+tickInterval: 4 #time duration of a tick e.g. 4 weeks
+#prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
+alpha: 1.1312 
+beta: 0.500
 ###formula of regular smoking theory###
 #this is the formula in the presentation slides "Latent_Composites_Draft_Analysis" of UCL 
 #the bias is set to a random value by the user as it is not provided in their slides
