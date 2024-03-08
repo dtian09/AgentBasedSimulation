@@ -30,7 +30,7 @@ class SmokingModel(Model):
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
         self.tickInterval=self.props["tickInterval"] #time duration of a tick e.g. 4 weeks
         #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
-        self.Lambda=self.props["lambda"] 
+        self.lbda=self.props["lambda"] 
         #prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
         self.alpha=self.props["alpha"]
         self.beta=self.props["beta"]    

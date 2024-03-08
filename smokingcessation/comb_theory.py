@@ -319,7 +319,7 @@ class QuitSuccessTheory(COMBTheory):
             agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
             agent.k += 1
             #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
-            self.level2Attributes['cCigAddictStrength']=np.round(self.level2Attributes['cCigAddictStrength'] * np.exp(self.smokingModel.Lambda*self.smokingModel.tickInterval))
+            self.level2Attributes['cCigAddictStrength']=np.round(self.level2Attributes['cCigAddictStrength'] * np.exp(self.smokingModel.lbda*self.smokingModel.tickInterval))
             #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
             threshold=random.uniform(0,1)
             successCount=self.agent.behaviourBuffer.count('quit success')
