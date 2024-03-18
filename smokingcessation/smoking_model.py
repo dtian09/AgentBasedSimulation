@@ -230,13 +230,11 @@ class SmokingModel(Model):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
-            self.logfile.writelines(agent.agent_info())
 
     def do_action_mechanisms(self):
         """micro entities do actions based on their internal states"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_action()
-            self.logfile.writelines(agent.agent_info())
 
     def do_transformational_mechanisms(self):
         pass
@@ -269,6 +267,8 @@ class SmokingModel(Model):
         self.do_macro_to_macro_mechanisms()
         if self.tick_counter == 13:
             self.tick_counter = 0
+        for agent in self.context.agents(agent_type=self.type):
+            self.logfile.writelines(agent.agent_info())
 
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
