@@ -45,14 +45,17 @@ class COMBTheory(Theory):
                                               value=self.smoking_model.data.at[indx_of_agent, level2_attribute_name])
                 self.level2_attributes[level2_attribute_name] = at_obj
             else:
-                sstr = ' is not int64 or float64 and not stored into the level2Attributes hashmap.'
+                sstr = ' is not int64 or float64 and not stored into the level2_attributes hashmap.'
                 sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)
-            if self.level2_attributes['mSmokerIdentity']==2: #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
-                self.level2_attributes['mNonSmokerSelfIdentity']=0
-            elif self.level2_attributes['mSmokerIdentity']==1:
-                self.level2_attributes['mNonSmokerSelfIdentity']=1
-            else:
-                self.level2_attributes['mNonSmokerSelfIdentity']=self.level2_attributes['mSmokerIdentity']#-1=’don’t know’ or 4=’not stated’.
+        if self.level2_attributes['mSmokerIdentity'].get_value()==2: #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
+            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=0)
+            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
+        elif self.level2_attributes['mSmokerIdentity'].get_value()==1:
+            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=1)
+            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
+        else:
+            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value())
+            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj #-1=’don’t know’ or 4=’not stated’.
    
     @abstractmethod
     def do_situation(self, agent: MicroAgent):  # run the situation mechanism of the agent of this theory
@@ -319,17 +322,17 @@ class QuitSuccessTheory(COMBTheory):
             agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
             agent.k += 1
             #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
-            self.level2Attributes['cCigAddictStrength']=np.round(self.level2Attributes['cCigAddictStrength'] * np.exp(self.smokingModel.lambda*self.smokingModel.tickInterval))
+            self.level2_attributes['cCigAddictStrength'].set_value(np.round(self.level2_attributes['cCigAddictStrength'].get_value() * np.exp(self.smoking_model.lbda*self.smoking_model.tickInterval)))
             #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
             threshold=random.uniform(0,1)
-            successCount=self.agent.behaviourBuffer.count('quit success')
-            probOfSmokerSelfIdentity=1/(1+self.smokingModel.alpha*(successCount*self.smokingModel.tickInterval)**self.smokingModel.beta)
+            successCount=agent.behaviour_buffer.count('quit success')
+            probOfSmokerSelfIdentity=1/(1+self.smoking_model.alpha*(successCount*self.smoking_model.tickInterval)**self.smoking_model.beta)
             if probOfSmokerSelfIdentity >= threshold:
-                self.level2Attributes['mSmokerIdentity']=2 #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
-                self.level2Attributes['mNonSmokerSelfIdentity']=0
+                self.level2_attributes['mSmokerIdentity'].set_value(2) #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
+                self.level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
             else:
-                self.level2Attributes['mSmokerIdentity']=1
-                self.level2Attributes['mNonSmokerSelfIdentity']=1
+                self.level2_attributes['mSmokerIdentity'].set_value(1)
+                self.level2_attributes['mNonSmokerSelfIdentity'].set_value(1)
             if agent.k < 12:
                 agent.set_state_of_next_time_step(AgentState.QUITTER)
             else:  # k==12

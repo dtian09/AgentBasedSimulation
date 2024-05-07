@@ -30,7 +30,7 @@ class SmokingModel(Model):
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
         self.tickInterval=self.props["tickInterval"] #time duration of a tick e.g. 4 weeks
         #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
-        self.lambda=self.props["lambda"] 
+        self.lbda=self.props["lambda"] 
         #prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
         self.alpha=self.props["alpha"]
         self.beta=self.props["beta"]    
@@ -236,13 +236,11 @@ class SmokingModel(Model):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()
-            self.logfile.writelines(agent.agent_info())
 
     def do_action_mechanisms(self):
         """micro entities do actions based on their internal states"""
         for agent in self.context.agents(agent_type=self.type):
             agent.do_action()
-            self.logfile.writelines(agent.agent_info())
 
     def do_transformational_mechanisms(self):
         pass
@@ -275,6 +273,8 @@ class SmokingModel(Model):
         self.do_macro_to_macro_mechanisms()
         if self.tick_counter == 13:
             self.tick_counter = 0
+        for agent in self.context.agents(agent_type=self.type):
+            self.logfile.writelines(agent.agent_info())
 
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
