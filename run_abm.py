@@ -1,7 +1,7 @@
 # ABM software for smoking behaviour using the COM-B theories: regular smoking uptake theory, quit attempt theory and
 # quit success theory and relapse theory
 #
-# Running command: python main.py props/model.yaml
+# Running command: python run_abm.py props/model.yaml
 
 from __future__ import annotations
 from mpi4py import MPI
