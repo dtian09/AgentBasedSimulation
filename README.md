@@ -68,6 +68,7 @@ python run_abm.py props/model.yaml
 ```
 
 The output files are:
+
 - logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
 
