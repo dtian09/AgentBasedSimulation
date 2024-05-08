@@ -7,8 +7,8 @@ COM-B quit attempt theory, COM-B quit success theory and relapse probabilities (
 
 The ABM software runs on Linux or MacOS operating systems (OS). The ABM software can also be run on Windows 10 or 11 OS by firstly installing the Windows Subsystem for Linux (WSL) on the Windows OS and secondly running the ABM software on WSL (see links below). 
 
-https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux
-https://learn.microsoft.com/en-us/windows/wsl/about
+- https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux
+- https://learn.microsoft.com/en-us/windows/wsl/about
 
 The ABM software has the dependencies: Repast4py, numpy and pandas. Repast4py has the dependency MPI. Install Python 3, pip, MPI and venv (virtual environment tool); then, create a virtual environment and install Repast4py, numpy and pandas into the virtual environment.
 
@@ -66,9 +66,10 @@ In model.yaml, each line specifies a parameter (left hand side of ":") and its v
 ```
 python run_abm.py props/model.yaml
 ```
+
 The output files are:
--logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
--prevalence_of_smoking.csv (the smoking prevalence at each time step)
+- logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
+- prevalence_of_smoking.csv (the smoking prevalence at each time step)
 
 To deactivate the virtual environment, use the following command 
 ```
