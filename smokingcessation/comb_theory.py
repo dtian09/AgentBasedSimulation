@@ -90,7 +90,6 @@ class COMBTheory(Theory):
         self.make_comp_m()
         self.do_behaviour(agent)
 
-
 class RegSmokeTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
@@ -150,10 +149,10 @@ class RegSmokeTheory(COMBTheory):
         self.power += self.smoking_model.uptake_betas['bias']
         self.power = -1 * self.power
         self.prob_behaviour = 1 / (1 + math.e ** self.power)
-
+        #insert the probability of regular smoking into the hashmap net_initiation_probabilities
+        insert_prob_of_regular_smoking_into_hashmap()
         # for a never smoker, run the regular smoking theory to calculate the probability of regular smoking;
         # if p >= threshold {A transitions to a smoker at t+1} else { A stays as never smoker or ex-smoker at t+1}
-
         self.threshold = random.uniform(0, 1)  # threshold
         if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
@@ -168,7 +167,50 @@ class RegSmokeTheory(COMBTheory):
             agent.add_behaviour(AgentBehaviour.NOUPTAKE)
             agent.set_state_of_next_time_step(AgentState.NEVERSMOKE)
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-
+        def insert_prob_of_regular_smoking_into_hashmap():
+            if agent.p_gender.get_value()==1: #male
+               self.smoking_model.net_initiation_probabilities['male'].append(self.prob_behaviour)
+            elif agent.p_gender.get_value()==2: #female
+               self.smoking_model.net_initiation_probabilities['female'].append(self.prob_behaviour)
+            else:
+               sys.exit('invalid gender: '+str(agent.p_gender.get_value())+'. Expected 1 or 2.')
+            if agent.p_imd_quintile.get_value()==1:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 1_least_deprived'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 1_least_deprived'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 1_least_deprived'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==2:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 2'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 2'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 2'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==3:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 3'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 3'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 3'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==4:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 4'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 4'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 4'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==5:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 5'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 5'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 5'].append(self.prob_behaviour)
+            else:
+                sys.exit('invalid IMD quintile: '+str(agent.p_imd_quintile.get_value())+'. Expected 1, 2, 3, 4 or 5.')
 
 class QuitAttemptTheory(COMBTheory):
 
@@ -226,7 +268,8 @@ class QuitAttemptTheory(COMBTheory):
         self.power += self.smoking_model.attempt_betas['bias']
         self.power = -1 * self.power
         self.prob_behaviour = 1 / (1 + math.e ** self.power)
-
+        #insert the probability of quit attempt into the hashmap quitting_probabilities
+        self.insert_prob_of_quit_attempt_or_quit_success_into_hashmap(agent)
         # for a smoker A, run the quit attempt theory to calculate the probability of making a quit attempt.
         # If p >= threshold, { A transitions to a quitter at t+1} else {A stays as a smoker at t+1}
         self.threshold = random.uniform(0, 1)
@@ -242,7 +285,6 @@ class QuitAttemptTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.QUITTER)
-
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
 
 class QuitSuccessTheory(COMBTheory):
@@ -346,4 +388,52 @@ class QuitSuccessTheory(COMBTheory):
             agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.k = 0
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-       
+
+def insert_prob_of_quit_attempt_or_quit_success_into_hashmap(self, agent : MicroAgent):
+            
+            
+            
+            if agent.p_gender.get_value()==1: #male
+               self.smoking_model.net_initiation_probabilities['male'].append(self.prob_behaviour)
+            elif agent.p_gender.get_value()==2: #female
+               self.smoking_model.net_initiation_probabilities['female'].append(self.prob_behaviour)
+            else:
+               sys.exit('invalid gender: '+str(agent.p_gender.get_value())+'. Expected 1 or 2.')
+            if agent.p_imd_quintile.get_value()==1:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 1_least_deprived'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 1_least_deprived'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 1_least_deprived'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==2:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 2'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 2'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 2'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==3:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 3'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 3'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 3'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==4:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 4'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 4'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 4'].append(self.prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==5:
+                if self.smoking_model.year_of_current_time_step>=2011 and self.smoking_model.year_of_current_time_step<=2013:
+                   self.smoking_model.net_initiation_probabilities['2011-2013 and 5'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2014 and self.smoking_model.year_of_current_time_step<=2016:
+                   self.smoking_model.net_initiation_probabilities['2014-2016 and 5'].append(self.prob_behaviour)
+                elif self.smoking_model.year_of_current_time_step>=2017 and self.smoking_model.year_of_current_time_step<=2019:
+                   self.smoking_model.net_initiation_probabilities['2017-2019 and 5'].append(self.prob_behaviour)
+            else:
+                sys.exit('invalid IMD quintile: '+str(agent.p_imd_quintile.get_value())+'. Expected 1, 2, 3, 4 or 5.')
+      

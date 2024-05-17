@@ -53,6 +53,46 @@ class SmokingModel(Model):
         self.relapse_prob = pd.read_csv(self.relapse_prob_file, header=0)  # read in STPM relapse probabilities
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
         self.tick_counter = 0
+        # hashmap to store net initiation probabilities by sex and by year and IMD quintile
+        self.net_initiation_probabilities={'male':[],
+                                           'female':[],
+                                           '2011-2013 and 1_least_deprived':[],
+                                           '2014-2016 and 1_least_deprived':[],
+                                           '2017-2019 and 1_least_deprived':[],
+                                           '2011-2013 and 2':[],
+                                           '2014-2016 and 2':[],
+                                           '2017-2019 and 2':[],
+                                           '2011-2013 and 3':[],
+                                           '2014-2016 and 3':[],
+                                           '2017-2019 and 3':[],
+                                           '2011-2013 and 4':[],
+                                           '2014-2016 and 4':[],
+                                           '2017-2019 and 4':[],
+                                           '2011-2013 and 5_most_deprived':[],
+                                           '2014-2016 and 5_most_deprived':[],
+                                           '2017-2019 and 5_most_deprived':[]
+                                           }
+        # hashmap to store quitting probabilities by sex and age and by year and IMD quintile
+        self.quitting_probabilities={      'male and 25-49':[],
+                                           'female and 25-49':[],
+                                           'male and 50-74':[],
+                                           'female and 50-74':[],                                           
+                                           '2011-2013 and 1_least_deprived':[],
+                                           '2014-2016 and 1_least_deprived':[],
+                                           '2017-2019 and 1_least_deprived':[],
+                                           '2011-2013 and 2':[],
+                                           '2014-2016 and 2':[],
+                                           '2017-2019 and 2':[],
+                                           '2011-2013 and 3':[],
+                                           '2014-2016 and 3':[],
+                                           '2017-2019 and 3':[],
+                                           '2011-2013 and 4':[],
+                                           '2014-2016 and 4':[],
+                                           '2017-2019 and 4':[],
+                                           '2011-2013 and 5_most_deprived':[],
+                                           '2014-2016 and 5_most_deprived':[],
+                                           '2017-2019 and 5_most_deprived':[]
+                                    }
         if self.running_mode == 'debug':
             self.logfile = open('logfile.txt', 'w')
             self.logfile.write('debug mode\n')
@@ -263,7 +303,7 @@ class SmokingModel(Model):
         print('Time step ' + str(self.current_time_step) + ': smoking prevalence=' + str(p) + '%.')
         self.smoking_prevalence_l.append(p)
         self.tick_counter += 1
-        if self.tick_counter == 13:
+        if self.tick_counter == 12:#each tick is 1 month
             self.year_of_current_time_step += 1
         if self.running_mode == 'debug':
             self.logfile.write('year: ' + str(self.year_of_current_time_step) + '\n')
@@ -279,6 +319,21 @@ class SmokingModel(Model):
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
         self.runner.schedule_stop(self.stop_at)
+
+    def net_initiation_probabilities_by_sex(self):
+        #output: weighted average probability of net initiation of female 
+        #        weighted average probability of net initiation of male 
+        #Weighted average probability of net initiation of female = Weight of female x average probability of net initiation of female
+        #where weight of female = no. of female / (no. of female + no. of male); the female and male are counted for ages 16 to 24 in the 2019 population.
+    
+    def net_initiation_probabilities_by_year_and_IMDquintile(self):
+        #output: weighted average net initiation probabilities of subgroups by year and IMD quintile
+
+    def quitting_probabilities_by_sex_and_age(self):
+        #output: weighted average quitting probabilities of subgroups by sex and age
+    
+    def quitting_probabilities_by_year_and_IMDquintile(self):
+        #output: weighted average quitting probabilities of subgroups by year and IMD quintile
 
     def collect_data(self):
         f = open('prevalence_of_smoking.csv', 'w')
