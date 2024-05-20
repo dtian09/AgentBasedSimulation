@@ -9,6 +9,7 @@ from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 from config.definitions import ROOT_DIR
 from config.definitions import AgentState
 from mbssm.model import Model
+from mbssm.micro_agent import MicroAgent
 
 
 class SmokingModel(Model):
@@ -199,6 +200,69 @@ class SmokingModel(Model):
                                             ' formula')
                                     sys.exit(level2attribute + sstr)
 
+    def store_prob_of_regular_smoking_into_hashmap(self, prob_behaviour : float, agent : MicroAgent):
+            if agent.p_gender.get_value()==1: #male
+               self.net_initiation_probabilities['male'].append(prob_behaviour)
+            elif agent.p_gender.get_value()==2: #female
+               self.net_initiation_probabilities['female'].append(prob_behaviour)
+            else:
+               sys.exit('invalid gender: '+str(agent.p_gender.get_value())+'. Expected 1 or 2.')
+            self.insert_prob_of_subgroups_by_years_and_imd_quintile_into_hashmap(prob_behaviour, agent, self.net_initiation_probabilities)
+
+    def store_prob_of_quit_attempt_or_quit_success_into_hashmap(self, prob_behaviour : float, agent : MicroAgent):                      
+            if agent.p_gender.get_value()==1: #male
+                if agent.p_age.get_value()>=25 and agent.p_age.get_value()<=49: 
+                  self.quitting_probabilities['male and 25-49'].append(prob_behaviour)
+                elif agent.p_age.get_value()>=50 and agent.p_age.get_value()<=74:
+                  self.quitting_probabilities['male and 50-74'].append(prob_behaviour)
+            elif agent.p_gender.get_value()==2: #female
+                if agent.p_age.get_value()>=25 and agent.p_age.get_value()<=49: 
+                  self.quitting_probabilities['female and 25-49'].append(prob_behaviour)
+                elif agent.p_age.get_value()>=50 and agent.p_age.get_value()<=74:
+                  self.quitting_probabilities['female and 50-74'].append(prob_behaviour)
+            else:
+                sys.exit('invalid gender: '+str(agent.p_gender.get_value())+'. Expected 1 or 2.')
+            self.store_prob_of_subgroups_by_years_and_imd_quintile_into_hashmap(prob_behaviour, agent, self.quitting_probabilities)
+
+    def store_prob_of_subgroups_by_years_and_imd_quintile_into_hashmap(self, prob_behaviour : float, agent : MicroAgent, hashmap):
+            if agent.p_imd_quintile.get_value()==1:
+                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
+                   hashmap['2011-2013 and 1_least_deprived'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
+                   hashmap['2014-2016 and 1_least_deprived'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
+                   hashmap['2017-2019 and 1_least_deprived'].append(prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==2:
+                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
+                   hashmap['2011-2013 and 2'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
+                   hashmap['2014-2016 and 2'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
+                   hashmap['2017-2019 and 2'].append(prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==3:
+                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
+                   hashmap['2011-2013 and 3'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
+                   hashmap['2014-2016 and 3'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
+                   hashmap['2017-2019 and 3'].append(prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==4:
+                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
+                   hashmap['2011-2013 and 4'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
+                   hashmap['2014-2016 and 4'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
+                   hashmap['2017-2019 and 4'].append(prob_behaviour)
+            elif agent.p_imd_quintile.get_value()==5:
+                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
+                   hashmap['2011-2013 and 5'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
+                   hashmap['2014-2016 and 5'].append(prob_behaviour)
+                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
+                   hashmap['2017-2019 and 5'].append(prob_behaviour)
+            else:
+                sys.exit('invalid IMD quintile: '+str(agent.p_imd_quintile.get_value())+'. Expected 1, 2, 3, 4 or 5.')
+
     def init_agents(self):
 
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
@@ -325,9 +389,27 @@ class SmokingModel(Model):
         #        weighted average probability of net initiation of male 
         #Weighted average probability of net initiation of female = Weight of female x average probability of net initiation of female
         #where weight of female = no. of female / (no. of female + no. of male); the female and male are counted for ages 16 to 24 in the 2019 population.
-    
+        mean_male=np.mean(self.net_initiation_probabilities['male'])
+        mean_female=np.mean(self.net_initiation_probabilities['female'])
+        return mean_male,mean_female
+        
     def net_initiation_probabilities_by_year_and_IMDquintile(self):
         #output: weighted average net initiation probabilities of subgroups by year and IMD quintile
+        '2011-2013 and 1_least_deprived':[],
+                                           '2014-2016 and 1_least_deprived':[],
+                                           '2017-2019 and 1_least_deprived':[],
+                                           '2011-2013 and 2':[],
+                                           '2014-2016 and 2':[],
+                                           '2017-2019 and 2':[],
+                                           '2011-2013 and 3':[],
+                                           '2014-2016 and 3':[],
+                                           '2017-2019 and 3':[],
+                                           '2011-2013 and 4':[],
+                                           '2014-2016 and 4':[],
+                                           '2017-2019 and 4':[],
+                                           '2011-2013 and 5_most_deprived':[],
+                                           '2014-2016 and 5_most_deprived':[],
+                                           '2017-2019 and 5_most_deprived':[]
 
     def quitting_probabilities_by_sex_and_age(self):
         #output: weighted average quitting probabilities of subgroups by sex and age
