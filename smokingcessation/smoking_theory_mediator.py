@@ -48,15 +48,15 @@ class SmokingTheoryMediator(TheoryMediator):
     def mediate_action(self, agent: MicroAgent):
         """
         definition of quitting smoking: a smoker transitions to an ex-smoker (i.e. achieve success in quitting) after
-        maintaining a quit attempt for 13 consecutive ticks (52 weeks i.e. 12 months).
+        maintaining a quit attempt for 12 consecutive ticks (12 months).
         The sequence of the agent's behaviours when transitioning from smoker to ex-smoker:
             quit attempt (at t=i, i > 0, state=smoker), quit success (at t=i+1, state=quitter),...,
-            quit success (at t=i+12, state=quitter), relapse or no relapse (at t=i+13, state=ex-smoker)
+            quit success (at t=i+11, state=quitter), relapse or no relapse (at t=i+12, state=ex-smoker)
         pseudocode of state transition
         At tick t:
-            for a quitter A, if k < 13, run the quit success theory to calculate the probability of maintaining a quit
+            for a quitter A, if k < 12, run the quit success theory to calculate the probability of maintaining a quit
                 attempt; if p >= threshold {A stays as a quitter at t+1; k=k+1} else { A transitions to a smoker at t+1}
-            for a quitter A, if k==13, run the quit success theory to calculate the probability of maintaining a quit
+            for a quitter A, if k==12, run the quit success theory to calculate the probability of maintaining a quit
                 attempt; if p >= threshold { A transitions to an ex-smoker at t+1; k=0;} else {A transitions to a smoker at t+1}
             for a smoker A, run the quit attempt theory to calculate the probability of making a quit attempt.
                 If p >= threshold, { A transitions to a quitter at t+1; k=1;} else {A stays as a smoker at t+1}
