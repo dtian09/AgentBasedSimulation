@@ -29,18 +29,18 @@ class RelapseSTPMTheory(STPMTheory):
         self.years_since_quit = None
 
     def do_situation(self, agent: MicroAgent):
-        # increment age of the agent every 13 ticks
-        if self.smoking_model.tick_counter == 13:
+        # increment age of the agent every 12 ticks
+        if self.smoking_model.tick_counter == 12:
             agent.increment_age()
         # retrieve probability of relapse of the matching person from STPM transition probabilities file
         self.years_since_quit = agent.p_years_since_quit.get_value()
         if (agent.p_years_since_quit.get_value() > 0) and (agent.p_years_since_quit.get_value() < 10):
-            matched = self.smoking_model.relapse_prob[
-                (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
-                (self.smoking_model.relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
-                (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
-                (self.smoking_model.relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
-                (self.smoking_model.relapse_prob['time_since_quit'] == agent.p_years_since_quit.get_value())]
+            matched = self.smoking_model.STPM_relapse_prob[
+                (self.smoking_model.STPM_relapse_prob['age'] == agent.p_age.get_value()) &
+                (self.smoking_model.STPM_relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
+                (self.smoking_model.STPM_relapse_prob['sex'] == agent.p_gender.get_value()) &
+                (self.smoking_model.STPM_relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
+                (self.smoking_model.STPM_relapse_prob['time_since_quit'] == agent.p_years_since_quit.get_value())]
             matched = pd.DataFrame(matched)
             if len(matched) > 0:
                 self.prob_behaviour = float(matched.iat[0, 5])
@@ -50,12 +50,12 @@ class RelapseSTPMTheory(STPMTheory):
                     self.smoking_model.logfile.write('no match in relapse probabilities file for this agent: ' +
                                                      str(agent) + '. probability of relapse=0.\n')
         elif agent.p_years_since_quit.get_value() >= 10:  # retrieve the probability of years since quit of 10
-            matched = self.smoking_model.relapse_prob[
-                (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
-                (self.smoking_model.relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
-                (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
-                (self.smoking_model.relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
-                (self.smoking_model.relapse_prob['time_since_quit'] == 10)]
+            matched = self.smoking_model.STPM_relapse_prob[
+                (self.smoking_model.STPM_relapse_prob['age'] == agent.p_age.get_value()) &
+                (self.smoking_model.STPM_relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
+                (self.smoking_model.STPM_relapse_prob['sex'] == agent.p_gender.get_value()) &
+                (self.smoking_model.STPM_relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
+                (self.smoking_model.STPM_relapse_prob['time_since_quit'] == 10)]
             matched = pd.DataFrame(matched)
             if len(matched) > 0:
                 self.prob_behaviour = float(matched.iat[0, 5])
@@ -80,7 +80,7 @@ class RelapseSTPMTheory(STPMTheory):
 
     def do_action(self, agent: MicroAgent):
         agent.tick_counter_ex_smoker += 1
-        if agent.tick_counter_ex_smoker == 13:
+        if agent.tick_counter_ex_smoker == 12:
             agent.p_years_since_quit.set_value(agent.p_years_since_quit.get_value() + 1)
             agent.tick_counter_ex_smoker = 0
         self.threshold = random.uniform(0, 1)
@@ -99,7 +99,7 @@ class RelapseSTPMTheory(STPMTheory):
             agent.add_behaviour(AgentBehaviour.NORELAPSE)
             agent.set_state_of_next_time_step(AgentState.EXSMOKER)
 
-class RegularSmokingSTPMTheory(STPMTheory):
+class InitiationSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name, smoking_model)
 

@@ -26,7 +26,7 @@ class COMBTheory(Theory):
         self.store_level2_attributes_into_map(indx_of_agent)
 
     def store_level2_attributes_into_map(self, indx_of_agent: int):
-        """store the level 2 attributes of agent i from level 2 attributes dataframe of smoking model class into a map
+        """store the level 2 attributes of agent i from data dataframe of smoking model class into a map
         <l2AttributeName : string, object : Level2Attribute>
         """
 
@@ -97,8 +97,7 @@ class RegSmokeTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        """increment age of the agent every 13 ticks"""
-        if self.smoking_model.tick_counter == 13:
+        if self.smoking_model.tick_counter == 12:
             agent.increment_age()
 
     def do_learning(self):
@@ -173,8 +172,7 @@ class QuitAttemptTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        """increment age of the agent every 13 ticks"""
-        if self.smoking_model.tick_counter == 13:
+        if self.smoking_model.tick_counter == 12:
             agent.increment_age()
 
     def do_learning(self):
@@ -233,13 +231,13 @@ class QuitAttemptTheory(COMBTheory):
             agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.QUITATTEMPT)
-            agent.set_state_of_next_time_step(state=AgentState.QUITTER)
+            agent.set_state_of_next_time_step(state=AgentState.NEWQUITTER)
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
-            agent.set_state_of_next_time_step(state=AgentState.QUITTER)
+            agent.set_state_of_next_time_step(state=AgentState.SMOKER)
         agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
 
 class QuitSuccessTheory(COMBTheory):
@@ -248,8 +246,7 @@ class QuitSuccessTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        """increment age of the agent every 13 ticks"""
-        if self.smoking_model.tick_counter == 13:
+        if self.smoking_model.tick_counter == 12:
             agent.increment_age()
 
     def do_learning(self):
@@ -305,7 +302,7 @@ class QuitSuccessTheory(COMBTheory):
         #  {A does quit success behaviour at t;
         #   k=k+1;
         #   if k < 12
-        #     {A stays as a quitter at t+1;}
+        #     {transition to ongoing quitterk;}
         #   else //k==12
         #     {A transitions to an ex-smoker at t+1;
         #      k=0;}
@@ -324,7 +321,7 @@ class QuitSuccessTheory(COMBTheory):
             self.level2_attributes['cCigAddictStrength'].set_value(np.round(self.level2_attributes['cCigAddictStrength'].get_value() * np.exp(self.smoking_model.lbda*self.smoking_model.tickInterval)))
             #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
             threshold=random.uniform(0,1)
-            successCount=agent.behaviour_buffer.count('quit success')
+            successCount=agent.behaviour_buffer.count(AgentBehaviour.QUITSUCCESS)
             probOfSmokerSelfIdentity=1/(1+self.smoking_model.alpha*(successCount*self.smoking_model.tickInterval)**self.smoking_model.beta)
             if probOfSmokerSelfIdentity >= threshold:
                 self.level2_attributes['mSmokerIdentity'].set_value(2) #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
@@ -333,10 +330,31 @@ class QuitSuccessTheory(COMBTheory):
                 self.level2_attributes['mSmokerIdentity'].set_value(1)
                 self.level2_attributes['mNonSmokerSelfIdentity'].set_value(1)
             if agent.k < 12:
-                agent.set_state_of_next_time_step(AgentState.QUITTER)
-            else:  # k==12
+                if agent.k==1:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER1)
+                elif agent.k==2:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER2)
+                elif agent.k==3:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER3)
+                elif agent.k==4:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER4)
+                elif agent.k==5:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER5)
+                elif agent.k==6:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER6)
+                elif agent.k==7:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER7)
+                elif agent.k==8:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER8)
+                elif agent.k==9:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER9)
+                elif agent.k==10:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER10)
+                elif agent.k==11:
+                    agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER11)
+            else:#k==12
                 agent.set_state_of_next_time_step(AgentState.EXSMOKER)
-                agent.k = 0
+                agent.k=0
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()

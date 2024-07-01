@@ -119,20 +119,20 @@ class Person(MicroAgent):
     def init_behaviour_buffer_and_k_and_p_number_of_recent_quit_attempts(self):
         """
         The behaviour buffer stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months
-        (13 ticks with each tick represents 4 weeks)
+        (12 ticks with each tick represents 1 month)
         COMB behaviours: 'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure'
         STPM behaviours: 'relapse', 'no relapse'
         At each tick, the behaviour buffer (a list) stores one of the 8 behaviours:
         'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure', 'relapse' and 'no relapse'
-        (behaviours of a quitter over last 12 months (13 ticks):
-            random behaviour (tick 1)..., random behaviour (tick i-1), quit attempt (tick i), quit success,..., quit success (tick 13)
+        (behaviours of a quitter over last 12 months (12 ticks):
+            random behaviour (tick 1)..., random behaviour (tick i-1), quit attempt (tick i), quit success,..., quit success (tick 12)
             or
-            random behaviour (tick 1),...,random behaviour (tick 12),quit attempt (tick 13))
+            random behaviour (tick 1),...,random behaviour (tick 12),quit attempt (tick 12))
         At tick 0, initialize the behaviour buffer of the agent to its historical behaviours as follows:
         or a quitter in the baseline population (i.e. at tick 0) {
-            select a random index i of the buffer (0=< i =< 12);
+            select a random index i of the buffer (0=< i =< 11);
             set the cell at i to 'quit attempt';
-            set all the cells at i+1,i+2...,12 to 'quit success';
+            set all the cells at i+1,i+2...,11 to 'quit success';
             set the cells at 0,...,i-1 to random behaviours;
         }
         for a non-quitter in the baseline population {
@@ -144,28 +144,27 @@ class Person(MicroAgent):
         """
 
         behaviours = [e for e in AgentBehaviour]
-        self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 13)]
+        self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
         self.k = 0
         if self.states[0] == AgentState.QUITTER:
             i = random.randint(0, 12)
             self.behaviour_buffer[i] = AgentBehaviour.QUITATTEMPT
-            for j in range(i + 1, 13):
+            for j in range(i + 1, 12):
                 self.behaviour_buffer[j] = AgentBehaviour.QUITSUCCESS
                 self.k += 1
             for q in range(0, i):  # set random behaviours to indices: 0, 1,..., i-1
                 self.behaviour_buffer[q] = behaviours[random.randint(0, len(behaviours) - 1)]
         elif self.states[0] == AgentState.NEVERSMOKE:
-            for i in range(0, 13):
+            for i in range(0, 12):
                 self.behaviour_buffer[i] = AgentBehaviour.NOUPTAKE
         elif self.states[0] == AgentState.EXSMOKER:
-            for i in range(0, 13):
+            for i in range(0, 12):
                 self.behaviour_buffer[i] = AgentBehaviour.NORELAPSE
         elif self.states[0] == AgentState.SMOKER:
-            for i in range(0, 13):
+            for i in range(0, 12):
                 self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]
         else:
             raise ValueError(f'{self.states[0]} is not an acceptable agent state')
-
         self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))
 
     def update_ec_ig_use(self, eciguse: int):

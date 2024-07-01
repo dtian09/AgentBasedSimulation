@@ -22,7 +22,7 @@ class SmokingModel(Model):
         self.rank: int = self.comm.Get_rank()
         self.type: int = 0  # type of agent in id (id is a tuple (id,rank,type))
         self.props = params
-        self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2012 data)
+        self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2013 data)
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
@@ -53,8 +53,18 @@ class SmokingModel(Model):
         self.level2_attributes_names = list(self.data.filter(regex='^[com]').columns)
         self.relapse_prob = pd.read_csv(self.relapse_prob_file, header=0)  # read in STPM relapse probabilities
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
+        self.behaviour_model = self.props['behaviour_model'] #COMB or STPM
+        if self.behaviour_model!='COMB':
+            if self.behaviour_model!='STPM':
+                sys.exit('invalid behaviour model: '+self.behaviour_model) 
+        if self.behaviour_model=='COMB':
+            print('This ABM is using the COM-B model.')
+        elif self.behaviour_model=='STPM':
+            print('This ABM is using the STPM model.')
+        else:
+            sys.exit('invalid behaviour model: '+self.behaviour_model) 
         self.tick_counter = 0
-        # hashmap to store net initiation probabilities by sex and by year and IMD quintile
+        # hashmap to store net initiation probabilities of ages 16 to 24 by sex and by year and IMD quintile of each tick
         self.net_initiation_probabilities={'male':[],
                                            'female':[],
                                            '2011-2013 and 1_least_deprived':[],
@@ -73,8 +83,48 @@ class SmokingModel(Model):
                                            '2014-2016 and 5_most_deprived':[],
                                            '2017-2019 and 5_most_deprived':[]
                                            }
-        # hashmap to store quitting probabilities by sex and age and by year and IMD quintile
+        #hashmap to store the average net initiation probabilities of ages 16 to 24 by sex and by year and IMD quintile of each tick
+        self.average_net_initiation_probabilities={'male':[],
+                                           'female':[],
+                                           '2011-2013 and 1_least_deprived':[],
+                                           '2014-2016 and 1_least_deprived':[],
+                                           '2017-2019 and 1_least_deprived':[],
+                                           '2011-2013 and 2':[],
+                                           '2014-2016 and 2':[],
+                                           '2017-2019 and 2':[],
+                                           '2011-2013 and 3':[],
+                                           '2014-2016 and 3':[],
+                                           '2017-2019 and 3':[],
+                                           '2011-2013 and 4':[],
+                                           '2014-2016 and 4':[],
+                                           '2017-2019 and 4':[],
+                                           '2011-2013 and 5_most_deprived':[],
+                                           '2014-2016 and 5_most_deprived':[],
+                                           '2017-2019 and 5_most_deprived':[]
+                                           }
+        # hashmap to store quitting probabilities by sex and age and by year and IMD quintile of each tick
         self.quitting_probabilities={      'male and 25-49':[],
+                                           'female and 25-49':[],
+                                           'male and 50-74':[],
+                                           'female and 50-74':[],                                           
+                                           '2011-2013 and 1_least_deprived':[],
+                                           '2014-2016 and 1_least_deprived':[],
+                                           '2017-2019 and 1_least_deprived':[],
+                                           '2011-2013 and 2':[],
+                                           '2014-2016 and 2':[],
+                                           '2017-2019 and 2':[],
+                                           '2011-2013 and 3':[],
+                                           '2014-2016 and 3':[],
+                                           '2017-2019 and 3':[],
+                                           '2011-2013 and 4':[],
+                                           '2014-2016 and 4':[],
+                                           '2017-2019 and 4':[],
+                                           '2011-2013 and 5_most_deprived':[],
+                                           '2014-2016 and 5_most_deprived':[],
+                                           '2017-2019 and 5_most_deprived':[]
+                                    }
+        # hashmap to store average quitting probabilities by sex and age and by year and IMD quintile of each tick  
+        self.average_quitting_probabilities={      'male and 25-49':[],
                                            'female and 25-49':[],
                                            'male and 50-74':[],
                                            'female and 50-74':[],                                           
@@ -274,10 +324,16 @@ class SmokingModel(Model):
         from smokingcessation.person import Person
 
         for i in range(self.size_of_population):
-            rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
-            qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
-            qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
-            relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
+            if self.behaviour_model=='COMB':
+                rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
+                qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
+                qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
+                relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
+            else:
+                rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
+                qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
+                qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
+                relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)            
             mediator = SmokingTheoryMediator({rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory})
 
             init_state = self.data.at[i, 'state']
@@ -287,8 +343,30 @@ class SmokingModel(Model):
                 states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
             elif init_state == 'smoker':
                 states = [AgentState.SMOKER, AgentState.SMOKER]
-            elif init_state == 'quitter':
-                states = [AgentState.QUITTER, AgentState.QUITTER]
+            elif init_state == 'newquitter':
+                states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
+            elif init_state == 'ongoingquitter1':
+                states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
+            elif init_state == 'ongoingquitter2':
+                states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
+            elif init_state == 'ongoingquitter3':
+                states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
+            elif init_state == 'ongoingquitter4':
+                states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
+            elif init_state == 'ongoingquitter5':
+                states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
+            elif init_state == 'ongoingquitter6':
+                states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
+            elif init_state == 'ongoingquitter7':
+                states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
+            elif init_state == 'ongoingquitter8':
+                states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
+            elif init_state == 'ongoingquitter9':
+                states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
+            elif init_state == 'ongoingquitter10':
+                states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
+            elif init_state == 'ongoingquitter11':
+                states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]                        
             else:
                 raise ValueError(f'{init_state} is not an acceptable agent state')
 
@@ -371,6 +449,7 @@ class SmokingModel(Model):
             self.year_of_current_time_step += 1
         if self.running_mode == 'debug':
             self.logfile.write('year: ' + str(self.year_of_current_time_step) + '\n')
+        #count sizes of subgroups: N_never_smokers_16-24M, N_ongoing_quitter_16-24M (N1,3+N1,4) etc.
         self.do_situational_mechanisms()
         self.do_action_mechanisms()
         self.do_transformational_mechanisms()
@@ -384,39 +463,26 @@ class SmokingModel(Model):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
         self.runner.schedule_stop(self.stop_at)
 
-    def net_initiation_probabilities_by_sex(self):
-        #output: weighted average probability of net initiation of female 
-        #        weighted average probability of net initiation of male 
-        #Weighted average probability of net initiation of female = Weight of female x average probability of net initiation of female
-        #where weight of female = no. of female / (no. of female + no. of male); the female and male are counted for ages 16 to 24 in the 2019 population.
-        mean_male=np.mean(self.net_initiation_probabilities['male'])
-        mean_female=np.mean(self.net_initiation_probabilities['female'])
-        return mean_male,mean_female
+    def calculate_average_net_initiation_probabilities(self):
+        for (k,v) in self.net_initiation_probabilities.items():
+            if len(v)>0:
+                m=np.mean(v)
+            else:#empty list (subgroup does not exist for this tick)
+                m='subgroup not exist'
+            self.average_net_initiation_probabilities[k].append(m)
+            self.net_initiation_probabilities[k]=[]#empty the list to store the net initiation probabilities of next tick     
+        return self.average_net_initiation_probabilities
         
-    def net_initiation_probabilities_by_year_and_IMDquintile(self):
-        #output: weighted average net initiation probabilities of subgroups by year and IMD quintile
-        '2011-2013 and 1_least_deprived':[],
-                                           '2014-2016 and 1_least_deprived':[],
-                                           '2017-2019 and 1_least_deprived':[],
-                                           '2011-2013 and 2':[],
-                                           '2014-2016 and 2':[],
-                                           '2017-2019 and 2':[],
-                                           '2011-2013 and 3':[],
-                                           '2014-2016 and 3':[],
-                                           '2017-2019 and 3':[],
-                                           '2011-2013 and 4':[],
-                                           '2014-2016 and 4':[],
-                                           '2017-2019 and 4':[],
-                                           '2011-2013 and 5_most_deprived':[],
-                                           '2014-2016 and 5_most_deprived':[],
-                                           '2017-2019 and 5_most_deprived':[]
-
-    def quitting_probabilities_by_sex_and_age(self):
-        #output: weighted average quitting probabilities of subgroups by sex and age
+    def calculate_average_quitting_probabilities(self):
+        for (k,v) in self.quitting_probabilities.items():
+            if len(v)>0:
+                m=np.mean(v)
+            else:#empty list (subgroup does not exist for this tick)
+                m='subgroup not exist'            
+            self.average_quitting_probabilities[k].append(m)
+            self.quitting_probabilities[k]=[]#empty list to store the quitting probabilities of next tick
+        return self.average_quitting_probabilities
     
-    def quitting_probabilities_by_year_and_IMDquintile(self):
-        #output: weighted average quitting probabilities of subgroups by year and IMD quintile
-
     def collect_data(self):
         f = open('prevalence_of_smoking.csv', 'w')
         for prev in self.smoking_prevalence_l:

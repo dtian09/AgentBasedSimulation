@@ -1,6 +1,8 @@
-ABM_mode: "debug" #'debug' or 'normal' (running mode of the ABM software)
+behaviour_model: "COMB" #"STPM"
+ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 data_file: "data/testdata.csv" #baseline (synthetic) population
 relapse_prob_file: "data/relapse_prob1month.csv" #STPM relapse probability file (1monthprobability)
+initiation_prob_file: "data/initiation_prob1month.csv"
 year_of_baseline: 2011 #year of the baseline popultion at t=0
 stop.at: 12 #the final time step when the simulation stops 
 ###cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = time length of a tick in weeks
@@ -33,7 +35,7 @@ uptake.bias: 1
 attempt.oSocialHousing.beta: 0.18
 attempt.mIntentionToQuit.beta: 0.52
 attempt.mSpendingOnCig.beta: 0.02
-attempt.mEnjoymentOfSmoking: -0.17
+attempt.mEnjoymentOfSmoking.beta: -0.17
 attempt.mAge.beta: -0.04
 attempt.O.beta: 0.14
 attempt.M.beta: 0.61
