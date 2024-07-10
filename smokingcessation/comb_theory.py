@@ -10,7 +10,7 @@ from config.definitions import AgentBehaviour
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 from smokingcessation.smoking_model import SmokingModel
-from smokingcessation.attribute import Level2AttributeInt, Level2AttributeFloat, Level1Attribute, Level2Attribute
+from smokingcessation.attribute import Level2AttributeInt, Level2AttributeFloat, Level1Attribute
 
 
 class COMBTheory(Theory):
@@ -147,8 +147,6 @@ class RegSmokeTheory(COMBTheory):
         self.power += self.smoking_model.uptake_betas['bias']
         self.power = -1 * self.power
         self.prob_behaviour = 1 / (1 + math.e ** self.power)
-        #insert the probability of regular smoking into the hashmap net_initiation_probabilities
-        self.smoking_model.store_prob_of_regular_smoking_into_hashmap(self.prob_behaviour, agent)
         # for a never smoker, run the regular smoking theory to calculate the probability of regular smoking;
         # if p >= threshold {A transitions to a smoker at t+1} else { A stays as never smoker or ex-smoker at t+1}
         self.threshold = random.uniform(0, 1)  # threshold
@@ -221,8 +219,6 @@ class QuitAttemptTheory(COMBTheory):
         self.power += self.smoking_model.attempt_betas['bias']
         self.power = -1 * self.power
         self.prob_behaviour = 1 / (1 + math.e ** self.power)
-        #insert the probability of quit attempt into quitting_probabilities hashmap
-        self.smoking_model.store_prob_of_quit_attempt_or_quit_success_into_hashmap(self.prob_behaviour, agent)
         # for a smoker A, run the quit attempt theory to calculate the probability of making a quit attempt.
         # If p >= threshold, { A transitions to a quitter at t+1} else {A stays as a smoker at t+1}
         self.threshold = random.uniform(0, 1)
@@ -294,8 +290,6 @@ class QuitSuccessTheory(COMBTheory):
         self.power += self.smoking_model.success_betas['bias']
         self.power = -1 * self.power
         self.prob_behaviour = 1 / (1 + math.e ** self.power)
-        #insert the probability of quit success into quitting_probabilities hashmap
-        self.smoking_model.store_prob_of_quit_attempt_or_quit_success_into_hashmap(self.prob_behaviour, agent)
         # for a quitter A,
         #  run the quit success theory to calculate the probability of maintaining a quit attempt;
         #  if p >= threshold

@@ -3,7 +3,7 @@ import pandas as pd
 
 startyear=2011 #start year of simulation
 finalyear=2019 #final year of simulation
-stpm_prob_file='X:/Shared/code/ABM_software/repositorysept23/smoking_state_transition_probabilities_England.xlsx'
+stpm_prob_file='X:/Shared/code/ABM_software/repositorysept23/smoking_state_transition_probabilities_England2.xlsx'
 #monthly initiation probability
 df=pd.read_excel(stpm_prob_file,sheet_name='Initiation')
 df['sex'] = df['sex'].replace({'Male': 1, 'Female': 2})

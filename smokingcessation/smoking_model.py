@@ -2,15 +2,12 @@ import numpy as np
 import pandas as pd
 import sys
 from typing import Dict
-
 from repast4py.context import SharedContext
 from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
-
 from config.definitions import ROOT_DIR
 from config.definitions import AgentState
-from mbssm.model import Model
-from mbssm.micro_agent import MicroAgent
-
+from config.definitions import agelowerbound, ageupperbound, N_neversmokers_startyear_ages_M, N_neversmokers_startyear_ages_F
+from mbssm.model import Model												
 
 class SmokingModel(Model):
 
@@ -20,14 +17,17 @@ class SmokingModel(Model):
         self.context: SharedContext = SharedContext(comm)  # create an agent population
         self.size_of_population = None
         self.rank: int = self.comm.Get_rank()
-        self.type: int = 0  # type of agent in id (id is a tuple (id,rank,type))
         self.props = params
         self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2013 data)
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
+        self.calibration_targets_file=f'{ROOT_DIR}/' + self.props['calibration_targets_file']
         self.year_of_current_time_step = self.props["year_of_baseline"]
+        self.year_number = 0
         self.current_time_step = 0
+        self.start_year_tick = 0 #1st tick of the current year
+        self.end_year_tick = 12 #last tick of the current year
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
         self.tickInterval=self.props["tickInterval"] #time duration of a tick e.g. 4 weeks
         #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
@@ -60,94 +60,19 @@ class SmokingModel(Model):
         if self.behaviour_model=='COMB':
             print('This ABM is using the COM-B model.')
         elif self.behaviour_model=='STPM':
-            print('This ABM is using the STPM model.')
+            print('This ABM is using the STPM state transition probabilities.')
+            self.initiation_prob_file = f'{ROOT_DIR}/' + self.props["initiation_prob_file"]
+            self.initiation_prob = pd.read_csv(self.initiation_prob_file,header=0)
+            self.quit_prob_file = f'{ROOT_DIR}/' + self.props["quit_prob_file"]
+            self.quit_prob = pd.read_csv(self.quit_prob_file,header=0)   
         else:
             sys.exit('invalid behaviour model: '+self.behaviour_model) 
         self.tick_counter = 0
-        # hashmap to store net initiation probabilities of ages 16 to 24 by sex and by year and IMD quintile of each tick
-        self.net_initiation_probabilities={'male':[],
-                                           'female':[],
-                                           '2011-2013 and 1_least_deprived':[],
-                                           '2014-2016 and 1_least_deprived':[],
-                                           '2017-2019 and 1_least_deprived':[],
-                                           '2011-2013 and 2':[],
-                                           '2014-2016 and 2':[],
-                                           '2017-2019 and 2':[],
-                                           '2011-2013 and 3':[],
-                                           '2014-2016 and 3':[],
-                                           '2017-2019 and 3':[],
-                                           '2011-2013 and 4':[],
-                                           '2014-2016 and 4':[],
-                                           '2017-2019 and 4':[],
-                                           '2011-2013 and 5_most_deprived':[],
-                                           '2014-2016 and 5_most_deprived':[],
-                                           '2017-2019 and 5_most_deprived':[]
-                                           }
-        #hashmap to store the average net initiation probabilities of ages 16 to 24 by sex and by year and IMD quintile of each tick
-        self.average_net_initiation_probabilities={'male':[],
-                                           'female':[],
-                                           '2011-2013 and 1_least_deprived':[],
-                                           '2014-2016 and 1_least_deprived':[],
-                                           '2017-2019 and 1_least_deprived':[],
-                                           '2011-2013 and 2':[],
-                                           '2014-2016 and 2':[],
-                                           '2017-2019 and 2':[],
-                                           '2011-2013 and 3':[],
-                                           '2014-2016 and 3':[],
-                                           '2017-2019 and 3':[],
-                                           '2011-2013 and 4':[],
-                                           '2014-2016 and 4':[],
-                                           '2017-2019 and 4':[],
-                                           '2011-2013 and 5_most_deprived':[],
-                                           '2014-2016 and 5_most_deprived':[],
-                                           '2017-2019 and 5_most_deprived':[]
-                                           }
-        # hashmap to store quitting probabilities by sex and age and by year and IMD quintile of each tick
-        self.quitting_probabilities={      'male and 25-49':[],
-                                           'female and 25-49':[],
-                                           'male and 50-74':[],
-                                           'female and 50-74':[],                                           
-                                           '2011-2013 and 1_least_deprived':[],
-                                           '2014-2016 and 1_least_deprived':[],
-                                           '2017-2019 and 1_least_deprived':[],
-                                           '2011-2013 and 2':[],
-                                           '2014-2016 and 2':[],
-                                           '2017-2019 and 2':[],
-                                           '2011-2013 and 3':[],
-                                           '2014-2016 and 3':[],
-                                           '2017-2019 and 3':[],
-                                           '2011-2013 and 4':[],
-                                           '2014-2016 and 4':[],
-                                           '2017-2019 and 4':[],
-                                           '2011-2013 and 5_most_deprived':[],
-                                           '2014-2016 and 5_most_deprived':[],
-                                           '2017-2019 and 5_most_deprived':[]
-                                    }
-        # hashmap to store average quitting probabilities by sex and age and by year and IMD quintile of each tick  
-        self.average_quitting_probabilities={      'male and 25-49':[],
-                                           'female and 25-49':[],
-                                           'male and 50-74':[],
-                                           'female and 50-74':[],                                           
-                                           '2011-2013 and 1_least_deprived':[],
-                                           '2014-2016 and 1_least_deprived':[],
-                                           '2017-2019 and 1_least_deprived':[],
-                                           '2011-2013 and 2':[],
-                                           '2014-2016 and 2':[],
-                                           '2017-2019 and 2':[],
-                                           '2011-2013 and 3':[],
-                                           '2014-2016 and 3':[],
-                                           '2017-2019 and 3':[],
-                                           '2011-2013 and 4':[],
-                                           '2014-2016 and 4':[],
-                                           '2017-2019 and 4':[],
-                                           '2011-2013 and 5_most_deprived':[],
-                                           '2014-2016 and 5_most_deprived':[],
-                                           '2017-2019 and 5_most_deprived':[]
-                                    }
         if self.running_mode == 'debug':
             self.logfile = open('logfile.txt', 'w')
             self.logfile.write('debug mode\n')
-
+            self.logfile.write('behaviour model: '+self.behaviour_model+'\n')
+    
     @staticmethod
     def replace_missing_value_with_zero(df):
         """replace NaN (missing values) with 0 to ignore the attributes in the COMB formulae (since beta*0 is 0)"""
@@ -249,160 +174,175 @@ class SmokingModel(Model):
                                     sstr = (' does not match patterns of level2attributes of C, O and M in quit success'
                                             ' formula')
                                     sys.exit(level2attribute + sstr)
-
-    def store_prob_of_regular_smoking_into_hashmap(self, prob_behaviour : float, agent : MicroAgent):
-            if agent.p_gender.get_value()==1: #male
-               self.net_initiation_probabilities['male'].append(prob_behaviour)
-            elif agent.p_gender.get_value()==2: #female
-               self.net_initiation_probabilities['female'].append(prob_behaviour)
-            else:
-               sys.exit('invalid gender: '+str(agent.p_gender.get_value())+'. Expected 1 or 2.')
-            self.insert_prob_of_subgroups_by_years_and_imd_quintile_into_hashmap(prob_behaviour, agent, self.net_initiation_probabilities)
-
-    def store_prob_of_quit_attempt_or_quit_success_into_hashmap(self, prob_behaviour : float, agent : MicroAgent):                      
-            if agent.p_gender.get_value()==1: #male
-                if agent.p_age.get_value()>=25 and agent.p_age.get_value()<=49: 
-                  self.quitting_probabilities['male and 25-49'].append(prob_behaviour)
-                elif agent.p_age.get_value()>=50 and agent.p_age.get_value()<=74:
-                  self.quitting_probabilities['male and 50-74'].append(prob_behaviour)
-            elif agent.p_gender.get_value()==2: #female
-                if agent.p_age.get_value()>=25 and agent.p_age.get_value()<=49: 
-                  self.quitting_probabilities['female and 25-49'].append(prob_behaviour)
-                elif agent.p_age.get_value()>=50 and agent.p_age.get_value()<=74:
-                  self.quitting_probabilities['female and 50-74'].append(prob_behaviour)
-            else:
-                sys.exit('invalid gender: '+str(agent.p_gender.get_value())+'. Expected 1 or 2.')
-            self.store_prob_of_subgroups_by_years_and_imd_quintile_into_hashmap(prob_behaviour, agent, self.quitting_probabilities)
-
-    def store_prob_of_subgroups_by_years_and_imd_quintile_into_hashmap(self, prob_behaviour : float, agent : MicroAgent, hashmap):
-            if agent.p_imd_quintile.get_value()==1:
-                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
-                   hashmap['2011-2013 and 1_least_deprived'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
-                   hashmap['2014-2016 and 1_least_deprived'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
-                   hashmap['2017-2019 and 1_least_deprived'].append(prob_behaviour)
-            elif agent.p_imd_quintile.get_value()==2:
-                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
-                   hashmap['2011-2013 and 2'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
-                   hashmap['2014-2016 and 2'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
-                   hashmap['2017-2019 and 2'].append(prob_behaviour)
-            elif agent.p_imd_quintile.get_value()==3:
-                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
-                   hashmap['2011-2013 and 3'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
-                   hashmap['2014-2016 and 3'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
-                   hashmap['2017-2019 and 3'].append(prob_behaviour)
-            elif agent.p_imd_quintile.get_value()==4:
-                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
-                   hashmap['2011-2013 and 4'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
-                   hashmap['2014-2016 and 4'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
-                   hashmap['2017-2019 and 4'].append(prob_behaviour)
-            elif agent.p_imd_quintile.get_value()==5:
-                if self.year_of_current_time_step>=2011 and self.year_of_current_time_step<=2013:
-                   hashmap['2011-2013 and 5'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2014 and self.year_of_current_time_step<=2016:
-                   hashmap['2014-2016 and 5'].append(prob_behaviour)
-                elif self.year_of_current_time_step>=2017 and self.year_of_current_time_step<=2019:
-                   hashmap['2017-2019 and 5'].append(prob_behaviour)
-            else:
-                sys.exit('invalid IMD quintile: '+str(agent.p_imd_quintile.get_value())+'. Expected 1, 2, 3, 4 or 5.')
-
     def init_agents(self):
-
-        from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator
-        from smokingcessation.smoking_theory_mediator import Theories
-        from smokingcessation.comb_theory import RegSmokeTheory
-        from smokingcessation.comb_theory import QuitAttemptTheory
-        from smokingcessation.comb_theory import QuitSuccessTheory
-        from smokingcessation.stpm_theory import RelapseSTPMTheory
+        from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
+        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
+        from smokingcessation.stpm_theory import RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
 
         for i in range(self.size_of_population):
+            init_state = self.data.at[i, 'state']
+            if init_state == 'never_smoker':
+                states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.NEVERSMOKERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.NEVERSMOKERFEMALE 
+            elif init_state == 'ex-smoker':
+                states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.EXSMOKERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.EXSMOKERFEMALE 
+            elif init_state == 'smoker':
+                states = [AgentState.SMOKER, AgentState.SMOKER]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.SMOKERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.SMOKERFEMALE 
+            elif init_state == 'newquitter':
+                states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.NEWQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.NEWQUITTERFEMALE 
+            elif init_state == 'ongoingquitter1':
+                states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter2':
+                states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter3':
+                states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter4':
+                states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter5':
+                states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter6':
+                states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter7':
+                states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter8':
+                states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter9':
+                states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter10':
+                states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 'ongoingquitter11':
+                states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]
+                if self.data.at[i,'pGender']=='1':#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE
+                elif self.data.at[i,'pGender']=='2':#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE                        
+            else:
+                raise ValueError(f'{init_state} is not an acceptable agent state')
             if self.behaviour_model=='COMB':
                 rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
                 qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
                 qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
                 relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
-            else:
+                self.context.add(Person(
+                    self,
+                    i,
+                    agenttype,
+                    self.rank,
+                    age=self.data.at[i, 'pAge'],
+                    gender=self.data.at[i, 'pGender'],
+                    cohort=self.data.at[i, 'pCohort'],
+                    qimd=self.data.at[i, 'pIMDquintile'],
+                    educational_level=self.data.at[i, 'pEducationalLevel'],
+                    sep=self.data.at[i, 'pSEP'],
+                    region=self.data.at[i, 'pRegion'],
+                    social_housing=self.data.at[i, 'pSocialHousing'],
+                    mental_health_conds=self.data.at[i, 'pMentalHealthCondition'],
+                    alcohol=self.data.at[i, 'pAlcoholConsumption'],
+                    expenditure=self.data.at[i, 'pExpenditure'],
+                    nrt_use=self.data.at[i, 'pNRTUse'],
+                    varenicline_use=self.data.at[i, 'pVareniclineUse'],
+                    ecig_use=self.data.at[i, 'pECigUse'],
+                    cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
+                    years_since_quit=self.data.at[i, 'pYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+                    states=states,
+                    reg_smoke_theory=rsmoke_theory,
+                    quit_attempt_theory=qattempt_theory,
+                    quit_success_theory=qsuccess_theory
+                ))
+            else:#STPM model
                 rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
                 qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
-                relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)            
+                relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
+                self.context.add(Person(
+                    self,
+                    i,
+                    self.type,
+                    self.rank,
+                    age=self.data.at[i, 'pAge'],
+                    gender=self.data.at[i, 'pGender'],
+                    cohort=self.data.at[i, 'pCohort'],
+                    qimd=self.data.at[i, 'pIMDquintile'],
+                    educational_level=self.data.at[i, 'pEducationalLevel'],
+                    sep=self.data.at[i, 'pSEP'],
+                    region=self.data.at[i, 'pRegion'],
+                    social_housing=self.data.at[i, 'pSocialHousing'],
+                    mental_health_conds=self.data.at[i, 'pMentalHealthCondition'],
+                    alcohol=self.data.at[i, 'pAlcoholConsumption'],
+                    expenditure=self.data.at[i, 'pExpenditure'],
+                    nrt_use=self.data.at[i, 'pNRTUse'],
+                    varenicline_use=self.data.at[i, 'pVareniclineUse'],
+                    ecig_use=self.data.at[i, 'pECigUse'],
+                    cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
+                    years_since_quit=self.data.at[i, 'pYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+                    states=states,
+                    reg_smoke_theory=None,
+                    quit_attempt_theory=None,
+                    quit_success_theory=None
+                ))           
             mediator = SmokingTheoryMediator({rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory})
-
-            init_state = self.data.at[i, 'state']
-            if init_state == 'never_smoker':
-                states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
-            elif init_state == 'ex-smoker':
-                states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
-            elif init_state == 'smoker':
-                states = [AgentState.SMOKER, AgentState.SMOKER]
-            elif init_state == 'newquitter':
-                states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
-            elif init_state == 'ongoingquitter1':
-                states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
-            elif init_state == 'ongoingquitter2':
-                states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
-            elif init_state == 'ongoingquitter3':
-                states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
-            elif init_state == 'ongoingquitter4':
-                states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
-            elif init_state == 'ongoingquitter5':
-                states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
-            elif init_state == 'ongoingquitter6':
-                states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
-            elif init_state == 'ongoingquitter7':
-                states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
-            elif init_state == 'ongoingquitter8':
-                states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
-            elif init_state == 'ongoingquitter9':
-                states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
-            elif init_state == 'ongoingquitter10':
-                states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
-            elif init_state == 'ongoingquitter11':
-                states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]                        
-            else:
-                raise ValueError(f'{init_state} is not an acceptable agent state')
-
-            self.context.add(Person(
-                self,
-                i,
-                self.type,
-                self.rank,
-                age=self.data.at[i, 'pAge'],
-                gender=self.data.at[i, 'pGender'],
-                cohort=self.data.at[i, 'pCohort'],
-                qimd=self.data.at[i, 'pIMDquintile'],
-                educational_level=self.data.at[i, 'pEducationalLevel'],
-                sep=self.data.at[i, 'pSEP'],
-                region=self.data.at[i, 'pRegion'],
-                social_housing=self.data.at[i, 'pSocialHousing'],
-                mental_health_conds=self.data.at[i, 'pMentalHealthCondition'],
-                alcohol=self.data.at[i, 'pAlcoholConsumption'],
-                expenditure=self.data.at[i, 'pExpenditure'],
-                nrt_use=self.data.at[i, 'pNRTUse'],
-                varenicline_use=self.data.at[i, 'pVareniclineUse'],
-                ecig_use=self.data.at[i, 'pECigUse'],
-                cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
-                years_since_quit=self.data.at[i, 'pYearsSinceQuit'],
-                # number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
-                states=states,
-                # state at tick 1 is the same as state at tick 0.
-                reg_smoke_theory=rsmoke_theory,
-                quit_attempt_theory=qattempt_theory,
-                quit_success_theory=qsuccess_theory
-            ))
             agent = self.context.agent((i, self.type, self.rank))
-            # mediator.set_agent(agent)
             agent.set_mediator(mediator)
 
     def init_population(self):
+        self.tick_counter = 0
+        self.current_time_step = 0
         (r, _) = self.data.shape
         print('size of agent population:', r)
         self.size_of_population = r
@@ -413,7 +353,53 @@ class SmokingModel(Model):
         print('===statistics of smoking prevalence===')
         print('Time step 0: smoking prevalence=' + str(p) + '%.')
         self.smoking_prevalence_l.append(p)
+        #calculate the calibration targets of whole population counts and write into a csv file
+        self.calculate_calibration_targets_of_whole_population_counts
+        f=open('calibrationtargets_whole_population_counts.csv','w')
+        f.write('Tick,Year,Year_num,Total_agent_population_W,N_never_smokers_W,N_smokers_W,N_new_quitters_W,N_ongoing_quitters_W,N_ex_smokers_W,Total_agent_population_F,N_never_smokers_F,N_smokers_F,N_new_quitters_F,N_ongoing_quitters_F,N_ex_smokers_F,Total_agent_population_M,N_never_smokers_M,N_smokers_M,N_new_quitters_M,N_ongoing_quitters_M,N_ex_smokers_M\n')
+        f.write(self.calculate_counts_of_whole_population())
+        #create subgroups of Table 1 (initiation age 16-24 by sex)
+        for agent in self.context.agents(agent_type=SubGroup.NEVERSMOKERMALE):
+            if agelowerbound <= agent.p_age.get_value() and agent.p_age.get_value() <= ageupperbound:
+                N_neversmokers_startyear_ages_M.add(agent.get_id())
+        for agent in self.context.agents(agent_type=SubGroup.NEVERSMOKERFEMALE):
+            if agelowerbound <= agent.p_age.get_value() and agent.p_age.get_value() <= ageupperbound:
+                N_neversmokers_startyear_ages_F.add(agent.get_id())
+        
+        if self.running_mode=='debug':
+            self.logfile.write('tick: 0, year: ' + str(self.year_of_current_time_step) + '\n')
 
+    def calculate_counts_of_whole_population(self):
+        counts=self.context.size(agent_type_ids=[SubGroup.NEVERSMOKERFEMALE,
+                                               SubGroup.NEVERSMOKERMALE,
+                                               SubGroup.SMOKERFEMALE,
+                                               SubGroup.SMOKERMALE,
+                                               SubGroup.EXSMOKERFEMALE,
+                                               SubGroup.EXSMOKERMALE,
+                                               SubGroup.NEWQUITTERFEMALE,
+                                               SubGroup.NEWQUITTERMALE,
+                                               SubGroup.ONGOINGQUITTERFEMALE,
+                                               SubGroup.ONGOINGQUITTERMALE])
+        c=str(self.current_time_step)+','+str(self.year_of_current_time_step)+','+str(self.year_number)+','+str(self.context.size())+','+str(self.size_of_population)+\
+         ','+str(counts[SubGroup.NEVERSMOKERFEMALE]+counts[SubGroup.NEVERSMOKERMALE])+\
+         ','+str(counts[SubGroup.SMOKERFEMALE]+counts[SubGroup.SMOKERMALE])+\
+         ','+str(counts[SubGroup.NEWQUITTERFEMALE]+counts[SubGroup.NEWQUITTERMALE])+\
+         ','+str(counts[SubGroup.ONGOINGQUITTERFEMALE]+counts[SubGroup.ONGOINGQUITTERMALE])+\
+         ','+str(counts[SubGroup.EXSMOKERFEMALE]+counts[SubGroup.EXSMOKERMALE])+\
+         ','+str(counts[SubGroup.NEVERSMOKERFEMALE]+counts[SubGroup.SMOKERFEMALE]+counts[SubGroup.NEWQUITTERFEMALE]+counts[SubGroup.ONGOINGQUITTERFEMALE]+counts[SubGroup.EXSMOKERFEMALE])+\
+         ','+str(counts[SubGroup.NEVERSMOKERFEMALE])+\
+         ','+str(counts[SubGroup.SMOKERFEMALE])+\
+         ','+str(+counts[SubGroup.NEWQUITTERFEMALE])+\
+         ','+str(counts[SubGroup.ONGOINGQUITTERFEMALE])+\
+         ','+str(counts[SubGroup.EXSMOKERFEMALE])+\
+         ','+str(counts[SubGroup.NEVERSMOKERMALE]+counts[SubGroup.SMOKERMALE]+counts[SubGroup.NEWQUITTERMALE]+counts[SubGroup.ONGOINGQUITTERMALE]+counts[SubGroup.EXSMOKERMALE])+\
+         ','+str(counts[SubGroup.NEVERSMOKERMALE])+\
+         ','+str(counts[SubGroup.SMOKERMALE])+\
+         ','+str(+counts[SubGroup.NEWQUITTERMALE])+\
+         ','+str(counts[SubGroup.ONGOINGQUITTERMALE])+\
+         ','+str(counts[SubGroup.EXSMOKERMALE]+'\n')
+        return c
+    
     def do_situational_mechanisms(self):
         """macro entities change internal states of micro entities (agents)"""
         for agent in self.context.agents(agent_type=self.type):
@@ -441,47 +427,36 @@ class SmokingModel(Model):
 
     def do_per_tick(self):
         self.current_time_step += 1
+        self.tick_counter += 1
         p = self.smoking_prevalence()
         print('Time step ' + str(self.current_time_step) + ': smoking prevalence=' + str(p) + '%.')
         self.smoking_prevalence_l.append(p)
-        self.tick_counter += 1
-        if self.tick_counter == 12:#each tick is 1 month
+        if self.current_time_step == 13:
             self.year_of_current_time_step += 1
-        if self.running_mode == 'debug':
-            self.logfile.write('year: ' + str(self.year_of_current_time_step) + '\n')
-        #count sizes of subgroups: N_never_smokers_16-24M, N_ongoing_quitter_16-24M (N1,3+N1,4) etc.
+            self.year_number += 1
+        elif self.current_time_step > 13:
+            if self.tick_counter == 12: #each tick is 1 month
+               self.year_of_current_time_step += 1
+               self.year_number += 1
+        #calibration targets calculation: count startyear states of agents e.g. N_neversmokers_startyear_16-24M etc.
         self.do_situational_mechanisms()
         self.do_action_mechanisms()
         self.do_transformational_mechanisms()
         self.do_macro_to_macro_mechanisms()
-        if self.tick_counter == 13:
+        #calibration targets calculation: count endyear states of agents e.g. N_neversmokers_endyear_16-24M, N_smokers_endyear_16-24M, N_newquitter_endyear_16-24M etc.
+        if self.current_time_step == 13:
             self.tick_counter = 0
-        for agent in self.context.agents(agent_type=self.type):
-            self.logfile.writelines(agent.agent_info())
+        elif self.current_time_step > 13:
+            if self.tick_counter == 12:
+                self.tick_counter = 0
+        if self.running_mode == 'debug':
+            self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) + '\n')
+            #for agent in self.context.agents(agent_type=self.type):
+            #    self.logfile.writelines(agent.agent_info())
 
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
         self.runner.schedule_stop(self.stop_at)
-
-    def calculate_average_net_initiation_probabilities(self):
-        for (k,v) in self.net_initiation_probabilities.items():
-            if len(v)>0:
-                m=np.mean(v)
-            else:#empty list (subgroup does not exist for this tick)
-                m='subgroup not exist'
-            self.average_net_initiation_probabilities[k].append(m)
-            self.net_initiation_probabilities[k]=[]#empty the list to store the net initiation probabilities of next tick     
-        return self.average_net_initiation_probabilities
-        
-    def calculate_average_quitting_probabilities(self):
-        for (k,v) in self.quitting_probabilities.items():
-            if len(v)>0:
-                m=np.mean(v)
-            else:#empty list (subgroup does not exist for this tick)
-                m='subgroup not exist'            
-            self.average_quitting_probabilities[k].append(m)
-            self.quitting_probabilities[k]=[]#empty list to store the quitting probabilities of next tick
-        return self.average_quitting_probabilities
     
     def collect_data(self):
         f = open('prevalence_of_smoking.csv', 'w')
@@ -489,6 +464,7 @@ class SmokingModel(Model):
             f.write(str(prev) + ',')
         f.close()
         if self.running_mode == 'debug':  # write states of each agent over the entire simulation period into a csv file
+            '''
             self.logfile.write('###states of the agents over all time steps###\n')
             self.logfile.write('id')
             for i in range(self.current_time_step + 1):
@@ -499,6 +475,7 @@ class SmokingModel(Model):
                 for i in range(self.current_time_step + 1):
                     self.logfile.write(',' + agent.states[i].name.lower())
                 self.logfile.write('\n')
+            '''
             self.logfile.close()
 
     def init(self):

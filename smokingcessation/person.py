@@ -6,7 +6,7 @@ from config.definitions import AgentBehaviour
 from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
-
+#This class defines a COM-B person
 
 class Person(MicroAgent):
     def __init__(self,
@@ -37,66 +37,76 @@ class Person(MicroAgent):
                  ):
         super().__init__(id=id, type=type, rank=rank)
         self.smoking_model = smoking_model
-        self.p_age = PersonalAttribute(name='pAge')
-        self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
-        self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
-        self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
+        self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
         self.p_gender = PersonalAttribute(name='pGender')
-        self.p_gender.add_level2_attribute(reg_smoke_theory.level2_attributes['mGender'])
         self.p_gender.set_value(gender)
         self.p_imd_quintile = PersonalAttribute(name='pIMDQuintile')
         self.p_imd_quintile.set_value(qimd)
         self.p_cohort = PersonalAttribute(name='pCohort')
         self.p_cohort.set_value(cohort)
         self.p_educational_level = PersonalAttribute(name='pEducationalLevel')
-        self.p_educational_level.add_level2_attribute(reg_smoke_theory.level2_attributes['oEducationalLevel'])
-        self.p_educational_level.add_level2_attribute(quit_success_theory.level2_attributes['oEducationalLevel'])
         self.p_educational_level.set_value(educational_level)
         self.p_sep = PersonalAttribute(name='pSEP')
-        self.p_sep.add_level2_attribute(reg_smoke_theory.level2_attributes['oSEP'])
-        self.p_sep.add_level2_attribute(quit_success_theory.level2_attributes['oSEP'])
         self.p_sep.set_value(sep)
         self.p_region = PersonalAttribute(name='pRegion')
         self.p_region.set_value(region)
         self.p_social_housing = PersonalAttribute(name='pSocialHousing')
-        self.p_social_housing.add_level2_attribute(reg_smoke_theory.level2_attributes['oSocialHousing'])
-        self.p_social_housing.add_level2_attribute(quit_attempt_theory.level2_attributes['oSocialHousing'])
-        self.p_social_housing.add_level2_attribute(quit_success_theory.level2_attributes['oSocialHousing'])
         self.p_social_housing.set_value(social_housing)
         self.p_mental_health_conditions = PersonalAttribute(name='pMentalHealthConditions')
-        self.p_mental_health_conditions.add_level2_attribute(reg_smoke_theory.level2_attributes['cMentalHealthConditions'])
-        self.p_mental_health_conditions.add_level2_attribute(quit_success_theory.level2_attributes['cMentalHealthConditions'])
         self.p_mental_health_conditions.set_value(mental_health_conds)
         self.p_alcohol_consumption = PersonalAttribute(name='pAlcoholConsumption')
-        self.p_alcohol_consumption.add_level2_attribute(reg_smoke_theory.level2_attributes['cAlcoholConsumption'])
-        self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['cAlcoholConsumption'])
-        self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['oAlcoholConsumption'])
         self.p_alcohol_consumption.set_value(alcohol)
         self.p_expenditure = PersonalAttribute(name='pExpenditure')
-        self.p_expenditure.add_level2_attribute(quit_attempt_theory.level2_attributes['mSpendingOnCig'])
         self.p_expenditure.set_value(expenditure)
         self.p_nrt_use = PersonalAttribute(name='pNRTuse')
-        self.p_nrt_use.add_level2_attribute(quit_success_theory.level2_attributes['cPrescriptionNRT'])
-        self.p_nrt_use.add_level2_attribute(quit_attempt_theory.level2_attributes['mUseOfNRT'])
         self.p_nrt_use.set_value(nrt_use)
         self.p_varenicline_use = PersonalAttribute(name='pVareniclineUse')
-        self.p_varenicline_use.add_level2_attribute(quit_success_theory.level2_attributes['cVareniclineUse'])
         self.p_varenicline_use.set_value(varenicline_use)
         self.p_cig_consumption_prequit = PersonalAttribute(name='pCigConsumptionPrequit')
-        self.p_cig_consumption_prequit.add_level2_attribute(quit_success_theory.level2_attributes['cCigConsumptionPrequit'])
         self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
-        self.p_ecig_use.add_level2_attribute(reg_smoke_theory.level2_attributes['cEcigaretteUse'])
-        self.p_ecig_use.add_level2_attribute(quit_success_theory.level2_attributes['cEcigaretteUse'])
         self.p_ecig_use.set_value(ecig_use)
-
         # pNumberOfRecentQuitAttempts is an imputed variable
         # (STPM does not have information on number of recent quit attempts)
         self.p_number_of_recent_quit_attempts = PersonalAttribute(name='pNumberOfRecentQuitAttempts')
-        self.p_number_of_recent_quit_attempts.add_level2_attribute(
-            quit_attempt_theory.level2_attributes['mNumberOfRecentQuitAttempts'])
-
+        if reg_smoke_theory!=None and quit_attempt_theory!=None and quit_success_theory!=None:
+            self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
+            self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
+            self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
+            self.p_age.set_value(age)
+            self.p_gender.add_level2_attribute(reg_smoke_theory.level2_attributes['mGender'])
+            self.p_gender.set_value(gender)
+            self.p_educational_level.add_level2_attribute(reg_smoke_theory.level2_attributes['oEducationalLevel'])
+            self.p_educational_level.add_level2_attribute(quit_success_theory.level2_attributes['oEducationalLevel'])
+            self.p_educational_level.set_value(educational_level)
+            self.p_sep.add_level2_attribute(reg_smoke_theory.level2_attributes['oSEP'])
+            self.p_sep.add_level2_attribute(quit_success_theory.level2_attributes['oSEP'])
+            self.p_sep.set_value(sep)
+            self.p_social_housing.add_level2_attribute(reg_smoke_theory.level2_attributes['oSocialHousing'])
+            self.p_social_housing.add_level2_attribute(quit_attempt_theory.level2_attributes['oSocialHousing'])
+            self.p_social_housing.add_level2_attribute(quit_success_theory.level2_attributes['oSocialHousing'])
+            self.p_social_housing.set_value(social_housing)
+            self.p_mental_health_conditions.add_level2_attribute(reg_smoke_theory.level2_attributes['cMentalHealthConditions'])
+            self.p_mental_health_conditions.add_level2_attribute(quit_success_theory.level2_attributes['cMentalHealthConditions'])
+            self.p_mental_health_conditions.set_value(mental_health_conds)
+            self.p_alcohol_consumption.add_level2_attribute(reg_smoke_theory.level2_attributes['cAlcoholConsumption'])
+            self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['cAlcoholConsumption'])
+            self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['oAlcoholConsumption'])
+            self.p_alcohol_consumption.set_value(alcohol)
+            self.p_expenditure.add_level2_attribute(quit_attempt_theory.level2_attributes['mSpendingOnCig'])
+            self.p_expenditure.set_value(expenditure)
+            self.p_nrt_use.add_level2_attribute(quit_success_theory.level2_attributes['cPrescriptionNRT'])
+            self.p_nrt_use.add_level2_attribute(quit_attempt_theory.level2_attributes['mUseOfNRT'])
+            self.p_nrt_use.set_value(nrt_use)
+            self.p_varenicline_use.add_level2_attribute(quit_success_theory.level2_attributes['cVareniclineUse'])
+            self.p_varenicline_use.set_value(varenicline_use)
+            self.p_cig_consumption_prequit.add_level2_attribute(quit_success_theory.level2_attributes['cCigConsumptionPrequit'])
+            self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
+            self.p_ecig_use.add_level2_attribute(reg_smoke_theory.level2_attributes['cEcigaretteUse'])
+            self.p_ecig_use.add_level2_attribute(quit_success_theory.level2_attributes['cEcigaretteUse'])
+            self.p_ecig_use.set_value(ecig_use)
+            self.p_number_of_recent_quit_attempts.add_level2_attribute(quit_attempt_theory.level2_attributes['mNumberOfRecentQuitAttempts'])
         # list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with
         # t=0 representing the beginning of the simulation.
         self.states = states
@@ -106,7 +116,6 @@ class Person(MicroAgent):
         self.init_behaviour_buffer_and_k_and_p_number_of_recent_quit_attempts()  # initialize:
 
         # behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months
-        # (13 ticks with each tick represents 4 weeks)
         # k: number of consecutive quit successes following the last quit attempt in the behaviourBuffer to end of the
         # behaviourBuffer pNumberOfRecentQuitAttempts
 
@@ -146,7 +155,7 @@ class Person(MicroAgent):
         behaviours = [e for e in AgentBehaviour]
         self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
         self.k = 0
-        if self.states[0] == AgentState.QUITTER:
+        if self.states[0] == AgentState.NEWQUITTER:
             i = random.randint(0, 12)
             self.behaviour_buffer[i] = AgentBehaviour.QUITATTEMPT
             for j in range(i + 1, 12):
@@ -208,15 +217,17 @@ class Person(MicroAgent):
         prob_behaviour = current_theory.prob_behaviour
         threshold = current_theory.threshold
         current_time_step = self.smoking_model.current_time_step
+        current_year = self.smoking_model.year_of_current_time_step
 
         res = ['agent id: ' + str(self.get_id()) + '\n',
                'state: ' + self.get_current_state().name.lower() + '\n',
                'age: ' + str(self.p_age.get_value()) + '\n',
                'behaviour: ' + self.behaviour_buffer[len(self.behaviour_buffer) - 1].name.lower() + '\n',
-               'buffer: ' + str([e.name.lower() for e in self.behaviour_buffer]) + '\n',
+               'behaviour buffer: ' + str([e.name.lower() for e in self.behaviour_buffer]) + '\n',
                'p_number_of_recent_quit_attempts: ' + str(self.p_number_of_recent_quit_attempts.get_value()) + '\n',
                'p_years_since_quit: ' + str(self.p_years_since_quit.get_value()) + '\n',
                'probability of behaviour: ' + str(prob_behaviour) + '\n',
                'threshold: ' + str(threshold) + '\n',
-               'time step: ' + str(current_time_step) + '\n\n']
+               'time step: ' + str(current_time_step) + '\n',
+               'year: ' + str(current_year)+'\n']
         return res
