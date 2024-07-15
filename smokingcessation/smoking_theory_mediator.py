@@ -5,7 +5,7 @@ from config.definitions import AgentState
 from mbssm.theory_mediator import TheoryMediator
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
-
+from smokingcessation.person import Person
 
 class SmokingTheoryMediator(TheoryMediator):
 
@@ -54,7 +54,7 @@ class SmokingTheoryMediator(TheoryMediator):
         else:
             raise ValueError(f'{cstate} is not an acceptable agent state')
 
-    def mediate_situation(self, agent: MicroAgent):
+    def mediate_situation(self, agent: Person):
         cstate = agent.get_current_state()
         if cstate == AgentState.NEVERSMOKE:
             self.theory_map[Theories.REGSMOKE].do_situation(agent)
@@ -62,34 +62,17 @@ class SmokingTheoryMediator(TheoryMediator):
             self.theory_map[Theories.QUITATTEMPT].do_situation(agent)        
         elif cstate == AgentState.NEWQUITTER:
             self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER1:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER2:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER3:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER4:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER5:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER6:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER7:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER8:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER9:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER10:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.ONGOINGQUITTER11:
+        elif cstate in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
+                        AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
+                        AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
+                        AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
             self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
         elif cstate == AgentState.EXSMOKER:
             self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
         else:
             raise ValueError(f'{cstate} is not an acceptable agent state')
 
-    def mediate_action(self, agent: MicroAgent):
+    def mediate_action(self, agent: Person):
         """
         A smoker transitions to an ex-smoker after maintaining quit (abstinence) for 12 months.
         The sequence of the agent's behaviours when transitioning from smoker to ex-smoker:

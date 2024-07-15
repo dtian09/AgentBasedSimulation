@@ -6,8 +6,11 @@ from repast4py.context import SharedContext
 from repast4py.schedule import SharedScheduleRunner, init_schedule_runner
 from config.definitions import ROOT_DIR
 from config.definitions import AgentState
-from config.definitions import agelowerbound, ageupperbound, N_neversmokers_startyear_ages_M, N_neversmokers_startyear_ages_F
-from mbssm.model import Model												
+from config.definitions import SubGroup
+from mbssm.model import Model
+from mbssm.micro_agent import MicroAgent
+from config.definitions import *
+#from config.definitions import initialize_global_variables_of_subgroups
 
 class SmokingModel(Model):
 
@@ -15,7 +18,9 @@ class SmokingModel(Model):
         super().__init__(comm, params)
         self.comm = comm
         self.context: SharedContext = SharedContext(comm)  # create an agent population
+        self.context2 = SharedContext(comm) #create the same agent population to compute whole population counts calibration targets 
         self.size_of_population = None
+        self.type = 0
         self.rank: int = self.comm.Get_rank()
         self.props = params
         self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2013 data)
@@ -26,8 +31,8 @@ class SmokingModel(Model):
         self.year_of_current_time_step = self.props["year_of_baseline"]
         self.year_number = 0
         self.current_time_step = 0
-        self.start_year_tick = 0 #1st tick of the current year
-        self.end_year_tick = 12 #last tick of the current year
+        self.start_year_tick = 1 #the tick of the 1st month of the current year
+        self.end_year_tick = 12 #last tick of the 12th month of the current year
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
         self.tickInterval=self.props["tickInterval"] #time duration of a tick e.g. 4 weeks
         #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
@@ -282,7 +287,7 @@ class SmokingModel(Model):
                 self.context.add(Person(
                     self,
                     i,
-                    agenttype,
+                    self.type,
                     self.rank,
                     age=self.data.at[i, 'pAge'],
                     gender=self.data.at[i, 'pGender'],
@@ -339,6 +344,7 @@ class SmokingModel(Model):
             mediator = SmokingTheoryMediator({rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory})
             agent = self.context.agent((i, self.type, self.rank))
             agent.set_mediator(mediator)
+            self.context2.add(MicroAgent(i,agenttype,self.rank))
 
     def init_population(self):
         self.tick_counter = 0
@@ -354,23 +360,23 @@ class SmokingModel(Model):
         print('Time step 0: smoking prevalence=' + str(p) + '%.')
         self.smoking_prevalence_l.append(p)
         #calculate the calibration targets of whole population counts and write into a csv file
-        self.calculate_calibration_targets_of_whole_population_counts
-        f=open('calibrationtargets_whole_population_counts.csv','w')
-        f.write('Tick,Year,Year_num,Total_agent_population_W,N_never_smokers_W,N_smokers_W,N_new_quitters_W,N_ongoing_quitters_W,N_ex_smokers_W,Total_agent_population_F,N_never_smokers_F,N_smokers_F,N_new_quitters_F,N_ongoing_quitters_F,N_ex_smokers_F,Total_agent_population_M,N_never_smokers_M,N_smokers_M,N_new_quitters_M,N_ongoing_quitters_M,N_ex_smokers_M\n')
-        f.write(self.calculate_counts_of_whole_population())
-        #create subgroups of Table 1 (initiation age 16-24 by sex)
-        for agent in self.context.agents(agent_type=SubGroup.NEVERSMOKERMALE):
-            if agelowerbound <= agent.p_age.get_value() and agent.p_age.get_value() <= ageupperbound:
-                N_neversmokers_startyear_ages_M.add(agent.get_id())
-        for agent in self.context.agents(agent_type=SubGroup.NEVERSMOKERFEMALE):
-            if agelowerbound <= agent.p_age.get_value() and agent.p_age.get_value() <= ageupperbound:
-                N_neversmokers_startyear_ages_F.add(agent.get_id())
-        
+        self.file_whole_population_counts=open('whole_population_counts.csv','w')
+        self.file_whole_population_counts.write('Tick,Year,Year_num,Total_agent_population_W,N_never_smokers_W,N_smokers_W,N_new_quitters_W,N_ongoing_quitters_W,N_ex_smokers_W,Total_agent_population_F,N_never_smokers_F,N_smokers_F,N_new_quitters_F,N_ongoing_quitters_F,N_ex_smokers_F,Total_agent_population_M,N_never_smokers_M,N_smokers_M,N_new_quitters_M,N_ongoing_quitters_M,N_ex_smokers_M\n')
+        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())
+        #create csv files for writing counts of subgroups of initiation and quitting
+        self.file_initiation_ages_sex=open('subgroups_of_initiation_by_ages_sex.csv','w')
+        self.file_initiation_ages_sex.write('Tick,Year,Year_num,N_neversmokers_startyear_16-24M,N_neversmokers_endyear_16-24M,N_smokers_endyear_16-24M,N_newquitter_endyear_16-24M,N_ongoingquitter_endyear_16-24M,N_exsmoker_endyear_16-24M,N_dead_endyear_16-24M,N_neversmokers_startyear_ages_F,N_neversmokers_endyear_16-24F,N_smokers_endyear_16-24F,N_newquitter_endyear_16-24F,N_ongoingquitter_endyear_16-24F,N_exsmoker_endyear_16-24F,N_dead_endyear_16-24F\n')
+        self.file_initiation_ages_sex_imd=open('subgroups_of_initiation_by_ages_sex_imd.csv','w')
+        self.file_initiation_ages_sex_imd.write('Tick,Year ,Year_num,N_neversmokers_startyear_16-24M_IMD1,N_neversmokers_endyear_16-24M_IMD1,N_smokers_endyear_16-24M_IMD1,N_newquitter_endyear_16-24M_IMD1,N_ongoingquitter_endyear_16-24M_IMD1,N_exsmoker_endyear_16-24M_IMD1,N_dead_endyear_16-24M_IMD1,N_neversmokers_startyear_16-24F_IMD1,N_neversmokers_endyear_16-24F_IMD1,N_smokers_endyear_16-24F_IMD1,N_newquitter_endyear_16-24F_IMD1,N_ongoingquitter_endyear_16-24F_IMD1,N_exsmoker_endyear_16-24F_IMD1,N_dead_endyear_16-24F_IMD1,N_neversmokers_startyear_16-24M_IMD2,N_neversmokers_endyear_16-24M_IMD2,N_smokers_endyear_16-24M_IMD2,N_newquitter_endyear_16-24M_IMD2,N_ongoingquitter_endyear_16-24M_IMD2,N_exsmoker_endyear_16-24M_IMD2,N_dead_endyear_16-24M_IMD2,N_neversmokers_startyear_16-24F_IMD2,N_neversmokers_endyear_16-24F_IMD2,N_smokers_endyear_16-24F_IMD2,N_newquitter_endyear_16-24F_IMD2,N_ongoingquitter_endyear_16-24F_IMD2,N_exsmoker_endyear_16-24F_IMD2,N_dead_endyear_16-24F_IMD2,N_neversmokers_startyear_16-24M_IMD3,N_neversmokers_endyear_16-24M_IMD3,N_smokers_endyear_16-24M_IMD3,N_newquitter_endyear_16-24M_IMD3,N_ongoingquitter_endyear_16-24M_IMD3,N_exsmoker_endyear_16-24M_IMD3,N_dead_endyear_16-24M_IMD3,N_neversmokers_startyear_16-24F_IMD3,N_neversmokers_endyear_16-24F_IMD3,N_smokers_endyear_16-24F_IMD3,N_newquitter_endyear_16-24F_IMD3,N_ongoingquitter_endyear_16-24F_IMD3,N_exsmoker_endyear_16-24F_IMD3,N_dead_endyear_16-24F_IMD3,N_neversmokers_startyear_16-24M_IMD4)+','N_neversmokers_endyear_16-24M_IMD4,N_smokers_endyear_16-24M_IMD4,N_newquitter_endyear_16-24M_IMD4,N_ongoingquitter_endyear_16-24M_IMD4,N_exsmoker_endyear_16-24M_IMD4,N_dead_endyear_16-24M_IMD4,N_neversmokers_startyear_16-24F_IMD4,N_neversmokers_endyear_16-24F_IMD4,N_smokers_endyear_16-24F_IMD4,N_newquitter_endyear_16-24F_IMD4,N_ongoingquitter_endyear_16-24F_IMD4,N_exsmoker_endyear_16-24F_IMD4,N_neversmokers_startyear_16-24M_IMD5,N_neversmokers_endyear_16-24M_IMD5,N_smokers_endyear_16-24M_IMD5,N_newquitter_endyear_16-24M_IMD5,N_ongoingquitter_endyear_16-24M_IMD5,N_exsmoker_endyear_16-24M_IMD5,N_dead_endyear_16-24M_IMD5,N_neversmokers_startyear_16-24F_IMD5,N_neversmokers_endyear_16-24F_IMD5,N_smokers_endyear_16-24F_IMD5,N_newquitter_endyear_16-24F_IMD5,N_ongoingquitter_endyear_16-24F_IMD5,N_exsmoker_endyear_16-24F_IMD5,N_dead_endyear_16-24F_IMD5\n')
+        self.file_quit_ages_sex=open('subgroups_of_quit_by_ages_sex.csv','w')
+        self.file_quit_ages_sex.write('Tick,Year ,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-49M,N_smokers_endyear_25-49M,N_newquitters_endyear_25-49M,N_ongoingquitters_endyear_25-49M,N_dead_endyear_25-49M,N_smokers_ongoingquitters_newquitters_startyear_25-49F,N_smokers_endyear_25-49F,N_newquitters_endyear_25-49F,N_ongoingquitters_endyear_25-49F,N_dead_endyear_25-49F,N_smokers_ongoingquitters_newquitters_startyear_50-74M,N_smokers_endyear_50-74M,N_newquitters_endyear_50-74M,N_ongoingquitters_endyear_50-74M,N_dead_endyear_50-74M,N_smokers_ongoingquitters_newquitters_startyear_50-74F,N_smokers_endyear_50-74F,N_newquitters_endyear_50-74F,N_ongoingquitters_endyear_50-74F,N_dead_endyear_50-74F\n')
+        self.file_quit_ages_imd=open('subgroups_of_quit_ages_imd.csv','w')
+        self.file_quit_ages_imd.write('Tick,Year ,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD1,N_smokers_endyear_25-74_IMD1,N_newquitters_endyear_25-74_IMD1,N_ongoingquitters_endyear_25-74_IMD1,N_dead_endyear_25-74_IMD1,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD2)+','+str(N_smokers_endyear_25-74_IMD2)+','+str(N_newquitters_endyear_25-74_IMD2,N_ongoingquitters_endyear_25-74_IMD2,N_dead_endyear_25-74_IMD2,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD3,N_smokers_endyear_25-74_IMD3,N_newquitters_endyear_25-74_IMD3,N_ongoingquitters_endyear_25-74_IMD3,N_dead_endyear_25-74_IMD3,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD4,N_smokers_endyear_25-74_IMD4,N_newquitters_endyear_25-74_IMD4,N_ongoingquitters_endyear_25-74_IMD4,N_dead_endyear_25-74_IMD4,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD5,N_smokers_endyear_25-74_IMD5,N_newquitters_endyear_25-74_IMD5,N_ongoingquitters_endyear_25-74_IMD5,N_dead_endyear_25-74_IMD5\n')       
         if self.running_mode=='debug':
             self.logfile.write('tick: 0, year: ' + str(self.year_of_current_time_step) + '\n')
 
     def calculate_counts_of_whole_population(self):
-        counts=self.context.size(agent_type_ids=[SubGroup.NEVERSMOKERFEMALE,
+        counts=self.context2.size(agent_type_ids=[SubGroup.NEVERSMOKERFEMALE,
                                                SubGroup.NEVERSMOKERMALE,
                                                SubGroup.SMOKERFEMALE,
                                                SubGroup.SMOKERMALE,
@@ -380,7 +386,7 @@ class SmokingModel(Model):
                                                SubGroup.NEWQUITTERMALE,
                                                SubGroup.ONGOINGQUITTERFEMALE,
                                                SubGroup.ONGOINGQUITTERMALE])
-        c=str(self.current_time_step)+','+str(self.year_of_current_time_step)+','+str(self.year_number)+','+str(self.context.size())+','+str(self.size_of_population)+\
+        c=str(self.current_time_step)+','+str(self.year_of_current_time_step)+','+str(self.year_number)+','+str(self.size_of_population)+\
          ','+str(counts[SubGroup.NEVERSMOKERFEMALE]+counts[SubGroup.NEVERSMOKERMALE])+\
          ','+str(counts[SubGroup.SMOKERFEMALE]+counts[SubGroup.SMOKERMALE])+\
          ','+str(counts[SubGroup.NEWQUITTERFEMALE]+counts[SubGroup.NEWQUITTERMALE])+\
@@ -397,12 +403,93 @@ class SmokingModel(Model):
          ','+str(counts[SubGroup.SMOKERMALE])+\
          ','+str(+counts[SubGroup.NEWQUITTERMALE])+\
          ','+str(counts[SubGroup.ONGOINGQUITTERMALE])+\
-         ','+str(counts[SubGroup.EXSMOKERMALE]+'\n')
+         ','+str(counts[SubGroup.EXSMOKERMALE])+'\n'
         return c
     
-    def do_situational_mechanisms(self):
-        """macro entities change internal states of micro entities (agents)"""
+    def get_subgroups_of_ages_sex_for_initiation(self):
+        if self.start_year_tick==1:
+            c='0,'
+        else:
+            c=str(self.start_year_tick)+','
+        c+=str(self.year_of_current_time_step)+','+str(self.year_number)+','\
+          +str(len(N_neversmokers_startyear_ages_M))+','+str(N_neversmokers_endyear_ages_M)+','\
+          +str(N_smokers_endyear_ages_M)+','+str(N_newquitter_endyear_ages_M)+','+str(N_ongoingquitter_endyear_ages_M)+','\
+          +str(N_exsmoker_endyear_ages_M)+','+str(N_dead_endyear_ages_M)+','+str(len(N_neversmokers_startyear_ages_F))+','\
+          +str(N_neversmokers_endyear_ages_F)+','+str(N_smokers_endyear_ages_F)+','+str(N_newquitter_endyear_ages_F)+','\
+          +str(N_ongoingquitter_endyear_ages_F)+','+str(N_exsmoker_endyear_ages_F)+','+str(N_dead_endyear_ages_F)+'\n'
+        return c
+    
+    def get_subgroups_of_ages_sex_imd_for_initiation(self):
+        if self.start_year_tick==1:
+            c='0,'
+        else:
+            c=str(self.start_year_tick)+','
+        c+=str(self.year_of_current_time_step)+','+str(self.year_number)+','\
+          +str(len(N_neversmokers_startyear_ages_M_IMD1))+str(N_neversmokers_endyear_ages_M_IMD1)+str(N_smokers_endyear_ages_M_IMD1)+','\
+          +str(N_newquitter_endyear_ages_M_IMD1)+','+str(N_ongoingquitter_endyear_ages_M_IMD1)+','+str(N_exsmoker_endyear_ages_M_IMD1)+','+str(N_dead_endyear_ages_M_IMD1)+','+\
+          +str(len(N_neversmokers_startyear_ages_F_IMD1))+','+str(N_neversmokers_endyear_ages_F_IMD1)+','+str(N_smokers_endyear_ages_F_IMD1)+','\
+          +str(N_newquitter_endyear_ages_F_IMD1)+','+str(N_ongoingquitter_endyear_ages_F_IMD1)+','+str(N_exsmoker_endyear_ages_F_IMD1)+','\
+          +str(N_dead_endyear_ages_F_IMD1)+','+str(len(N_neversmokers_startyear_ages_M_IMD2))+','+str(N_neversmokers_endyear_ages_M_IMD2)+','\
+          +str(N_smokers_endyear_ages_M_IMD2)+','+str(N_newquitter_endyear_ages_M_IMD2)+','+str(N_ongoingquitter_endyear_ages_M_IMD2)+','\
+          +str(N_exsmoker_endyear_ages_M_IMD2)+','+str(N_dead_endyear_ages_M_IMD2)+','+str(len(N_neversmokers_startyear_ages_F_IMD2))+','\
+          +str(N_neversmokers_endyear_ages_F_IMD2)+','+str(N_smokers_endyear_ages_F_IMD2)+','+str(N_newquitter_endyear_ages_F_IMD2)+','\
+          +str(N_ongoingquitter_endyear_ages_F_IMD2)+','+str(N_exsmoker_endyear_ages_F_IMD2)+','+str(N_dead_endyear_ages_F_IMD2)+','\
+          +str(len(N_neversmokers_startyear_ages_M_IMD3))+','+str(N_neversmokers_endyear_ages_M_IMD3)+','+str(N_smokers_endyear_ages_M_IMD3)+','\
+          +str(N_newquitter_endyear_ages_M_IMD3)+','+str(N_ongoingquitter_endyear_ages_M_IMD3)+','+str(N_exsmoker_endyear_ages_M_IMD3)+','\
+          +str(N_dead_endyear_ages_M_IMD3)+','+str(len(N_neversmokers_startyear_ages_F_IMD3))+','+str(N_neversmokers_endyear_ages_F_IMD3)+','\
+          +str(N_smokers_endyear_ages_F_IMD3)+','+str(N_newquitter_endyear_ages_F_IMD3)+','+str(N_ongoingquitter_endyear_ages_F_IMD3)+','\
+          +str(N_exsmoker_endyear_ages_F_IMD3)+','+str(N_dead_endyear_ages_F_IMD3)+','+str(len(N_neversmokers_startyear_ages_M_IMD4))+','\
+          +str(N_neversmokers_endyear_ages_M_IMD4)+','+str(N_smokers_endyear_ages_M_IMD4)+','+str(N_newquitter_endyear_ages_M_IMD4)+','\
+          +str(N_ongoingquitter_endyear_ages_M_IMD4)+','+str(N_exsmoker_endyear_ages_M_IMD4)+','+str(N_dead_endyear_ages_M_IMD4)+','\
+          +str(len(N_neversmokers_startyear_ages_F_IMD4))+','+str(N_neversmokers_endyear_ages_F_IMD4)+','+str(N_smokers_endyear_ages_F_IMD4)+','\
+          +str(N_newquitter_endyear_ages_F_IMD4)+','+str(N_ongoingquitter_endyear_ages_F_IMD4)+','+str(N_exsmoker_endyear_ages_F_IMD4)+','\
+          +str(len(N_neversmokers_startyear_ages_M_IMD5))+','+str(N_neversmokers_endyear_ages_M_IMD5)+','+str(N_smokers_endyear_ages_M_IMD5)+','\
+          +str(N_newquitter_endyear_ages_M_IMD5)+','+str(N_ongoingquitter_endyear_ages_M_IMD5)+','+str(N_exsmoker_endyear_ages_M_IMD5)+','\
+          +str(N_dead_endyear_ages_M_IMD5)+','+str(len(N_neversmokers_startyear_ages_F_IMD5))+','+str(N_neversmokers_endyear_ages_F_IMD5)+','\
+          +str(N_smokers_endyear_ages_F_IMD5)+','+str(N_newquitter_endyear_ages_F_IMD5)+','+str(N_ongoingquitter_endyear_ages_F_IMD5)+','\
+          +str(N_exsmoker_endyear_ages_F_IMD5)+','+str(N_dead_endyear_ages_F_IMD5)+'\n'
+        return c
+    
+    def get_subgroups_of_ages_sex_for_quit(self):
+        if self.start_year_tick==1:
+            c='0,'
+        else:
+            c=str(self.start_year_tick)+','
+        c+=str(self.year_of_current_time_step)+','+str(self.year_number)+','\
+           +str(len(N_smokers_ongoingquitters_newquitters_startyear_ages1_M))+','+str(N_smokers_endyear_ages1_M)+','\
+           +str(N_newquitters_endyear_ages1_M)+','+str(N_ongoingquitters_endyear_ages1_M)+','\
+           +str(N_dead_endyear_ages1_M)+','+str(len(N_smokers_ongoingquitters_newquitters_startyear_ages1_F))+','\
+           +str(N_smokers_endyear_ages1_F)+','+str(N_newquitters_endyear_ages1_F)+','+str(N_ongoingquitters_endyear_ages1_F)+','\
+           +str(N_dead_endyear_ages1_F)+','+str(len(N_smokers_ongoingquitters_newquitters_startyear_ages2_M))+','+str(N_smokers_endyear_ages2_M)+','\
+           +str(N_newquitters_endyear_ages2_M)+','+str(N_ongoingquitters_endyear_ages2_M)+','+str(N_dead_endyear_ages2_M)+','\
+           +str(len(N_smokers_ongoingquitters_newquitters_startyear_ages2_F))+','+str(N_smokers_endyear_ages2_F)+','+str(N_newquitters_endyear_ages2_F)+','\
+           +str(N_ongoingquitters_endyear_ages2_F)+','+str(N_dead_endyear_ages2_F)+'\n'
+        return c
+    
+    def get_subgroups_of_ages_imd_for_quit(self):
+        if self.start_year_tick==1:
+            c='0,'
+        else:
+            c=str(self.start_year_tick)+','
+        c+=str(len(N_smokers_ongoingquitters_newquitters_startyear_ages_IMD1))+','+str(N_smokers_endyear_ages_IMD1)+','\
+        +str(N_newquitters_endyear_ages_IMD1)+','+str(N_ongoingquitters_endyear_ages_IMD1)+','+str(N_dead_endyear_ages_IMD1)+','\
+        +str(len(N_smokers_ongoingquitters_newquitters_startyear_ages_IMD2))+','+str(N_smokers_endyear_ages_IMD2)+','\
+        +str(N_newquitters_endyear_ages_IMD2)+','+str(N_ongoingquitters_endyear_ages_IMD2)+','+str(N_dead_endyear_ages_IMD2)+','\
+        +str(len(N_smokers_ongoingquitters_newquitters_startyear_ages_IMD3))+','+str(N_smokers_endyear_ages_IMD3)+','\
+        +str(N_newquitters_endyear_ages_IMD3)+','+str(N_ongoingquitters_endyear_ages_IMD3)+','+str(N_dead_endyear_ages_IMD3)+','\
+        +str(len(N_smokers_ongoingquitters_newquitters_startyear_ages_IMD4))+','+str(N_smokers_endyear_ages_IMD4)+','\
+        +str(N_newquitters_endyear_ages_IMD4)+','+str(N_ongoingquitters_endyear_ages_IMD4)+','+str(N_dead_endyear_ages_IMD4)+','\
+        +str(len(N_smokers_ongoingquitters_newquitters_startyear_ages_IMD5))+','+str(N_smokers_endyear_ages_IMD5)+','\
+        +str(N_newquitters_endyear_ages_IMD5)+','+str(N_ongoingquitters_endyear_ages_IMD5)+','+str(N_dead_endyear_ages_IMD5)+'\n'      
+        return c
+
+    def count_agents_of_subgroups_and_do_situational_mechanisms(self):
         for agent in self.context.agents(agent_type=self.type):
+            agent.add_duplicate_agent_to_context2()
+            agent.count_agent_for_subgroups_of_ages_sex_for_initiation()
+            agent.count_agent_for_subgroups_of_ages_sex_imd_for_initiation()
+            agent.count_agent_for_subgroups_of_ages_sex_for_quit()
+            agent.count_agent_for_subgroups_of_ages_imd_for_quit()
             agent.do_situation()
 
     def do_action_mechanisms(self):
@@ -438,12 +525,23 @@ class SmokingModel(Model):
             if self.tick_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
-        #calibration targets calculation: count startyear states of agents e.g. N_neversmokers_startyear_16-24M etc.
-        self.do_situational_mechanisms()
+        self.count_agents_of_subgroups_and_do_situational_mechanisms()
+        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())
+        if self.current_time_step == self.end_year_tick:
+            self.file_initiation_ages_sex.write(self.get_subgroups_of_ages_sex_for_initiation())
+            self.file_initiation_ages_sex_imd.write(self.get_subgroups_of_ages_sex_imd_for_initiation())
+            self.file_quit_ages_sex.write(self.get_subgroups_of_ages_sex_for_quit())
+            self.file_quit_ages_imd.write(self.get_subgroups_of_ages_imd_for_quit())
+            initialize_global_variables_of_subgroups()
         self.do_action_mechanisms()
         self.do_transformational_mechanisms()
         self.do_macro_to_macro_mechanisms()
-        #calibration targets calculation: count endyear states of agents e.g. N_neversmokers_endyear_16-24M, N_smokers_endyear_16-24M, N_newquitter_endyear_16-24M etc.
+        self.context2=SharedContext(self.comm)#initialize to empty population for whole population counts at next tick
+        if self.current_time_step == self.start_year_tick:
+            self.start_year_tick += 12
+            self.end_year_tick += self.start_year_tick + 11
+        #elif self.current_time_step == self.end_year_tick:
+        #   initialize_global_variables_of_subgroups()
         if self.current_time_step == 13:
             self.tick_counter = 0
         elif self.current_time_step > 13:
@@ -459,6 +557,15 @@ class SmokingModel(Model):
         self.runner.schedule_stop(self.stop_at)
     
     def collect_data(self):
+        #save outputs of ABM to files
+        self.file_whole_population_counts.close()
+        self.file_initiation_ages_sex.close()
+        self.file_initiation_ages_sex_imd.close()
+        self.file_quit_ages_sex.close()
+        self.file_quit_ages_imd.close()
+        print('whole population counts and subgroups counts for initiation and quitting are saved in the files:\n')
+        print('whole_population_counts.csv, subgroups_of_initiation_by_ages_sex.csv, subgroups_of_initiation_by_ages_sex_imd.csv,\n')
+        print('subgroups_of_quit_by_ages_sex.csv, subgroups_of_quit_ages_imd.csv\n')
         f = open('prevalence_of_smoking.csv', 'w')
         for prev in self.smoking_prevalence_l:
             f.write(str(prev) + ',')
