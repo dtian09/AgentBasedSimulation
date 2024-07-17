@@ -18,7 +18,8 @@ class SmokingModel(Model):
         super().__init__(comm, params)
         self.comm = comm
         self.context: SharedContext = SharedContext(comm)  # create an agent population
-        self.context2 = SharedContext(comm) #create the same agent population to compute whole population counts calibration targets 
+        #self.context2 = SharedContext(comm) #create the same agent population to compute whole population counts calibration targets 
+        self.population_counts={}#key=subgroup, value=count of agents of subgroup
         self.size_of_population = None
         self.type = 0
         self.rank: int = self.comm.Get_rank()
@@ -27,7 +28,6 @@ class SmokingModel(Model):
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
-        self.calibration_targets_file=f'{ROOT_DIR}/' + self.props['calibration_targets_file']
         self.year_of_current_time_step = self.props["year_of_baseline"]
         self.year_number = 0
         self.current_time_step = 0
@@ -186,97 +186,98 @@ class SmokingModel(Model):
         from smokingcessation.person import Person
 
         for i in range(self.size_of_population):
+            agenttype=None
             init_state = self.data.at[i, 'state']
             if init_state == 'never_smoker':
                 states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.NEVERSMOKERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.NEVERSMOKERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.NEVERSMOKERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.NEVERSMOKERFEMALE.value
             elif init_state == 'ex-smoker':
                 states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.EXSMOKERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.EXSMOKERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.EXSMOKERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.EXSMOKERFEMALE.value 
             elif init_state == 'smoker':
                 states = [AgentState.SMOKER, AgentState.SMOKER]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.SMOKERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.SMOKERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.SMOKERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.SMOKERFEMALE.value 
             elif init_state == 'newquitter':
                 states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.NEWQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.NEWQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.NEWQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.NEWQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter1':
                 states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter2':
                 states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter3':
                 states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter4':
                 states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter5':
                 states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter6':
                 states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter7':
                 states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter8':
                 states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter9':
                 states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter10':
                 states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE 
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value 
             elif init_state == 'ongoingquitter11':
                 states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]
-                if self.data.at[i,'pGender']=='1':#1=male
-                    agenttype=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']=='2':#2=female:
-                    agenttype=SubGroup.ONGOINGQUITTERFEMALE                        
+                if self.data.at[i,'pGender']==1:#1=male
+                    agenttype=SubGroup.ONGOINGQUITTERMALE.value
+                elif self.data.at[i,'pGender']==2:#2=female:
+                    agenttype=SubGroup.ONGOINGQUITTERFEMALE.value                        
             else:
                 raise ValueError(f'{init_state} is not an acceptable agent state')
             if self.behaviour_model=='COMB':
@@ -359,6 +360,8 @@ class SmokingModel(Model):
         print('===statistics of smoking prevalence===')
         print('Time step 0: smoking prevalence=' + str(p) + '%.')
         self.smoking_prevalence_l.append(p)
+        #print('size of context2: '+str(self.context2.size()))
+        #print('context2 contain agenttype: '+str(SubGroup.NEVERSMOKERMALE.value)+': '+str(self.context2.contains_type(SubGroup.NEVERSMOKERMALE.value)))
         #calculate the calibration targets of whole population counts and write into a csv file
         self.file_whole_population_counts=open('whole_population_counts.csv','w')
         self.file_whole_population_counts.write('Tick,Year,Year_num,Total_agent_population_W,N_never_smokers_W,N_smokers_W,N_new_quitters_W,N_ongoing_quitters_W,N_ex_smokers_W,Total_agent_population_F,N_never_smokers_F,N_smokers_F,N_new_quitters_F,N_ongoing_quitters_F,N_ex_smokers_F,Total_agent_population_M,N_never_smokers_M,N_smokers_M,N_new_quitters_M,N_ongoing_quitters_M,N_ex_smokers_M\n')
@@ -376,34 +379,35 @@ class SmokingModel(Model):
             self.logfile.write('tick: 0, year: ' + str(self.year_of_current_time_step) + '\n')
 
     def calculate_counts_of_whole_population(self):
-        counts=self.context2.size(agent_type_ids=[SubGroup.NEVERSMOKERFEMALE,
-                                               SubGroup.NEVERSMOKERMALE,
-                                               SubGroup.SMOKERFEMALE,
-                                               SubGroup.SMOKERMALE,
-                                               SubGroup.EXSMOKERFEMALE,
-                                               SubGroup.EXSMOKERMALE,
-                                               SubGroup.NEWQUITTERFEMALE,
-                                               SubGroup.NEWQUITTERMALE,
-                                               SubGroup.ONGOINGQUITTERFEMALE,
-                                               SubGroup.ONGOINGQUITTERMALE])
+        counts=self.context2.size(agent_type_ids=[SubGroup.NEVERSMOKERFEMALE.value,
+                                               SubGroup.NEVERSMOKERMALE.value,
+                                               SubGroup.SMOKERFEMALE.value,
+                                               SubGroup.SMOKERMALE.value,
+                                               SubGroup.EXSMOKERFEMALE.value,
+                                               SubGroup.EXSMOKERMALE.value,
+                                               SubGroup.NEWQUITTERFEMALE.value,
+                                               SubGroup.NEWQUITTERMALE.value,
+                                               SubGroup.ONGOINGQUITTERFEMALE.value,
+                                               SubGroup.ONGOINGQUITTERMALE.value])
+        print('counts: '+str(counts))
         c=str(self.current_time_step)+','+str(self.year_of_current_time_step)+','+str(self.year_number)+','+str(self.size_of_population)+\
-         ','+str(counts[SubGroup.NEVERSMOKERFEMALE]+counts[SubGroup.NEVERSMOKERMALE])+\
-         ','+str(counts[SubGroup.SMOKERFEMALE]+counts[SubGroup.SMOKERMALE])+\
-         ','+str(counts[SubGroup.NEWQUITTERFEMALE]+counts[SubGroup.NEWQUITTERMALE])+\
-         ','+str(counts[SubGroup.ONGOINGQUITTERFEMALE]+counts[SubGroup.ONGOINGQUITTERMALE])+\
-         ','+str(counts[SubGroup.EXSMOKERFEMALE]+counts[SubGroup.EXSMOKERMALE])+\
-         ','+str(counts[SubGroup.NEVERSMOKERFEMALE]+counts[SubGroup.SMOKERFEMALE]+counts[SubGroup.NEWQUITTERFEMALE]+counts[SubGroup.ONGOINGQUITTERFEMALE]+counts[SubGroup.EXSMOKERFEMALE])+\
-         ','+str(counts[SubGroup.NEVERSMOKERFEMALE])+\
-         ','+str(counts[SubGroup.SMOKERFEMALE])+\
-         ','+str(+counts[SubGroup.NEWQUITTERFEMALE])+\
-         ','+str(counts[SubGroup.ONGOINGQUITTERFEMALE])+\
-         ','+str(counts[SubGroup.EXSMOKERFEMALE])+\
-         ','+str(counts[SubGroup.NEVERSMOKERMALE]+counts[SubGroup.SMOKERMALE]+counts[SubGroup.NEWQUITTERMALE]+counts[SubGroup.ONGOINGQUITTERMALE]+counts[SubGroup.EXSMOKERMALE])+\
-         ','+str(counts[SubGroup.NEVERSMOKERMALE])+\
-         ','+str(counts[SubGroup.SMOKERMALE])+\
-         ','+str(+counts[SubGroup.NEWQUITTERMALE])+\
-         ','+str(counts[SubGroup.ONGOINGQUITTERMALE])+\
-         ','+str(counts[SubGroup.EXSMOKERMALE])+'\n'
+         ','+str(counts[SubGroup.NEVERSMOKERFEMALE.value]+counts[SubGroup.NEVERSMOKERMALE.value])+\
+         ','+str(counts[SubGroup.SMOKERFEMALE.value]+counts[SubGroup.SMOKERMALE.value])+\
+         ','+str(counts[SubGroup.NEWQUITTERFEMALE.value]+counts[SubGroup.NEWQUITTERMALE.value])+\
+         ','+str(counts[SubGroup.ONGOINGQUITTERFEMALE.value]+counts[SubGroup.ONGOINGQUITTERMALE.value])+\
+         ','+str(counts[SubGroup.EXSMOKERFEMALE.value]+counts[SubGroup.EXSMOKERMALE.value])+\
+         ','+str(counts[SubGroup.NEVERSMOKERFEMALE.value]+counts[SubGroup.SMOKERFEMALE.value]+counts[SubGroup.NEWQUITTERFEMALE.value]+counts[SubGroup.ONGOINGQUITTERFEMALE.value]+counts[SubGroup.EXSMOKERFEMALE.value])+\
+         ','+str(counts[SubGroup.NEVERSMOKERFEMALE.value])+\
+         ','+str(counts[SubGroup.SMOKERFEMALE.value])+\
+         ','+str(+counts[SubGroup.NEWQUITTERFEMALE.value])+\
+         ','+str(counts[SubGroup.ONGOINGQUITTERFEMALE.value])+\
+         ','+str(counts[SubGroup.EXSMOKERFEMALE.value])+\
+         ','+str(counts[SubGroup.NEVERSMOKERMALE.value]+counts[SubGroup.SMOKERMALE.value]+counts[SubGroup.NEWQUITTERMALE.value]+counts[SubGroup.ONGOINGQUITTERMALE.value]+counts[SubGroup.EXSMOKERMALE.value])+\
+         ','+str(counts[SubGroup.NEVERSMOKERMALE.value])+\
+         ','+str(counts[SubGroup.SMOKERMALE.value])+\
+         ','+str(+counts[SubGroup.NEWQUITTERMALE.value])+\
+         ','+str(counts[SubGroup.ONGOINGQUITTERMALE.value])+\
+         ','+str(counts[SubGroup.EXSMOKERMALE.value])+'\n'
         return c
     
     def get_subgroups_of_ages_sex_for_initiation(self):
@@ -483,7 +487,7 @@ class SmokingModel(Model):
         +str(N_newquitters_endyear_ages_IMD5)+','+str(N_ongoingquitters_endyear_ages_IMD5)+','+str(N_dead_endyear_ages_IMD5)+'\n'      
         return c
 
-    def count_agents_of_subgroups_and_do_situational_mechanisms(self):
+    def calculate_calibration_targets_and_do_situational_mechanisms(self):
         for agent in self.context.agents(agent_type=self.type):
             agent.add_duplicate_agent_to_context2()
             agent.count_agent_for_subgroups_of_ages_sex_for_initiation()
@@ -525,10 +529,10 @@ class SmokingModel(Model):
             if self.tick_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
-        self.count_agents_of_subgroups_and_do_situational_mechanisms()
-        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())
+        self.calculate_calibration_targets_and_do_situational_mechanisms()
+        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
         if self.current_time_step == self.end_year_tick:
-            self.file_initiation_ages_sex.write(self.get_subgroups_of_ages_sex_for_initiation())
+            self.file_initiation_ages_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
             self.file_initiation_ages_sex_imd.write(self.get_subgroups_of_ages_sex_imd_for_initiation())
             self.file_quit_ages_sex.write(self.get_subgroups_of_ages_sex_for_quit())
             self.file_quit_ages_imd.write(self.get_subgroups_of_ages_imd_for_quit())
@@ -540,8 +544,6 @@ class SmokingModel(Model):
         if self.current_time_step == self.start_year_tick:
             self.start_year_tick += 12
             self.end_year_tick += self.start_year_tick + 11
-        #elif self.current_time_step == self.end_year_tick:
-        #   initialize_global_variables_of_subgroups()
         if self.current_time_step == 13:
             self.tick_counter = 0
         elif self.current_time_step > 13:

@@ -5,7 +5,6 @@ data_file: "data/testdata.csv" #baseline (synthetic) population
 initiation_prob_file: "data/initiation_prob1month.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month.csv" #STPM monthly quit probability file
-calibration_targets_file: "data/CalibrationTargets.xlsx"
 year_of_baseline: 2011 #year of the baseline popultion at t=0
 #stop.at: 25 #the final time step when the simulation stops 
 stop.at: 97 #year 2018 (where tick 0 is 2011)

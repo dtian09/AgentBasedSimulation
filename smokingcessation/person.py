@@ -153,7 +153,7 @@ class Person(MicroAgent):
         self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
         self.k = 0
         if self.states[0] == AgentState.NEWQUITTER:
-            i = random.randint(0, 12)
+            i = random.randint(0, 11)
             self.behaviour_buffer[i] = AgentBehaviour.QUITATTEMPT
             for j in range(i + 1, 12):
                 self.behaviour_buffer[j] = AgentBehaviour.QUITSUCCESS
@@ -169,6 +169,12 @@ class Person(MicroAgent):
         elif self.states[0] == AgentState.SMOKER:
             for i in range(0, 12):
                 self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]
+        elif self.states[0] in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
+                        AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
+                        AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
+                        AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
+            for i in range(0, 12):
+                self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]    
         else:
             raise ValueError(f'{self.states[0]} is not an acceptable self state')
         self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))

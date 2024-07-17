@@ -1,5 +1,6 @@
 import os
-from enum import Enum
+#from integer.enum import enum
+from enum import Enum, IntEnum
 
 ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -415,7 +416,7 @@ def initialize_global_variables_of_subgroups():
     N_dead_endyear_ages_IMD5=0
 
 
-class SubGroup(Enum):
+class SubGroup(IntEnum):
     """
     define the subgroups (calibration targets) in whole population counts 
     """
