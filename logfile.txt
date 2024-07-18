@@ -1,2 +1,15 @@
 debug mode
 behaviour model: COMB
+tick: 0, year: 2011
+tick: 1, year: 2011
+tick: 2, year: 2011
+tick: 3, year: 2011
+tick: 4, year: 2011
+tick: 5, year: 2011
+tick: 6, year: 2011
+tick: 7, year: 2011
+tick: 8, year: 2011
+tick: 9, year: 2011
+tick: 10, year: 2011
+tick: 11, year: 2011
+tick: 12, year: 2011
