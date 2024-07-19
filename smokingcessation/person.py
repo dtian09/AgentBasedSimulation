@@ -32,10 +32,17 @@ class Person(MicroAgent):
                  reg_smoke_theory=None,
                  quit_attempt_theory=None,
                  quit_success_theory=None,
-                 behaviour_model=None
+                 regular_smoking_behaviour=None,#regular smoking COMB model or STPM intiation transition probabilities
+                 quitting_behaviour=None #quit attempt COMB model or STPM quitting transition probabilities
                  ):
         super().__init__(id=id, type=type, rank=rank)
-        self.smoking_model = smoking_model
+        self.smoking_model = smoking_model        
+        self.states = states #list of states. states[t] is the self's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
+        self.behaviour_buffer = None
+        self.k = None
+        self.tick_counter_ex_smoker = 0  # count number of consecutive ticks when the self stays as an ex-smoker
+        self.init_behaviour_buffer_and_k() #initialize: the behaviour buffer which stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
+                                           #            k, number of consecutive quit successes following the last quit attempt in the behaviourBuffer to end of the
         self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
         self.p_gender = PersonalAttribute(name='pGender')
@@ -66,34 +73,46 @@ class Person(MicroAgent):
         self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
-        # pNumberOfRecentQuitAttempts is an imputed variable
-        # (STPM does not have information on number of recent quit attempts)
         self.p_number_of_recent_quit_attempts = PersonalAttribute(name='pNumberOfRecentQuitAttempts')
+        self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))       
         self.p_years_since_quit = PersonalAttribute(
                 # number of years since quit smoking for an ex-smoker, NA for quitter, never_smoker and smoker
                 name='pYearsSinceQuit')
         self.p_years_since_quit.set_value(years_since_quit)           
-        if behaviour_model=='comb':#if the COMB model is used by the ABM, add the Level 2 attributes of the personal attributes to their lists
-            self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
+        if regular_smoking_behaviour=='COMB':#if the regular smoking COMB model is used by the ABM, add its Level 2 attributes associated with the personal attributes to their lists
             self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
-            self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
             self.p_age.set_value(age)
             self.p_gender.add_level2_attribute(reg_smoke_theory.level2_attributes['mGender'])
             self.p_gender.set_value(gender)
             self.p_educational_level.add_level2_attribute(reg_smoke_theory.level2_attributes['oEducationalLevel'])
-            self.p_educational_level.add_level2_attribute(quit_success_theory.level2_attributes['oEducationalLevel'])
             self.p_educational_level.set_value(educational_level)
             self.p_sep.add_level2_attribute(reg_smoke_theory.level2_attributes['oSEP'])
-            self.p_sep.add_level2_attribute(quit_success_theory.level2_attributes['oSEP'])
             self.p_sep.set_value(sep)
             self.p_social_housing.add_level2_attribute(reg_smoke_theory.level2_attributes['oSocialHousing'])
+            self.p_social_housing.set_value(social_housing)
+            self.p_mental_health_conditions.add_level2_attribute(reg_smoke_theory.level2_attributes['cMentalHealthConditions'])
+            self.p_mental_health_conditions.set_value(mental_health_conds)
+            self.p_alcohol_consumption.add_level2_attribute(reg_smoke_theory.level2_attributes['cAlcoholConsumption'])
+            self.p_alcohol_consumption.set_value(alcohol)
+            self.p_expenditure.set_value(expenditure)
+            self.p_nrt_use.set_value(nrt_use)
+            self.p_varenicline_use.set_value(varenicline_use)
+            self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
+            self.p_ecig_use.add_level2_attribute(reg_smoke_theory.level2_attributes['cEcigaretteUse'])
+            self.p_ecig_use.set_value(ecig_use)
+        if quitting_behaviour=='COMB':#if quit attempt COM-B model and quit success COM-B model are used by this ABM, add their Level 2 attributes associated with the personal attributes to the personal attributes' lists
+            self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
+            self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
+            self.p_age.set_value(age)
+            self.p_educational_level.add_level2_attribute(quit_success_theory.level2_attributes['oEducationalLevel'])
+            self.p_educational_level.set_value(educational_level)
+            self.p_sep.add_level2_attribute(quit_success_theory.level2_attributes['oSEP'])
+            self.p_sep.set_value(sep)
             self.p_social_housing.add_level2_attribute(quit_attempt_theory.level2_attributes['oSocialHousing'])
             self.p_social_housing.add_level2_attribute(quit_success_theory.level2_attributes['oSocialHousing'])
             self.p_social_housing.set_value(social_housing)
-            self.p_mental_health_conditions.add_level2_attribute(reg_smoke_theory.level2_attributes['cMentalHealthConditions'])
             self.p_mental_health_conditions.add_level2_attribute(quit_success_theory.level2_attributes['cMentalHealthConditions'])
             self.p_mental_health_conditions.set_value(mental_health_conds)
-            self.p_alcohol_consumption.add_level2_attribute(reg_smoke_theory.level2_attributes['cAlcoholConsumption'])
             self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['cAlcoholConsumption'])
             self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['oAlcoholConsumption'])
             self.p_alcohol_consumption.set_value(alcohol)
@@ -106,22 +125,12 @@ class Person(MicroAgent):
             self.p_varenicline_use.set_value(varenicline_use)
             self.p_cig_consumption_prequit.add_level2_attribute(quit_success_theory.level2_attributes['cCigConsumptionPrequit'])
             self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
-            self.p_ecig_use.add_level2_attribute(reg_smoke_theory.level2_attributes['cEcigaretteUse'])
             self.p_ecig_use.add_level2_attribute(quit_success_theory.level2_attributes['cEcigaretteUse'])
             self.p_ecig_use.set_value(ecig_use)
             self.p_number_of_recent_quit_attempts.add_level2_attribute(quit_attempt_theory.level2_attributes['mNumberOfRecentQuitAttempts'])
-        # list of states. states[t] is the self's state at time step t (t=0,1,...,current time step) with
-        # t=0 representing the beginning of the simulation.
-        self.states = states
-        self.behaviour_buffer = None
-        self.k = None
-        self.tick_counter_ex_smoker = 0  # count number of consecutive ticks when the self stays as an ex-smoker
-        self.init_behaviour_buffer_and_k_and_p_number_of_recent_quit_attempts()  # initialize:
-        # behaviour buffer which stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
-        # k: number of consecutive quit successes following the last quit attempt in the behaviourBuffer to end of the
-        # behaviourBuffer pNumberOfRecentQuitAttempts
-
-    def init_behaviour_buffer_and_k_and_p_number_of_recent_quit_attempts(self):
+            self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))       
+        
+    def init_behaviour_buffer_and_k(self):
         """
         The behaviour buffer stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
         (12 ticks with each tick represents 1 month)
@@ -144,10 +153,9 @@ class Person(MicroAgent):
             set each cell of the behaviour buffer to a random behaviour;
         }
         k: count of number of consecutive quit successes done at the current state
-        Initialize k to the number of consecutive quit successes following the last quit attempt in the behaviourBuffer
+        Initialize k to the number of consecutive quit successes following the last quit attempt in the behaviour_buffer
         to the end of the behaviourBuffer
         """
-
         behaviours = [e for e in AgentBehaviour]
         self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
         self.k = 0
@@ -176,7 +184,6 @@ class Person(MicroAgent):
                 self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]    
         else:
             raise ValueError(f'{self.states[0]} is not an acceptable self state')
-        self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))
 
     def update_ec_ig_use(self, eciguse: int):
         self.ecig_use = eciguse
@@ -275,8 +282,8 @@ class Person(MicroAgent):
             raise ValueError(f'{cstate} is not an acceptable agent state')
         self.smoking_model.population_counts[subgroup]+=1    
     
-    def count_agent_for_subgroups_of_ages_sex_for_initiation(self):#count agents of the subgroups (age and sex) of Table 1 initiation based on this agent's state
-        #count this agent for subgroups of ages and sex for initiation
+    def count_agent_for_initiation_subgroups_by_ages_sex(self):
+        #count this agent for subgroups by ages and sex for initiation based on its state
         cstate = self.get_current_state()
         if self.smoking_model.current_time_step == self.smoking_model.start_year_tick: 
             if cstate == AgentState.NEVERSMOKE:
@@ -321,168 +328,97 @@ class Person(MicroAgent):
                 else:
                     raise ValueError(f'{cstate} is not an acceptable self state')
 
-    def count_agent_for_subgroups_of_ages_sex_imd_for_initiation(self):#count agents of the subgroups of Table 2 intiation by age, sex and IMD based on this agent's state
-        #count this agent for subgroups of ages, sex and imd for quit
+    def count_agent_for_initiation_subgroups_by_ages_imd(self):
+        #count this agent for subgroups of ages and imd for initiation based on its state
         cstate = self.get_current_state()
         if self.smoking_model.current_time_step == self.smoking_model.start_year_tick:
             if cstate == AgentState.NEVERSMOKE:
-                if self.p_gender.get_value()==1 and g.agelowerbound <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound:
-                            if self.p_imd_quintile==1:
-                                   g.N_neversmokers_startyear_ages_M_IMD1.add(self.get_id())
-                            elif self.p_imd_quintile==2:
-                                    g.N_neversmokers_startyear_ages_M_IMD2.add(self.get_id())
-                            elif self.p_imd_quintile==3:
-                                    g.N_neversmokers_startyear_ages_M_IMD3.add(self.get_id())
-                            elif self.p_imd_quintile==4:
-                                    g.N_neversmokers_startyear_ages_M_IMD4.add(self.get_id())
+                if g.agelowerbound <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound:
+                            if self.p_imd_quintile.get_value()==1:
+                                   g.N_neversmokers_startyear_ages_IMD1.add(self.get_id())
+                            elif self.p_imd_quintile.get_value()==2:
+                                    g.N_neversmokers_startyear_ages_IMD2.add(self.get_id())
+                            elif self.p_imd_quintile.get_value()==3:
+                                    g.N_neversmokers_startyear_ages_IMD3.add(self.get_id())
+                            elif self.p_imd_quintile.get_value()==4:
+                                    g.N_neversmokers_startyear_ages_IMD4.add(self.get_id())
                             else:
-                                    g.N_neversmokers_startyear_ages_M_IMD5.add(self.get_id())
-                elif self.p_gender.get_value()==2 and g.agelowerbound <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound:
-                            if self.p_imd_quintile==1:
-                                    g.N_neversmokers_startyear_ages_F_IMD1.add(self.get_id())
-                            elif self.p_imd_quintile==2:
-                                    g.N_neversmokers_startyear_ages_F_IMD2.add(self.get_id())
-                            elif self.p_imd_quintile==3:
-                                    g.N_neversmokers_startyear_ages_F_IMD3.add(self.get_id())
-                            elif self.p_imd_quintile==4:
-                                    g.N_neversmokers_startyear_ages_F_IMD4.add(self.get_id())
-                            else:
-                                    g.N_neversmokers_startyear_ages_F_IMD5.add(self.get_id())
+                                    g.N_neversmokers_startyear_ages_IMD5.add(self.get_id())
         elif self.smoking_model.current_time_step == self.smoking_model.end_year_tick:
                 if cstate == AgentState.NEVERSMOKE:
-                            if self.get_id() in g.N_neversmokers_startyear_ages_M_IMD1:
-                                        N_neversmokers_endyear_ages_M_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD2:
-                                        N_neversmokers_endyear_ages_M_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD3:
-                                        N_neversmokers_endyear_ages_M_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD4:
-                                        N_neversmokers_endyear_ages_M_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD5:
-                                        N_neversmokers_endyear_ages_M_IMD5 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD1:
-                                        g.N_neversmokers_endyear_ages_F_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD2:
-                                        g.N_neversmokers_endyear_ages_F_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD3:
-                                        g.N_neversmokers_endyear_ages_F_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD4:
-                                        g.N_neversmokers_endyear_ages_F_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD5:
-                                        g.N_neversmokers_endyear_ages_F_IMD5 += 1
+                            if self.get_id() in g.N_neversmokers_startyear_ages_IMD1:
+                                        g.N_neversmokers_endyear_ages_IMD1 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD2:
+                                        g.N_neversmokers_endyear_ages_IMD2 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD3:
+                                        g.N_neversmokers_endyear_ages_IMD3 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD4:
+                                        g.N_neversmokers_endyear_ages_IMD4 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD5:
+                                        g.N_neversmokers_endyear_ages_IMD5 += 1
                 elif cstate == AgentState.SMOKER:                                                
-                            if self.get_id() in g.N_neversmokers_startyear_ages_M_IMD1:
-                                    g.N_smokers_endyear_ages_M_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD2:
-                                    g.N_smokers_endyear_ages_M_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD3:
-                                    g.N_smokers_endyear_ages_M_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD4:
-                                    g.N_smokers_endyear_ages_M_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD5:
-                                    g.N_smokers_endyear_ages_M_IMD5 += 1                            
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD1:
-                                    g.N_smokers_endyear_ages_F_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD2:
-                                g.N_smokers_endyear_ages_F_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD3:
-                                g.N_smokers_endyear_ages_F_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD4:
-                                g.N_smokers_endyear_ages_F_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD5:
-                                g.N_smokers_endyear_ages_F_IMD5 += 1   
+                            if self.get_id() in g.N_neversmokers_startyear_ages_IMD1:
+                                    g.N_smokers_endyear_ages_IMD1 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD2:
+                                    g.N_smokers_endyear_ages_IMD2 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD3:
+                                    g.N_smokers_endyear_ages_IMD3 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD4:
+                                    g.N_smokers_endyear_ages_IMD4 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD5:
+                                    g.N_smokers_endyear_ages_IMD5 += 1                             
                 elif cstate == AgentState.NEWQUITTER:
-                            if self.get_id() in g.N_neversmokers_startyear_ages_M_IMD1:
-                                        g.N_newquitter_endyear_ages_M_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD2:
-                                        g.N_newquitter_endyear_ages_M_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD3:
-                                        g.N_newquitter_endyear_ages_M_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD4:
-                                        g.N_newquitter_endyear_ages_M_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD5:
-                                        g.N_newquitter_endyear_ages_M_IMD5 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD1:
-                                        g.N_newquitter_endyear_ages_F_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD2:
-                                        g.N_newquitter_endyear_ages_F_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD3:
-                                        g.N_newquitter_endyear_ages_F_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD4:
-                                        g.N_newquitter_endyear_ages_F_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD5:
-                                        g.N_newquitter_endyear_ages_F_IMD5 += 1    
+                            if self.get_id() in g.N_neversmokers_startyear_ages_IMD1:
+                                        g.N_newquitter_endyear_ages_IMD1 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD2:
+                                        g.N_newquitter_endyear_ages_IMD2 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD3:
+                                        g.N_newquitter_endyear_ages_IMD3 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD4:
+                                        g.N_newquitter_endyear_ages_IMD4 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD5:
+                                        g.N_newquitter_endyear_ages_IMD5 += 1  
                 elif cstate in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
                             AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
                             AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
                             AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
-                            if self.get_id() in g.N_neversmokers_startyear_ages_M_IMD1:
-                                        g.N_ongoingquitter_endyear_ages_M_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD2:
-                                        g.N_ongoingquitter_endyear_ages_M_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD3:
-                                        g.N_ongoingquitter_endyear_ages_M_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD4:
-                                        g.N_ongoingquitter_endyear_ages_M_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD5:
-                                        g.N_ongoingquitter_endyear_ages_M_IMD5 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD1:
-                                        g.N_ongoingquitter_endyear_ages_F_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD2:
-                                        g.N_ongoingquitter_endyear_ages_F_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD3:
-                                        g.N_ongoingquitter_endyear_ages_F_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD4:
-                                        N_ongogingquitter_endyear_ages_F_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD5:
-                                        g.N_ongoingquitter_endyear_ages_F_IMD5 += 1
+                            if self.get_id() in g.N_neversmokers_startyear_ages_IMD1:
+                                        g.N_ongoingquitter_endyear_ages_IMD1 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD2:
+                                        g.N_ongoingquitter_endyear_ages_IMD2 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD3:
+                                        g.N_ongoingquitter_endyear_ages_IMD3 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD4:
+                                        g.N_ongoingquitter_endyear_ages_IMD4 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD5:
+                                        g.N_ongoingquitter_endyear_ages_IMD5 += 1
                 elif cstate == AgentState.EXSMOKER:
-                            if self.get_id() in g.N_neversmokers_startyear_ages_M_IMD1:
-                                        g.N_exsmoker_endyear_ages_M_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD2:
-                                        g.N_exsmoker_endyear_ages_M_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD3:
-                                        g.N_exsmoker_endyear_ages_M_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD4:
-                                        g.N_exsmoker_endyear_ages_M_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD5:
-                                        g.N_exsmoker_endyear_ages_M_IMD5 += 1  
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD1:
-                                        g.N_exsmoker_endyear_ages_F_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD2:
-                                        g.N_exsmoker_endyear_ages_F_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD3:
-                                        g.N_exsmoker_endyear_ages_F_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD4:
-                                        g.N_exsmoker_endyear_ages_F_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD5:
-                                        g.N_exsmoker_endyear_ages_F_IMD5 += 1
+                            if self.get_id() in g.N_neversmokers_startyear_ages_IMD1:
+                                        g.N_exsmoker_endyear_ages_IMD1 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD2:
+                                        g.N_exsmoker_endyear_ages_IMD2 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD3:
+                                        g.N_exsmoker_endyear_ages_IMD3 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD4:
+                                        g.N_exsmoker_endyear_ages_IMD4 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD5:
+                                        g.N_exsmoker_endyear_ages_IMD5 += 1  
                 elif cstate == AgentState.DEAD:
-                            if self.get_id() in g.N_neversmokers_startyear_ages_M_IMD1:
-                                        g.N_dead_endyear_ages_M_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD2:
-                                        g.N_dead_endyear_ages_M_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD3:
-                                        g.N_dead_endyear_ages_M_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD4:
-                                        g.N_dead_endyear_ages_M_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_M_IMD5:
-                                        g.N_dead_endyear_ages_M_IMD5 += 1 
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD1:
-                                        g.N_dead_endyear_ages_F_IMD1 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD2:
-                                        g.N_dead_endyear_ages_F_IMD2 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD3:
-                                        g.N_dead_endyear_ages_F_IMD3 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD4:
-                                        g.N_dead_endyear_ages_F_IMD4 += 1
-                            elif self.get_id() in g.N_neversmokers_startyear_ages_F_IMD5:
-                                        g.N_dead_endyear_ages_F_IMD5 += 1 
+                            if self.get_id() in g.N_neversmokers_startyear_ages_IMD1:
+                                        g.N_dead_endyear_ages_IMD1 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD2:
+                                        g.N_dead_endyear_ages_IMD2 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD3:
+                                        g.N_dead_endyear_ages_IMD3 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD4:
+                                        g.N_dead_endyear_ages_IMD4 += 1
+                            elif self.get_id() in g.N_neversmokers_startyear_ages_IMD5:
+                                        g.N_dead_endyear_ages_IMD5 += 1 
                 else:
                     raise ValueError(f'{cstate} is not an acceptable self state')
         
-    def count_agent_for_subgroups_of_ages_sex_for_quit(self):#count agents of the subgroups of Table 3 quit by age and sex based on this agent's state
-        #count this agent for subgroups of ages and sex for quit
+    def count_agent_for_quit_subgroups_by_ages_sex(self):
+        #count this agent for subgroups of ages and sex for quit based on its state
         cstate = self.get_current_state()
         if self.smoking_model.current_time_step == self.smoking_model.start_year_tick: 
                 if cstate in (AgentState.SMOKER,AgentState.NEWQUITTER,AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
@@ -538,69 +474,69 @@ class Person(MicroAgent):
                     elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages2_F:
                             g.N_dead_endyear_ages2_F += 1 
 
-    def count_agent_for_subgroups_of_ages_imd_for_quit(self):#count agents of the subgroups of Table 4 quit by age and IMD based on this agent's state
-        #count this agent for subgroups of ages and imd for quit
+    def count_agent_for_quit_subgroups_by_ages_imd(self):
+        #count this agent for subgroups of ages and imd for quit based on its state
         cstate = self.get_current_state()
         if self.smoking_model.current_time_step == self.smoking_model.start_year_tick: 
             if cstate in (AgentState.SMOKER,AgentState.NEWQUITTER,AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
                             AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
                             AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
                             AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
-                    if self.p_imd_quintile==1 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
-                            g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD1.add(self.get_id())
-                    elif self.p_imd_quintile==2 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
-                            g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD2.add(self.get_id())
-                    elif self.p_imd_quintile==3 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
-                            g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD3.add(self.get_id())
-                    elif self.p_imd_quintile==4 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
-                            g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD4.add(self.get_id())
-                    elif self.p_imd_quintile==5 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
-                            g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD5.add(self.get_id())
+                    if self.p_imd_quintile.get_value()==1 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
+                            g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD1.add(self.get_id())
+                    elif self.p_imd_quintile.get_value()==2 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
+                            g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD2.add(self.get_id())
+                    elif self.p_imd_quintile.get_value()==3 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
+                            g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD3.add(self.get_id())
+                    elif self.p_imd_quintile.get_value()==4 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
+                            g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD4.add(self.get_id())
+                    elif self.p_imd_quintile.get_value()==5 and g.agelowerbound3 <= self.p_age.get_value() and self.p_age.get_value() <= g.ageupperbound3:
+                            g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5.add(self.get_id())
         elif self.smoking_model.current_time_step == self.smoking_model.end_year_tick:
             if cstate == AgentState.SMOKER:
-                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD1:
-                            g.N_smokers_endyear_ages_IMD1 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD2:
-                            g.N_smokers_endyear_ages_IMD2 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD3:
-                            g.N_smokers_endyear_ages_IMD3 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD4:
-                            g.N_smokers_endyear_ages_IMD4 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD5:
-                            g.N_smokers_endyear_ages_IMD5 += 1
+                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD1:
+                            g.N_smokers_endyear_ages3_IMD1 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD2:
+                            g.N_smokers_endyear_ages3_IMD2 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD3:
+                            g.N_smokers_endyear_ages3_IMD3 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD4:
+                            g.N_smokers_endyear_ages3_IMD4 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
+                            g.N_smokers_endyear_ages3_IMD5 += 1
             elif cstate == AgentState.NEWQUITTER:
-                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD1:
-                            g.N_newquitters_endyear_ages_IMD1 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD2:
-                            g.N_newquitters_endyear_ages_IMD2 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD3:
-                            g.N_newquitters_endyear_ages_IMD3 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD4:
-                            g.N_newquitters_endyear_ages_IMD4 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD5:
-                            g.N_newquitters_endyear_ages_IMD5 += 1
+                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD1:
+                            g.N_newquitters_endyear_ages3_IMD1 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD2:
+                            g.N_newquitters_endyear_ages3_IMD2 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD3:
+                            g.N_newquitters_endyear_ages3_IMD3 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD4:
+                            g.N_newquitters_endyear_ages3_IMD4 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
+                            g.N_newquitters_endyear_ages3_IMD5 += 1
             elif cstate in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
                             AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
                             AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
                             AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
-                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD1:
-                            g.N_ongoingquitters_endyear_ages_IMD1 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD2:
-                            g.N_ongoingquitters_endyear_ages_IMD2 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD3:
-                            g.N_ongoingquitters_endyear_ages_IMD3 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD4:
-                            g.N_ongoingquitters_endyear_ages_IMD4 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD5:
-                            g.N_ongoingquitters_endyear_ages_IMD5 += 1
+                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD1:
+                            g.N_ongoingquitters_endyear_ages3_IMD1 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD2:
+                            g.N_ongoingquitters_endyear_ages3_IMD2 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD3:
+                            g.N_ongoingquitters_endyear_ages3_IMD3 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD4:
+                            g.N_ongoingquitters_endyear_ages3_IMD4 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
+                            g.N_ongoingquitters_endyear_ages3_IMD5 += 1
             elif cstate == AgentState.DEAD:
-                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD1:
-                            g.N_dead_endyear_ages_IMD1 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD2:
-                            g.N_dead_endyear_ages_IMD2 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD3:
-                            g.N_dead_endyear_ages_IMD3 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD4:
-                            g.N_dead_endyear_ages_IMD4 += 1
-                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages_IMD5:
-                            g.N_dead_endyear_ages_IMD5 += 1
+                    if self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD1:
+                            g.N_dead_endyear_ages3_IMD1 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD2:
+                            g.N_dead_endyear_ages3_IMD2 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD3:
+                            g.N_dead_endyear_ages3_IMD3 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD4:
+                            g.N_dead_endyear_ages3_IMD4 += 1
+                    elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
+                            g.N_dead_endyear_ages3_IMD5 += 1

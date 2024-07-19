@@ -1,13 +1,13 @@
-behaviour_model: "COMB" #"STPM"
-#behaviour_model: "STPM"
+regular_smoking_behaviour: "COMB" #"STPM"
+quitting_behaviour: "COMB" #"STPM"
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 data_file: "data/testdata.csv" #baseline (synthetic) population
-initiation_prob_file: "data/initiation_prob1month.csv" #STPM monthly initiation probability file
-relapse_prob_file: "data/relapse_prob1month.csv" #STPM monthly relapse probability file
-quit_prob_file: "data/quit_prob1month.csv" #STPM monthly quit probability file
+initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
+relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
+quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
 year_of_baseline: 2011 #year of the baseline popultion at t=0
-stop.at: 12 #the final time step when the simulation stops 
-#stop.at: 97 #year 2018 (where tick 0 is 2011)
+#stop.at: 12 #the final time step when the simulation stops 
+stop.at: 97 #year 2018 (where tick 0 is 2011)
 ###cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = time length of a tick in weeks
 lambda: 0.0368 
 tickInterval: 4.3 #time length of a tick in weeks (4.3 weeks is 1 month)

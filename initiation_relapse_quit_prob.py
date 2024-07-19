@@ -14,7 +14,7 @@ p1month=pd.DataFrame(p1month)
 p1month.columns=['p_start_1month']
 df=df.drop(columns=['p_start'])#delete probabilty of initiation of 1 year as it is not needed
 df=df.join([p1month])
-df.to_csv('initiation_prob1month.csv',index=False)
+df.to_csv('initiation_prob1month_STPM.csv',index=False)
 #monthly relapse probability
 df=pd.read_excel(stpm_prob_file,sheet_name='Relapse')
 df['sex'] = df['sex'].replace({'Male': 1, 'Female': 2})
@@ -25,7 +25,7 @@ p1month=pd.DataFrame(p1month)
 p1month.columns=['p_relapse_1month']
 df=df.drop(columns=['p_relapse'])#delete probabilty of relapse of 1 year as it is not needed
 df=df.join([p1month])
-df.to_csv('relapse_prob1month.csv',index=False)
+df.to_csv('relapse_prob1month_STPM.csv',index=False)
 #monthly quit probability
 df=pd.read_excel(stpm_prob_file,sheet_name='Quit')
 df['sex'] = df['sex'].replace({'Male': 1, 'Female': 2})
@@ -36,5 +36,5 @@ p1month=pd.DataFrame(p1month)
 p1month.columns=['p_quit_1month']
 df=df.drop(columns=['p_quit'])#delete probabilty of initiation of 1 year as it is not needed
 df=df.join([p1month])
-df.to_csv('quit_prob1month.csv',index=False)
+df.to_csv('quit_prob1month_STPM.csv',index=False)
 
