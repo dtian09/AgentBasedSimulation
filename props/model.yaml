@@ -1,4 +1,4 @@
-regular_smoking_behaviour: "COMB" #"STPM"
+regular_smoking_behaviour: "STPM" #"COMB" #
 quitting_behaviour: "COMB" #"STPM"
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 data_file: "data/testdata.csv" #baseline (synthetic) population

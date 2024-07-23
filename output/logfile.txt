@@ -1,7 +1,5 @@
 debug mode
-This ABM is using the regular smoking COM-B model.
-This ABM is using the quit attempt COM-B model and quit success COM-B model.
-This ABM is using the STPM relapse transition probabilities.
+the STPM initiation transition probabilities, the quit attempt COM-B model, quit success COM-B model and the STPM relapse transition probabilities.
 tick: 0, year: 2011
 tick: 1, year: 2011
 tick: 2, year: 2011

@@ -141,11 +141,11 @@ class QuitSTPMTheory(STPMTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
-        matched = self.smoking_model.initiation_prob[
-                (self.smoking_model.initiation_prob['age'] == agent.p_age.get_value()) &
-                (self.smoking_model.initiation_prob['year'] == self.smoking_model.year_of_current_time_step) &
-                (self.smoking_model.initiation_prob['sex'] == agent.p_gender.get_value()) &
-                (self.smoking_model.initiation_prob['imd_quintile'] == agent.p_imd_quintile.get_value())]
+        matched = self.smoking_model.quit_prob[
+                (self.smoking_model.quit_prob['age'] == agent.p_age.get_value()) &
+                (self.smoking_model.quit_prob['year'] == self.smoking_model.year_of_current_time_step) &
+                (self.smoking_model.quit_prob['sex'] == agent.p_gender.get_value()) &
+                (self.smoking_model.quit_prob['imd_quintile'] == agent.p_imd_quintile.get_value())]
         matched = pd.DataFrame(matched)
         if len(matched) > 0:
             self.prob_behaviour = float(matched.iat[0,-1])
@@ -183,18 +183,6 @@ class QuitSTPMTheory(STPMTheory):
                 # append the agent's new behaviour to its behaviour buffer
                 agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
                 agent.k += 1
-                #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
-                self.level2_attributes['cCigAddictStrength'].set_value(np.round(self.level2_attributes['cCigAddictStrength'].get_value() * np.exp(self.smoking_model.lbda*self.smoking_model.tickInterval)))
-                #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
-                threshold=random.uniform(0,1)
-                successCount=agent.behaviour_buffer.count(AgentBehaviour.QUITSUCCESS)
-                probOfSmokerSelfIdentity=1/(1+self.smoking_model.alpha*(successCount*self.smoking_model.tickInterval)**self.smoking_model.beta)
-                if probOfSmokerSelfIdentity >= threshold:
-                    self.level2_attributes['mSmokerIdentity'].set_value(2) #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
-                    self.level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
-                else:
-                    self.level2_attributes['mSmokerIdentity'].set_value(1)
-                    self.level2_attributes['mNonSmokerSelfIdentity'].set_value(1)
                 if agent.k < 12:
                     if agent.k==1:
                         agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER1)
