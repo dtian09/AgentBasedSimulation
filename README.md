@@ -1,7 +1,18 @@
-# Cessation ABM
+# ABM Version 0.7
 
-ABM software simulates the smoking behaviours of agents using the COM-B regular smoking theory, 
-COM-B quit attempt theory, COM-B quit success theory and relapse probabilities (STPM).
+ABM version 0.7 runs 1) the COM-B regular smoking theory or STPM initiation probabilities for initiating regular smoking;
+			    	 2) COM-B quit attempt theory or STPM quitting probabilities for making a quit attempt;
+		 		 	 3) COM-B quit success theory or STPM quitting probabilities for quitting successfully;
+					 4) and runs STPM relapse probabilities for relapse.
+
+# Outputs of ABM Version 0.7
+
+ABM version 0.7 outputs calibration targets in the following files under the 'output' folder:
+		1) whole_population_counts.csv, 
+		2) Initiation_sex.csv, 
+		3) Initiation_IMD.csv,
+		4) Quit_age_sex.csv,
+		5) Quit_IMD.csv.
 
 ## Installation
 
