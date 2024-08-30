@@ -5,15 +5,6 @@ ABM version 0.7 runs 1) the COM-B regular smoking theory or STPM initiation prob
 		 		 	 3) COM-B quit success theory or STPM quitting probabilities for quitting successfully;
 					 4) and runs STPM relapse probabilities for relapse.
 
-# Outputs of ABM Version 0.7
-
-ABM version 0.7 outputs calibration targets in the following files under the 'output' folder:
-		1) whole_population_counts.csv, 
-		2) Initiation_sex.csv, 
-		3) Initiation_IMD.csv,
-		4) Quit_age_sex.csv,
-		5) Quit_IMD.csv.
-
 ## Installation
 
 The ABM software runs on Linux or MacOS operating systems (OS). The ABM software can also be run on Windows 10 or 11 OS by firstly installing the Windows Subsystem for Linux (WSL) on the Windows OS and secondly running the ABM software on WSL (see links below). 
@@ -68,17 +59,38 @@ pip install numpy pandas
 ## Run the ABM software
 
 1. Activate the virtual environment my_env as described above.
+
 2. Move into the repository directory.
 ```
 cd abm-software-all-version
 ```
-3. Use the following command to run the ABM model with the parameters/settings specified in the props/model.yaml file.
+
+3. Specify the behaviour model to use for initiating regular smoking, making a quit attempt and quitting successfully.
+
+For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit success theory for quitting successfully and run the ABM in debug mode, set the following parameters in model.yaml: 
+
+- regular_smoking_behaviour: "STPM"
+- quitting_behaviour: "COMB"
+- ABM_mode: "debug"
+
+4. Use the following command to run the ABM model with the parameters/settings specified in the props/model.yaml file.
+
 In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":").
 ```
 python run_abm.py props/model.yaml
 ```
+ 
 
-The output files are:
+## Outputs of ABM
+
+ABM outputs calibration targets in the following files under the 'output' folder:
+		1) whole_population_counts.csv, 
+		2) Initiation_sex.csv, 
+		3) Initiation_IMD.csv,
+		4) Quit_age_sex.csv,
+		5) Quit_IMD.csv.
+		
+Additionally, when running in the 'debug mode', the following 2 files are output:
 
 - logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
