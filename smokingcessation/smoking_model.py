@@ -39,7 +39,6 @@ class SmokingModel(Model):
         self.alpha=self.props["alpha"]
         self.beta=self.props["beta"]    
         self.runner: SharedScheduleRunner = init_schedule_runner(comm)
-        self.smoking_prevalence_l = list()
         # hashmap (dictionary) to store betas (coefficients) of the COMB formula of regular smoking theory
         self.uptake_betas = {}
         self.attempt_betas = {}  # hashmap to store betas of the COMB formula of quit attempt theory
@@ -56,37 +55,39 @@ class SmokingModel(Model):
         self.level2_attributes_names = list(self.data.filter(regex='^[com]').columns)
         self.relapse_prob = pd.read_csv(self.relapse_prob_file, header=0)  # read in STPM relapse probabilities
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
+        if self.running_mode == 'debug':
+            self.smoking_prevalence_l = list()
         self.regular_smoking_behaviour = self.props['regular_smoking_behaviour'] #COMB or STPM
         self.quitting_behaviour = self.props['quitting_behaviour'] #COMB or STPM
-        if self.regular_smoking_behaviour=='COMB':
-            print('This ABM is using the regular smoking COM-B model, ')
-        elif self.regular_smoking_behaviour=='STPM':
-            print('This ABM is using the STPM initiation transition probabilities, ')
+        if self.regular_smoking_behaviour=='STPM':
             self.initiation_prob_file = f'{ROOT_DIR}/' + self.props["initiation_prob_file"]
-            self.initiation_prob = pd.read_csv(self.initiation_prob_file,header=0)  
+            self.initiation_prob = pd.read_csv(self.initiation_prob_file,header=0) 
         else:
             sys.exit('invalid regular smoking behaviour: '+self.regular_smoking_behaviour)
-        if self.quitting_behaviour=='COMB':
-            print('quit attempt COM-B model, quit success COM-B model, ')
-        elif self.quitting_behaviour=='STPM':
-            print('STPM quitting transition probabilities ')
+        if self.quitting_behaviour=='STPM':
             self.quit_prob_file = f'{ROOT_DIR}/' + self.props["quit_prob_file"]
             self.quit_prob = pd.read_csv(self.quit_prob_file,header=0)   
+        elif self.quitting_behaviour=='COMB':
+            pass
         else:
             sys.exit('invalid quitting behaviour: '+self.quitting_behaviour)
-        print('and the STPM relapse transition probabilities.')
         self.tick_counter = 0
         if self.running_mode == 'debug':
             self.logfile = open(f'{ROOT_DIR}/output/logfile.txt', 'w')
             self.logfile.write('debug mode\n')
             if self.regular_smoking_behaviour=='COMB':
+                print('This ABM is using the regular smoking COM-B model, ')
                 self.logfile.write('This ABM is using the regular smoking COM-B model, ')
             elif self.regular_smoking_behaviour=='STPM':
+                print('This ABM is using the STPM initiation transition probabilities, ')
                 self.logfile.write('the STPM initiation transition probabilities, ')
             if self.quitting_behaviour=='COMB':
+                print('quit attempt COM-B model, quit success COM-B model, ')
                 self.logfile.write('the quit attempt COM-B model, quit success COM-B model ')
             elif self.quitting_behaviour=='STPM':
+                print('STPM quitting transition probabilities ')
                 self.logfile.write('the STPM quitting transition probabilities')
+            print('and the STPM relapse transition probabilities.')
             self.logfile.write('and the STPM relapse transition probabilities.\n')    
     
     @staticmethod
@@ -345,15 +346,16 @@ class SmokingModel(Model):
         self.tick_counter = 0
         self.current_time_step = 0
         (r, _) = self.data.shape
-        print('size of agent population:', r)
         self.size_of_population = r
         self.init_agents()
         self.size_of_population = (self.context.size()).get(-1)
-        print('size of population:', self.size_of_population)
-        p = self.smoking_prevalence()
-        print('===statistics of smoking prevalence===')
-        print('Time step 0: year: '+str(self.year_of_current_time_step)+', smoking prevalence=' + str(p) + '%.')
-        self.smoking_prevalence_l.append(p)
+        if self.running_mode == 'debug':
+            print('size of agent population:', r)
+            print('size of population:', self.size_of_population)
+            p = self.smoking_prevalence()
+            print('===statistics of smoking prevalence===')
+            print('Time step 0: year: '+str(self.year_of_current_time_step)+', smoking prevalence=' + str(p) + '%.')
+            self.smoking_prevalence_l.append(p)
         #calculate the calibration targets of whole population counts and write into a csv file
         self.file_whole_population_counts=open(f'{ROOT_DIR}/output/whole_population_counts.csv','w')
         self.file_whole_population_counts.write('Tick,Year,Year_num,Total_agent_population_W,N_never_smokers_W,g.N_smokers_W,N_new_quitters_W,N_ongoing_quitters_W,N_ex_smokers_W,Total_agent_population_F,N_never_smokers_F,N_smokers_F,N_new_quitters_F,N_ongoing_quitters_F,N_ex_smokers_F,Total_agent_population_M,N_never_smokers_M,N_smokers_M,N_new_quitters_M,N_ongoing_quitters_M,N_ex_smokers_M\n')
@@ -371,7 +373,8 @@ class SmokingModel(Model):
         self.file_quit_age_sex.write('Tick,Year,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-49M,N_smokers_endyear_25-49M,N_newquitters_endyear_25-49M,N_ongoingquitters_endyear_25-49M,N_dead_endyear_25-49M,N_smokers_ongoingquitters_newquitters_startyear_25-49F,N_smokers_endyear_25-49F,N_newquitters_endyear_25-49F,N_ongoingquitters_endyear_25-49F,N_dead_endyear_25-49F,N_smokers_ongoingquitters_newquitters_startyear_50-74M,N_smokers_endyear_50-74M,N_newquitters_endyear_50-74M,N_ongoingquitters_endyear_50-74M,N_dead_endyear_50-74M,N_smokers_ongoingquitters_newquitters_startyear_50-74F,N_smokers_endyear_50-74F,N_newquitters_endyear_50-74F,N_ongoingquitters_endyear_50-74F,N_dead_endyear_50-74F\n')
         self.file_quit_imd=open(f'{ROOT_DIR}/output/'+self.filename_quit_imd,'w')
         self.file_quit_imd.write('Tick,Year,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD1,N_smokers_endyear_25-74_IMD1,N_newquitters_endyear_25-74_IMD1,N_ongoingquitters_endyear_25-74_IMD1,N_dead_endyear_25-74_IMD1,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD2,N_smokers_endyear_25-74_IMD2,N_newquitters_endyear_25-74_IMD2,N_ongoingquitters_endyear_25-74_IMD2,N_dead_endyear_25-74_IMD2,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD3,N_smokers_endyear_25-74_IMD3,N_newquitters_endyear_25-74_IMD3,N_ongoingquitters_endyear_25-74_IMD3,N_dead_endyear_25-74_IMD3,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD4,N_smokers_endyear_25-74_IMD4,N_newquitters_endyear_25-74_IMD4,N_ongoingquitters_endyear_25-74_IMD4,N_dead_endyear_25-74_IMD4,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD5,N_smokers_endyear_25-74_IMD5,N_newquitters_endyear_25-74_IMD5,N_ongoingquitters_endyear_25-74_IMD5,N_dead_endyear_25-74_IMD5\n')
-        self.logfile.write('tick: 0, year: ' + str(self.year_of_current_time_step) + '\n')
+        if self.running_mode == 'debug':
+            self.logfile.write('tick: 0, year: ' + str(self.year_of_current_time_step) + '\n')
   
     def calculate_counts_of_whole_population(self):
         c=str(self.current_time_step)+','+str(self.year_of_current_time_step)+','+str(self.year_number)+','+str(self.size_of_population)+\
@@ -495,9 +498,10 @@ class SmokingModel(Model):
     def do_per_tick(self):
         self.current_time_step += 1
         self.tick_counter += 1
-        p = self.smoking_prevalence()
-        print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')
-        self.smoking_prevalence_l.append(p)
+        if self.running_mode == 'debug':
+            p = self.smoking_prevalence()
+            print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')
+            self.smoking_prevalence_l.append(p)
         if self.current_time_step == 13:
             self.year_of_current_time_step += 1
             self.year_number += 1
@@ -509,7 +513,6 @@ class SmokingModel(Model):
         self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
         self.init_population_counts()
         if self.current_time_step == self.end_year_tick:
-            print('write calibration targets to files')
             self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
             self.file_initiation_imd.write(self.get_subgroups_of_ages_imd_for_initiation())
             self.file_quit_age_sex.write(self.get_subgroups_of_ages_sex_for_quit())
@@ -542,14 +545,15 @@ class SmokingModel(Model):
         self.file_initiation_imd.close()
         self.file_quit_age_sex.close()
         self.file_quit_imd.close()
-        print('whole population counts and subgroups counts for initiation and quitting are saved in the files:\n')
-        print('whole_population_counts.csv, '+str(self.filename_initiation_sex)+', '+str(self.filename_initiation_imd)+',\n')
-        print(str(self.filename_quit_age_sex)+','+str(self.filename_quit_imd)+'\n')
-        f = open('prevalence_of_smoking.csv', 'w')
-        for prev in self.smoking_prevalence_l:
-            f.write(str(prev) + ',')
-        f.close()
-        if self.running_mode == 'debug':  # write states of each agent over the entire simulation period into a csv file
+        if self.running_mode == 'debug':
+            print('whole population counts and subgroups counts for initiation and quitting are saved in the files:\n')
+            print('whole_population_counts.csv, '+str(self.filename_initiation_sex)+', '+str(self.filename_initiation_imd)+',\n')
+            print(str(self.filename_quit_age_sex)+','+str(self.filename_quit_imd)+'\n')
+            f=open(f'{ROOT_DIR}/output/prevalence_of_smoking.csv', 'w')
+            for prev in self.smoking_prevalence_l:
+                f.write(str(prev) + ',')
+            f.close()
+            # write states of each agent over the entire simulation period into a csv file
             '''
             self.logfile.write('###states of the agents over all time steps###\n')
             self.logfile.write('id')
