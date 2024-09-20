@@ -540,3 +540,29 @@ class Person(MicroAgent):
                             g.N_dead_endyear_ages3_IMD4 += 1
                     elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
                             g.N_dead_endyear_ages3_IMD5 += 1
+
+    def count_agent_for_ecig_diffusion_subgroups(self):
+        #count this agent for the following e-cigarette diffusion subgroups:
+               #Ex-smoker<1940
+               #Ex-smoker1941-1960
+               #Ex-smoker1961-1980
+               #Ex-smoker1981-1990
+               #Ex-smoker1991+
+               #Smoker<1940
+               #Smoker1941-1960
+               #Smoker1961-1980
+               #Smoker1981-1990
+               #Smoker1991+
+               #p_cohort: 0 (1900-1909), 1 (1910-1919), 2 (1920-1929), 3 (1930-1939), 4 (1940-1949), 5 (1950-1959), 6 (1960-1969)
+               #7 (1970-1979), 8 (1980-1989), 9 (1990-1999), 10 (2000-2009), 11 (2010-2019)
+
+         cstate = self.get_current_state()
+         if cstate == AgentState.EXSMOKER and self.p_cohort < 4:
+                self.smoking_model.exsmoker_less_1940.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmokerless1940
+         elif cstate == AgentState.EXSMOKER and self.p_cohort in (4,5) #cannot get 1941-1960 subgroup??
+                self.smoking_model.exsmoker_1941_1960.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1941_1960
+         elif cstate == AgentState.EXSMOKER and self.p_cohort in (6,7) #cannot get 1961-1980 subgroup??
+                self.smoking_model.exsmoker_1941_1960.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1941_1960  

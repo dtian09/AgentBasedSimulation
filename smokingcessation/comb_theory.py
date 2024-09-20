@@ -5,8 +5,7 @@ import math
 import random
 import sys
 
-from config.definitions import AgentState
-from config.definitions import AgentBehaviour
+from config.definitions import AgentState, AgentBehaviour, eCigDiffSubGroup
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 from smokingcessation.smoking_model import SmokingModel
@@ -99,6 +98,25 @@ class RegSmokeTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
+        #allocate e-cigarette to this agent randomly using its diffusion model
+        if self.smoking_model.year_of_current_time_step < 2022:#before 2022, allocate non-disposable ecig to this agent randomly
+           if agent.eCig_diff_subgroup == eCigDiffSubGroup.Exsmokerless1940:
+               if self.smoking_model.nondisp_diffusion_exsmoker_less1940.deltaEt > 0:
+                  self.smoking_model.nondisp_diffusion_exsmoker_less1940.allocateDiffusion(agent)
+        else:#from 2022, allocate disposable ecig to this agent randomly
+           if agent.eCig_diff_subgroup == eCigDiffSubGroup.Exsmokerless1940:
+               if self.smoking_model.disp_diffusion_exsmoker_less1940.deltaEt > 0:
+                  self.smoking_model.disp_diffusion_exsmoker_less1940.allocateDiffusion(agent)
+        
+        self.exsmoker_1941_1960=set()
+        self.exsmoker_1961_1980=set()
+        self.exsmoker_1981_1990=set()
+        self.exsmoker_over_1991=set()
+        self.smoker_less_1940=set()
+        self.smoker_1941_1960=set()
+        self.smoker_1961_1980=set()
+        self.smoker_1981_1990=set()
+        self.smoker_over_1991=set()
 
     def do_learning(self):
         pass

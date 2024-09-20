@@ -1,4 +1,4 @@
-from typing import Set
+from typing import List
 
 from config.definitions import Theories
 from config.definitions import AgentState
@@ -9,7 +9,7 @@ from smokingcessation.person import Person
 
 class SmokingTheoryMediator(TheoryMediator):
 
-    def __init__(self, theory_list: Set[Theory]):
+    def __init__(self, theory_list: List [Theory]):
         super().__init__(theory_list)
         if len(self.theory_list) == 0:
             raise Exception(f"{__class__.__name__} require a theoryList with length > 0")
@@ -18,7 +18,7 @@ class SmokingTheoryMediator(TheoryMediator):
             if not isinstance(theory.name, Theories):
                 raise ValueError(f'{theory.name} must be an instance of the class Theories.')
             self.theory_map[theory.name] = theory
-
+    '''
     def get_current_theory_of_agent(self, agent: MicroAgent) -> Theory:
         cstate = agent.get_current_state()
         if cstate == AgentState.NEVERSMOKE:
@@ -53,7 +53,7 @@ class SmokingTheoryMediator(TheoryMediator):
             return self.theory_map[Theories.RELAPSESSTPM]
         else:
             raise ValueError(f'{cstate} is not an acceptable agent state')
-
+    '''
     def mediate_situation(self, agent: Person):
         cstate = agent.get_current_state()
         if cstate == AgentState.NEVERSMOKE:
