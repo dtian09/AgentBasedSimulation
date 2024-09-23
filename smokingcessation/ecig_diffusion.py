@@ -17,6 +17,8 @@ class eCigDiffusion(MacroEntity):
         self.smoking_model=smoking_model
         self.subgroup=None #the population subgroup of this e-cigarette diffusion
         self.ecig_type=None #the type of e-cigarette (non-disosable or disposable) represented by this diffusion model
+        self.deltaEt_agents=list() #if deltaEt > 0, deltEt_agents is the list of the |deltaEt| non-ecig users (agent ids) of this subgroup who become ecig users when allocateDiffusion method is called iteratively; if deltaEt < 0, deltEt_agents is the list of the |deltaEt| e-cig users who become non-e-cig users when allocateDiffusion method is called iteratively. 
+        self.deltaEt_agents_shuffled=False #Set to True if the deltaEt_agents have been shuffled already; otherwise, False
 
     def set_subgroup(self, subgroup : int):
         self.subgroup=subgroup
@@ -42,10 +44,12 @@ class eCigDiffusion(MacroEntity):
         else:
             self.deltaEt=0
 
-    def allocateDiffusion(self, p : Person): #also decrement deltaEt
-        #Input: a person of the subgroup is a non-ecig user
-        #threshold = a random value from uniform distribution [0,1]
-        #if E(t) >= threshold
-        #then agent adapts e-cig
-        #else agent does not
-     
+    def allocateDiffusion(self, p : Person):
+        if self.deltaEt > 0:#make this agent an ecig user
+            p.p_ecig_use=1
+            self.deltaEt -=1 #decrease no. of new non-ecig users to create
+            self.deltaEt_agents.remove(p.get_id())
+        elif self.deltaEt < 0: #make this agent a non-ecig user
+            p.p_ecig_use=0 
+            self.deltaEt +=1 #increase no. of new non-ecig users to create
+            self.deltaEt_agents.remove(p.get_id())
