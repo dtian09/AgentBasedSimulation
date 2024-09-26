@@ -78,7 +78,9 @@ class Person(MicroAgent):
         self.p_years_since_quit = PersonalAttribute(
                 # number of years since quit smoking for an ex-smoker, NA for quitter, never_smoker and smoker
                 name='pYearsSinceQuit')
-        self.p_years_since_quit.set_value(years_since_quit)           
+        self.p_years_since_quit.set_value(years_since_quit)
+        self.eCig_diff_subgroup=None
+        self.ecig_type=None           
         if regular_smoking_behaviour=='COMB':#if the regular smoking COMB model is used by the ABM, add its Level 2 attributes associated with the personal attributes to their lists
             self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
             self.p_age.set_value(age)
@@ -129,8 +131,7 @@ class Person(MicroAgent):
             self.p_ecig_use.set_value(ecig_use)
             self.p_number_of_recent_quit_attempts.add_level2_attribute(quit_attempt_theory.level2_attributes['mNumberOfRecentQuitAttempts'])
             self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))       
-        self.eCig_diff_subgroup=None
-
+        
     def init_behaviour_buffer_and_k(self):
         """
         The behaviour buffer stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
@@ -542,37 +543,49 @@ class Person(MicroAgent):
                     elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
                             g.N_dead_endyear_ages3_IMD5 += 1
 
-    def count_agent_for_ecig_diffusion_subgroups_and_get_deltaEtagents(self):
-        #count this agent for the following e-cigarette diffusion subgroups:
-               #Ex-smoker<1940
-               #Ex-smoker1941-1960
-               #Ex-smoker1961-1980
-               #Ex-smoker1981-1990
-               #Ex-smoker1991+
-               #Smoker<1940
-               #Smoker1941-1960
-               #Smoker1961-1980
-               #Smoker1981-1990
-               #Smoker1991+
-               #p_cohort: 0 (1900-1909), 1 (1910-1919), 2 (1920-1929), 3 (1930-1939), 4 (1940-1949), 5 (1950-1959), 6 (1960-1969)
-               #7 (1970-1979), 8 (1980-1989), 9 (1990-1999), 10 (2000-2009), 11 (2010-2019)
-        #Then, get the agents (non-ecig users or ecig users) of deltaEt_agent of each diffusion model
-         cstate = self.get_current_state()
-         if cstate == AgentState.EXSMOKER and self.p_cohort < 4:
+    def count_agent_for_ecig_diffusion_subgroups_and_add_to_deltaEtagents(self):
+        #count this agent for the following e-cigarette diffusion subgroups
+        #p_cohort: <1940 (0), 1941-1960 (1), 1961-1980 (2), 1981-1990 (3), 1991+ (4)
+        #then, add this agent to the deltaEt_agent list of each diffusion model as appropriate
+        cstate = self.get_current_state()
+        if cstate == AgentState.EXSMOKER and self.p_cohort == 0:
                 self.smoking_model.exsmoker_less_1940.add(self.get_id())
                 self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmokerless1940
-        elif cstate == AgentState.EXSMOKER and self.p_cohort in (4,5) #cannot get 1941-1960 subgroup??
+        elif cstate == AgentState.EXSMOKER and self.p_cohort == 1:
                 self.smoking_model.exsmoker_1941_1960.add(self.get_id())
                 self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1941_1960
-         elif cstate == AgentState.EXSMOKER and self.p_cohort in (6,7) #cannot get 1961-1980 subgroup??
-                self.smoking_model.exsmoker_1941_1960.add(self.get_id())
-                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1941_1960  
-    
+        elif cstate == AgentState.EXSMOKER and self.p_cohort == 2:
+                self.smoking_model.exsmoker_1961_1980.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1961_1980  
+        elif cstate == AgentState.EXSMOKER and self.p_cohort == 3:
+                self.smoking_model.exsmoker_1981_1990.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1981_1990
+        elif cstate == AgentState.EXSMOKER and self.p_cohort == 4:
+                self.smoking_model.exsmoker_over_1991.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker_over1991
+        elif cstate == AgentState.SMOKER and self.p_cohort == 0:
+                self.smoking_model.smoker_less_1940.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smokerless1940
+        elif cstate == AgentState.SMOKER and self.p_cohort == 1:
+                self.smoking_model.smoker_1941_1960.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker1941_1960
+        elif cstate == AgentState.SMOKER and self.p_cohort == 2:
+                self.smoking_model.smoker_1961_1980.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker1961_1980  
+        elif cstate == AgentState.SMOKER and self.p_cohort == 3:
+                self.smoking_model.smoker_1981_1990.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker1981_1990
+        elif cstate == AgentState.EXSMOKER and self.p_cohort == 4:
+                self.smoking_model.smoker_over_1991.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker_over1991
+        elif cstate == AgentState.NEVERSMOKE and self.p_cohort == 4:
+                self.smoking_model.neversmoker_over_1991.add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Neversmoked_over1991
         for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
-                    if diffusion_model.deltaEt > 0 and self.p_ecig_use==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
+                    if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
                            diffusion_model.deltaEt_agents.append[self.get_id()]      
-                    elif diffusion_model.deltaEt < 0 and self.p_ecig_use==1 and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
+                    elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
                            diffusion_model.deltaEt_agents.append[self.get_id()]
-                    elif (len(diffusion_model.deltaEt_agents) == abs(diffusion_model.deltaEt)) and diffusion_model.deltaEt_agents_shuffled==False:
-                           random.shuffle(diffusion_model.deltaEt_agents)
-                           diffusion_model.deltaEt_agents_shuffled=True
+                    
+                           
+        

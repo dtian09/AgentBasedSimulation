@@ -17,15 +17,11 @@ class SmokingRegulatorMediator(RegulatorMediator):
     def mediate_transformation(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
             self.regulator_map['eCigDiffusionRegulator'].do_transformation(macroEntity)
-        #elif isinstance(macroEntity,SocialNetwork):
-        #    self.regulator_map['SocialNetworkRegulator'].do_transformation(macroEntity)
         else:
-            raise Exception('This macro entity is not eCigDiffusion and Social Network.')
+            raise Exception('This macro entity is not eCigDiffusion.')
         
     def mediate_macro_macro(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
             self.regulator_map['eCigDiffusionRegulator'].do_macro_macro(macroEntity)
-        #elif isinstance(macroEntity,SocialNetwork):
-        #    self.regulator_map['SocialNetworkRegulator'].do_macro_macro(macroEntity)
         else:
-            raise Exception('This macro entity is not eCigDiffusion and Social Network.')
+            raise Exception('This macro entity is not eCigDiffusion.')

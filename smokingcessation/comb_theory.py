@@ -98,9 +98,10 @@ class RegSmokeTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
-        for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
-            if agent.get_id() == diffusion_model.deltaEt_agents[0]:#this agent is the head of the shuffled list deltaEt_agents
-                diffusion_model.allocateDiffusion(agent)
+        for diffusion_model in random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]):
+            if diffusion_model.deltaEt > 0 or diffusion_model.deltaEt < 0:
+                if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    diffusion_model.allocateDiffusion(agent)
 
     def do_learning(self):
         pass
@@ -174,6 +175,10 @@ class QuitAttemptTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
+        for diffusion_model in random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]):
+            if diffusion_model.deltaEt > 0 or diffusion_model.deltaEt < 0:
+                if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    diffusion_model.allocateDiffusion(agent)
 
     def do_learning(self):
         pass
@@ -246,6 +251,10 @@ class QuitSuccessTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
+        for diffusion_model in random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]):
+            if diffusion_model.deltaEt > 0 or diffusion_model.deltaEt < 0:
+                if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    diffusion_model.allocateDiffusion(agent)
 
     def do_learning(self):
         pass

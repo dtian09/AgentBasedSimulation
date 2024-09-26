@@ -22,6 +22,7 @@ class eCigDiffSubGroup(IntEnum):
     Smoker1961_1980 = 8
     Smoker1981_1990 = 9
     Smoker_over1991 = 10
+    Neversmoked_over1991 = 11
 
 class SubGroup(IntEnum):
     """
