@@ -11,7 +11,7 @@ class eCigDiffusion(MacroEntity):
         self.q=q
         self.m=m
         self.d=d
-        self.deltaT=1/3 #deltaT is the time difference in quarters between two consecutive time steps of ABM
+        self.deltaT=1/3 #deltaT is the time difference in quarters between two consecutive time steps (months) of ABM
         self.Et=0 #initialize e-cig prevalence at tick 0
         self.deltaEt=0 #initialize new e-cig users at tick 0
         self.smoking_model=smoking_model

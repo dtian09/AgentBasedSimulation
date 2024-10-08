@@ -1,13 +1,21 @@
 regular_smoking_behaviour: "STPM" #"COMB" #
 quitting_behaviour: "COMB" #"STPM"
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
-data_file: "data/testdata.csv" #baseline (synthetic) population
+#data_file: "data/testdata.csv" #baseline (synthetic) population
+data_file: "data/testdata_sts2010jan.csv" #STS Jan 2010 data for verifying ecig diffusions of the ABM 
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
-year_of_baseline: 2011 #year of the baseline popultion at t=0
+#year_of_baseline: 2011 #year of the baseline popultion at t=0
+year_of_baseline: 2010 #year of STS Jan 2010 population (for verifying e-cig diffusions)
 #stop.at: 12 #the final time step when the simulation stops 
-stop.at: 97 #year 2018 (where tick 0 is 2011)
+#stop.at: 97 #year 2018. This is the stop time of ABM when tick 1 = Jan 2011
+stop.at: 170 #March 2024 (for verifying e-cig diffusions). This is the stop time of ABM when tick 1 = Jan 2010
+#set the starting time step of e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
+#start_time_of_non_disp_diffusions: -12 #non-disposable diffusions start at 1st quarter of 2010. The ABM starts at Jan 2011 (tick 1) (baseline population is STPM 2011)
+#start_time_of_disp_diffusions: 133 #disposable diffusions start at 1st quarter of 2022. 12 months x (2022-2011) years + 1 month = 133 months in timescale of ABM
+start_time_of_non_disp_diffusions: 3 #ABM starts at Jan 2010 and non-disposable diffusions start at 1st quarter (March) of 2010 (baseline population is STS Jan 2010)
+start_time_of_disp_diffusions: 146   #ABM starts at Jan 2010 and disposable diffusions start at 1st quarter (March) of 2022. 12 months x (2022-2010) years + 2 months = 146 months in timescale of ABM
 ###cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = time length of a tick in weeks
 lambda: 0.0368 
 tickInterval: 4.3 #time length of a tick in weeks (4.3 weeks is 1 month)
@@ -63,9 +71,6 @@ success.oSEP.beta: -0.15
 success.C.beta: 0.55
 success.O.beta: 0.08
 success.bias: 0.3
-#set the starting time step of e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
-start_time_of_non_disp_diffusions: -12 #non-disposable diffusions start at 1st quarter of 2010. The ABM starts at Jan 2011 (tick 1)
-start_time_of_disp_diffusions: 133 #disposable diffusions start at 1st quarter of 2022. 12 months x (2022-2011) years + 1 month = 133 months in timescale of ABM
 ###parameters of non-disposable e-cigarette diffusion models
 nondisp_diffusion_exsmoker_less1940.p: 0.003758197
 nondisp_diffusion_exsmoker_less1940.q: 0.229035581
