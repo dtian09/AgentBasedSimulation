@@ -12,11 +12,11 @@ class MacroEntity:
     
     def do_transformation(self):
         if self.macro_mediator is not None:
-            self.macro_mediator.mediate_transformation()
+            self.macro_mediator.mediate_transformation(self)
 
     def do_macro_macro(self):
         if self.macro_mediator is not None:
-            self.macro_mediator.mediate_macro_to_macro()
+            self.macro_mediator.mediate_macro_macro(self)
 
 
 class RegulatorMediator(ABC):
@@ -28,7 +28,7 @@ class RegulatorMediator(ABC):
         pass
 
     @abstractmethod
-    def mediate_macro_to_macro(self):
+    def mediate_macro_macro(self):
         pass
 
 
@@ -45,5 +45,5 @@ class Regulator(ABC):
         pass
 
     @abstractmethod
-    def do_macro_to_macro(self, macro_entity: MacroEntity):
+    def do_macro_macro(self, macro_entity: MacroEntity):
         pass

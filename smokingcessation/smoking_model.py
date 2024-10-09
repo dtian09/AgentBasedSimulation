@@ -90,7 +90,18 @@ class SmokingModel(Model):
                 self.logfile.write('the STPM quitting transition probabilities')
             print('and the STPM relapse transition probabilities.')
             self.logfile.write('and the STPM relapse transition probabilities.\n')  
-            self.ecig_Et = {}
+            self.ecig_Et = {                              
+                            eCigDiffSubGroup.Exsmokerless1940:[],
+                            eCigDiffSubGroup.Exsmoker1941_1960:[],
+                            eCigDiffSubGroup.Exsmoker1961_1980:[],
+                            eCigDiffSubGroup.Exsmoker1981_1990:[],
+                            eCigDiffSubGroup.Exsmoker_over1991:[],
+                            eCigDiffSubGroup.Smokerless1940:[],
+                            eCigDiffSubGroup.Smoker1941_1960:[],
+                            eCigDiffSubGroup.Smoker1961_1980:[],
+                            eCigDiffSubGroup.Smoker1981_1990:[],
+                            eCigDiffSubGroup.Smoker_over1991:[],
+                            eCigDiffSubGroup.Neversmoked_over1991:[]}
 
     def initialize_ecig_diffusion_subgroups(self):
         self.exsmoker_less_1940=set()
@@ -289,7 +300,8 @@ class SmokingModel(Model):
         self.disp_diffusion_smoker_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
         self.non_disp_and_disp_diffusion_models[eCigDiffSubGroup.Smoker_over1991]=[self.nondisp_diffusion_smoker_over1991,self.disp_diffusion_smoker_over1991]        
         if self.running_mode == 'debug':
-            self.Et={}
+            self.non_disp_Et={}
+            self.non_disp_and_disp_Et={}
             for k in self.non_disp_diffusion_models.keys():
                 self.non_disp_Et[k]=[] #non disposabl e-cig prevalence of each quarter
             for k in self.non_disp_and_disp_diffusion_models.keys():
@@ -677,7 +689,7 @@ class SmokingModel(Model):
             agent.count_agent_for_initiation_subgroups_by_ages_imd()
             agent.count_agent_for_quit_subgroups_by_ages_sex()
             agent.count_agent_for_quit_subgroups_by_ages_imd()
-            agent.count_agent_for_ecig_diffusion_subgroups_and_get_deltaEtagents()
+            agent.count_agent_for_ecig_diffusion_subgroups_and_add_to_deltaEtagents()
             agent.do_situation()
     
     def do_action_mechanisms(self):
@@ -686,11 +698,13 @@ class SmokingModel(Model):
     
     def do_transformational_mechanisms(self):    
         if self.year_of_current_time_step < 2022:#run non-disposable models
-           for diffusion_model in self.non_disp_diffusion_models.values():
-               diffusion_model.do_transformation()
+           for diffusion_models in self.non_disp_diffusion_models.values():
+               for diffusion_model in diffusion_models:
+                   diffusion_model.do_transformation()
            if self.running_mode == 'debug':            
-               for diffusion_model in self.non_disp_diffusion_models.values():    
-                   self.ecig_Et[diffusion_model.subgroup].append(diffusion_model.Et)    
+               for diffusion_models in self.non_disp_diffusion_models.values():
+                   for diffusion_model in diffusion_models:    
+                       self.ecig_Et[diffusion_model.subgroup].append(diffusion_model.Et)    
         else:#from 2022 for the subgroups using both non-disp model and disp model, run both diffusion models
            common_subgroups = [eCigDiffSubGroup.Exsmoker1961_1980,
                                eCigDiffSubGroup.Exsmoker1981_1990,
@@ -700,14 +714,20 @@ class SmokingModel(Model):
                                eCigDiffSubGroup.Smoker1981_1990,
                                eCigDiffSubGroup.Smoker_over1991]
            if self.running_mode == 'debug':
-               self.s=0
+               self.s=0 #number of e-cig users of a subgroup
            for subgroup in common_subgroups:                                      
-               for diffusion_model in self.non_disp_and_disp_diffusion_models[subgroup]:
-                   diffusion_model.do_transformation()
+               for diffusion_models in self.non_disp_and_disp_diffusion_models[subgroup]:
+                   print(str(diffusion_models))
+                   for diffusion_model in diffusion_models:    
+                        diffusion_model.do_transformation()
                    if self.running_mode == 'debug':#only add together Et of both diffusion models in debug mode and record the total value (ecig prevalence) in Ecig_Et list
-                       self.s += diffusion_model.ecig_users
-                       self.s=0 
-                       self.ecig_Et[subgroup].append(self.s/len(self.ecig_diff_subgroups[subgroup]))                                           
+                        self.s += diffusion_model.ecig_users
+                   if len(self.ecig_diff_subgroups[subgroup]) > 0:
+                       self.ecig_Et[subgroup].append(self.s/len(self.ecig_diff_subgroups[subgroup]))
+                   else:
+                       self.ecig_Et[subgroup].append(0)                                          
+                   if self.running_mode == 'debug':
+                        self.s=0 
            self.non_disp_and_disp_diffusion_models[eCigDiffSubGroup.Neversmoked_over1991].do_transformation() #neversmoker1991+ only use disposable ecig                          
            for subgroup in [eCigDiffSubGroup.Exsmokerless1940, eCigDiffSubGroup.Exsmoker1941_1960, eCigDiffSubGroup.Smokerless1940]:#these subgroups only use non-disposable ecig from 2022
                    self.non_disp_and_disp_diffusion_models[subgroup].do_transformation()                   
@@ -717,11 +737,12 @@ class SmokingModel(Model):
                        diffusion_model = self.non_disp_and_disp_diffusion_models[subgroup]
                        self.ecig_Et[subgroup].append(diffusion_model.Et)    
 
-    def do_macro_to_macro_mechanisms(self): 
+    def do_macro_macro_mechanisms(self): 
         #calculate deltaEt of each e-cigarette diffusion 
         if self.year_of_current_time_step < 2022:
-           for diffusion_model in self.non_disp_diffusion_models.values():
-                diffusion_model.do_macro_macro()
+           for diffusion_models in self.non_disp_diffusion_models.values():
+               for diffusion_model in diffusion_models:    
+                   diffusion_model.do_macro_macro()
         else:#from 2022, for the subgroups covered by non-disp model and disp model, run both models
            common_subgroups = [eCigDiffSubGroup.Exsmoker1961_1980,
                                eCigDiffSubGroup.Exsmoker1981_1990,
@@ -731,8 +752,9 @@ class SmokingModel(Model):
                                eCigDiffSubGroup.Smoker1981_1990,
                                eCigDiffSubGroup.Smoker_over1991]
            for subgroup in common_subgroups:                                      
-               for diffusion_model in self.non_disp_and_disp_diffusion_models[subgroup]:
-                   diffusion_model.do_macro_macro()                                          
+               for diffusion_models in self.non_disp_and_disp_diffusion_models[subgroup]:
+                   for diffusion_model in diffusion_models:    
+                       diffusion_model.do_macro_macro()                                          
            self.non_disp_and_disp_diffusion_models[eCigDiffSubGroup.Neversmoked_over1991].do_macro_macro()#neversmoker1991+ only use disposable ecig
            for subgroup in [eCigDiffSubGroup.Exsmokerless1940, eCigDiffSubGroup.Exsmoker1941_1960, eCigDiffSubGroup.Smokerless1940]:#these subgroups only use non-disposable ecig from 2022
                   self.non_disp_and_disp_diffusion_models[subgroup].do_macro_macro()
@@ -750,15 +772,15 @@ class SmokingModel(Model):
         #convert the current time step of ABM to the corresponding time step (tick) of non-disposable diffusion models
         #return: corresponding tick of non disposable diffusion models in months
         if self.start_time_of_non_disp_diffusions > 0: #e.g. 3
-            if self.smoking_model.current_time_step == self.start_time_of_non_disp_diffusions:
+            if self.current_time_step == self.start_time_of_non_disp_diffusions:
                 return 3 #Now is tick 1 (1st quarter of year) of diffusion model
-            elif self.smoking_model.current_time_step > self.start_time_of_non_disp_diffusions:
-                return (self.smoking_model.current_time_step - self.start_time_of_non_disp_diffusions + 3) #tick of diffusion model = (current time step of ABM - start time step of diffusion model + 3)/3. (current time step of ABM - start time step of diffusion model + 3) is the numerator. changeInE() of eCigDiffusion class divides this numerator by 3.
+            elif self.current_time_step > self.start_time_of_non_disp_diffusions:
+                return (self.current_time_step - self.start_time_of_non_disp_diffusions + 3) #tick of diffusion model = (current time step of ABM - start time step of diffusion model + 3)/3. (current time step of ABM - start time step of diffusion model + 3) is the numerator. changeInE() of eCigDiffusion class divides this numerator by 3.
             else:#if time step of ABM is less than starting time step of diffusion model, then diffusion model does not start and there is 0 diffusion
                 return 0
         elif self.start_time_of_non_disp_diffusions < 0: #e.g. -12 
-            if self.smoking_model.current_time_step > self.start_time_of_non_disp_diffusions:
-                return self.smoking_model.current_time_step - self.start_time_of_non_disp_diffusions
+            if self.current_time_step > self.start_time_of_non_disp_diffusions:
+                return self.current_time_step - self.start_time_of_non_disp_diffusions
             else:#if time step of ABM is less than starting time step of diffusion model, then diffusion model does not start and there is 0 diffusion
                 return 0
         
@@ -766,14 +788,14 @@ class SmokingModel(Model):
         #convert the current time step of ABM to the corresponding time step (tick) of disposable diffusion models
         #return: corresponding tick of disposable diffusion models in months
         if self.start_time_of_disp_diffusions > 0: #e.g. 133
-            if self.smoking_model.current_time_step == self.start_time_of_disp_diffusions:
+            if self.current_time_step == self.start_time_of_disp_diffusions:
                 return 3 #Now is tick 1 (1st quarter of year) of diffusion model
-            elif self.smoking_model.current_time_step > self.start_time_of_disp_diffusions:
-                return (self.smoking_model.current_time_step - self.start_time_of_disp_diffusions + 3)
+            elif self.current_time_step > self.start_time_of_disp_diffusions:
+                return (self.current_time_step - self.start_time_of_disp_diffusions + 3)
             else:#if time step of ABM is less than starting time step of diffusion model, then diffusion model does not start and there is 0 diffusion
                 return 0
         else:
-            sys.exit('start time of disposable diffusions: '+str(self.start_time_of_disp_diffusions)+' < start time of ABM: '+str(self.smoking_model.current_time_step)+'. ABM should start before disposable diffusions start.')
+            sys.exit('start time of disposable diffusions: '+str(self.start_time_of_disp_diffusions)+' < start time of ABM: '+str(self.current_time_step)+'. ABM should start before disposable diffusions start.')
         
     def do_per_tick(self):
         self.current_time_step += 1
@@ -807,7 +829,7 @@ class SmokingModel(Model):
             g.initialize_global_variables_of_subgroups()        
         self.do_action_mechanisms()#COMB models or STPM models
         self.do_transformational_mechanisms()#compute Et of diffusion models
-        self.do_macro_to_macro_mechanisms()#compute deltaEt of diffusion models
+        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11

@@ -33,9 +33,12 @@ class eCigDiffusion(MacroEntity):
     
     def calculate_Et(self):#calculate E(t), the prevalence of e-cigarette
         #calculate E(t)=1/N * sum(pEcigUse_i) where i is the ith agent; N is size of the population subgroup (e.g. Ex-smoker<1940) of the diffusion model
-        self.calculate_number_ecig_users()
-        return self.ecig_users/len(self.smoking_model.ecig_diff_subgroups[self.subgroup])
-
+        self.calculate_ecig_users()
+        if len(self.smoking_model.ecig_diff_subgroups[self.subgroup]) > 0:
+            return self.ecig_users/len(self.smoking_model.ecig_diff_subgroups[self.subgroup])
+        else:
+            return 0
+        
     def changeInE(self, t):#calculate deltaE(t) where t in months
         if t > 0:
             self.deltaEt=self.p*(self.m*np.exp(-self.d*t/3)-self.Et)+(self.q*np.exp(self.d*t/3)/self.m)*self.Et*(self.m*np.exp(-self.d*t/3)-self.Et)

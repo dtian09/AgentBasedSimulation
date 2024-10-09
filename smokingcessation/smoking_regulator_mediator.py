@@ -1,6 +1,5 @@
 from mbssm.macro_entity import MacroEntity, RegulatorMediator, Regulator
 from typing import List
-from config.definitions import Regulators
 from smokingcessation.ecig_diffusion import eCigDiffusion
 
 class SmokingRegulatorMediator(RegulatorMediator):
@@ -10,10 +9,11 @@ class SmokingRegulatorMediator(RegulatorMediator):
             raise Exception(f"{__class__.__name__} require a regulator_list with length > 0")
         self.regulator_map = {}
         for regulator in regulator_list:
-            if not isinstance(regulator.name, Regulators):
-                raise ValueError(f'{regulator.name} must be an instance of the class Regulators.')
-            self.regulator_map[regulator.name] = regulator
-
+            if isinstance(regulator, Regulator):
+                self.regulator_map[regulator.name] = regulator
+            else:
+                raise Exception(str(regulator)+' is not an instance of the class Regulator.')
+            
     def mediate_transformation(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
             self.regulator_map['eCigDiffusionRegulator'].do_transformation(macroEntity)
