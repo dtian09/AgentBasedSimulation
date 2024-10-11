@@ -581,12 +581,12 @@ class Person(MicroAgent):
         elif cstate == AgentState.NEVERSMOKE and self.p_cohort == 4:
                 self.smoking_model.neversmoker_over_1991.add(self.get_id())
                 self.eCig_diff_subgroup = eCigDiffSubGroup.Neversmoked_over1991
-        if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None:
+        if self.eCig_diff_subgroup!=None:
                 for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
-                            if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
-                                   diffusion_model.deltaEt_agents.append[self.get_id()]      
-                            elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
-                                   diffusion_model.deltaEt_agents.append[self.get_id()]
+                        if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
+                                diffusion_model.deltaEt_agents.append[self.get_id()]      
+                        elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
+                                diffusion_model.deltaEt_agents.append[self.get_id()]
                     
                            
         

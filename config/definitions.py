@@ -48,12 +48,12 @@ class Theories(Enum):
     QUITSUCCESS = 3
     RELAPSESSTPM = 4
 
-class Regulators(Enum):
-    """
-    Enum class that lists the available regulators of macro entities
-    """
-    eCigDiffReg = 1
-    SocialNetworkReg = 2 
+#class Regulators(Enum):
+#    """
+#    Enum class that lists the available regulators of macro entities
+#    """
+#    eCigDiffReg = 1
+#    SocialNetworkReg = 2 
 
 class AgentState(Enum):
     """

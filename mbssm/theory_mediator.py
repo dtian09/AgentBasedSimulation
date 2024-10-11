@@ -9,10 +9,6 @@ class TheoryMediator(ABC):
     def __init__(self, theory_list: List[Theory]):
         self.theory_list: List[Theory] = theory_list
 
-    #@abstractmethod
-    #def get_current_theory_of_agent(self, agent):
-    #    pass
-
     @abstractmethod
     def mediate_situation(self, agent):
         pass
