@@ -17,7 +17,7 @@ class eCigDiffusion(MacroEntity):
         self.smoking_model=smoking_model
         self.subgroup=None #the population subgroup of this e-cigarette diffusion model
         self.ecig_type=None #the type of e-cigarette (non-disosable or disposable) modelled by this diffusion model
-        self.deltaEt_agents=list() #if deltaEt > 0, deltEt_agents is the list of the |deltaEt| non-ecig users (agent ids) of this subgroup who become ecig users when allocateDiffusion method is called iteratively; if deltaEt < 0, deltEt_agents is the list of the |deltaEt| e-cig users who become non-e-cig users when allocateDiffusion method is called iteratively. 
+        self.deltaEt_agents=[] #if deltaEt > 0, deltEt_agents is the list of the agents of this subgroup who will become e-cig users when allocateDiffusion method is called iteratively; if deltaEt < 0, deltEt_agents is the list of the e-cig users who will become non-e-cig users when allocateDiffusion method is called iteratively. 
         self.ecig_users=0
 
     def set_subgroup(self, subgroup : int):
@@ -56,16 +56,16 @@ class eCigDiffusion(MacroEntity):
                 self.deltaEt=int(self.deltaEt)
         else:
             self.deltaEt=0
-        self.deltaEt_agents=list()#reset to empty list
+        self.deltaEt_agents=[] #reset to empty list
 
     def allocateDiffusion(self, p : Person):
         if self.deltaEt > 0:#change this agent to an ecig user
             p.p_ecig_use.set_value(1)
             p.ecig_type = self.ecig_type
-            self.deltaEt -=1 #decrease no. of new non-ecig users to create
+            self.deltaEt -=1 #update number of new ecig users to create
             self.deltaEt_agents.remove(p.get_id())
         elif self.deltaEt < 0: #change this agent to non-ecig user
             p.p_ecig_use.set_value(0)
             p.ecig_type = None  
-            self.deltaEt +=1 #increase no. of new non-ecig users to create
+            self.deltaEt +=1 #update number of new non-ecig users to create
             self.deltaEt_agents.remove(p.get_id())

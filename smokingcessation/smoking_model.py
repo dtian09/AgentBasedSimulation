@@ -104,29 +104,18 @@ class SmokingModel(Model):
                             eCigDiffSubGroup.Neversmoked_over1991:[]}
 
     def initialize_ecig_diffusion_subgroups(self):
-        self.exsmoker_less_1940=set()
-        self.exsmoker_1941_1960=set()
-        self.exsmoker_1961_1980=set()
-        self.exsmoker_1981_1990=set()
-        self.exsmoker_over_1991=set()
-        self.smoker_less_1940=set()
-        self.smoker_1941_1960=set()
-        self.smoker_1961_1980=set()
-        self.smoker_1981_1990=set()
-        self.smoker_over_1991=set()
-        self.neversmoker_over_1991=set()
         self.ecig_diff_subgroups={}
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmokerless1940]=self.exsmoker_less_1940
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1941_1960]=self.exsmoker_1941_1960
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1961_1980]=self.exsmoker_1961_1980
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1981_1990]=self.exsmoker_1981_1990
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker_over1991]=self.exsmoker_over_1991
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Smokerless1940]=self.smoker_less_1940
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1941_1960]=self.smoker_1941_1960
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1961_1980]=self.smoker_1961_1980
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1981_1990]=self.smoker_1981_1990
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker_over1991]=self.smoker_over_1991
-        self.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991]=self.neversmoker_over_1991
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmokerless1940]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1941_1960]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1961_1980]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1981_1990]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker_over1991]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Smokerless1940]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1941_1960]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1961_1980]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1981_1990]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker_over1991]=set()
+        self.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991]=set()
         
     def init_ecig_diffusions(self):
         from smokingcessation.ecig_diffusion import eCigDiffusion
@@ -557,6 +546,7 @@ class SmokingModel(Model):
                     nrt_use=self.data.at[i, 'pNRTUse'],
                     varenicline_use=self.data.at[i, 'pVareniclineUse'],
                     ecig_use=self.data.at[i, 'pECigUse'],
+                    ecig_type=self.data.at[i, 'alldisposable'],
                     cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
                     years_since_quit=self.data.at[i, 'pYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
                     states=states,
@@ -778,7 +768,7 @@ class SmokingModel(Model):
         #return: corresponding tick of non disposable diffusion models in months
         if self.start_time_of_non_disp_diffusions > 0: #e.g. 3
             if self.current_time_step == self.start_time_of_non_disp_diffusions:
-                return 3 #Now is tick 1 (1st quarter of year) of diffusion model
+                return 3 #at tick 1 (1st quarter of year) of diffusion model
             elif self.current_time_step > self.start_time_of_non_disp_diffusions:
                 return (self.current_time_step - self.start_time_of_non_disp_diffusions + 3) #tick of diffusion model = (current time step of ABM - start time step of diffusion model + 3)/3. (current time step of ABM - start time step of diffusion model + 3) is the numerator. changeInE() of eCigDiffusion class divides this numerator by 3.
             else:#if time step of ABM is less than starting time step of diffusion model, then diffusion model does not start and there is 0 diffusion
@@ -828,6 +818,10 @@ class SmokingModel(Model):
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Smokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Smokerless1940]
             self.current_time_step_of_disp_diffusions = self.convert_tick_of_ABM_to_tick_of_disp_ecig_diffusions()
         self.calculate_calibration_targets_and_ecig_diffusion_subgroups_and_do_situational_mechanisms()
+        ###debug
+        #for subgroup,subgroupset in self.ecig_diff_subgroups.items():
+        #    print(str(subgroup)+': '+str(len(subgroupset)))
+        ###    
         self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
         self.init_population_counts()
         if self.current_time_step == self.end_year_tick:
@@ -839,6 +833,13 @@ class SmokingModel(Model):
         self.do_action_mechanisms()#COMB models or STPM models
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models
+        ###debug
+        for subgroup,diffusion_models in self.non_disp_diffusion_models.items():
+            print('subgroup'+str(subgroup))
+            for diff_model in diffusion_models:
+                print('diffusion model: e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt))
+        print('ecig_Et: '+str(self.ecig_Et))
+        ###
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
@@ -860,12 +861,12 @@ class SmokingModel(Model):
         import matplotlib.pyplot as plt
         l=[0 for _ in range(0,132)] #(2021-2010)*12=132 months 
         self.ecig_Et[eCigDiffSubGroup.Neversmoked_over1991]= l + self.ecig_Et[eCigDiffSubGroup.Neversmoked_over1991]#neversmoker1991+ only used disposable ecig from 2022 and did not use ecig before 2022 (add 0s)
-        for subgroup in [(eCigDiffSubGroup.Exsmokerless1940,"Exsmoker <1940"),
+        for subgroup in [(eCigDiffSubGroup.Exsmokerless1940,"Exsmoker_less1940"),
                         (eCigDiffSubGroup.Exsmoker1941_1960,"Exsmoker1941_1960"),
                         (eCigDiffSubGroup.Exsmoker1961_1980,"Exsmoker1961_1980"),
                         (eCigDiffSubGroup.Exsmoker1981_1990,"Exsmoker1981_1990"),
                         (eCigDiffSubGroup.Exsmoker_over1991,"Exsmoker_over1991"),
-                        (eCigDiffSubGroup.Smokerless1940,"Smokerless1940"),
+                        (eCigDiffSubGroup.Smokerless1940,"Smoker_less1940"),
                         (eCigDiffSubGroup.Smoker1941_1960,"Smoker1941_1960"),
                         (eCigDiffSubGroup.Smoker1961_1980,"Smoker1961_1980"),
                         (eCigDiffSubGroup.Smoker1981_1990,"Smoker1981_1990"),
