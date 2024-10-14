@@ -102,10 +102,12 @@ class RegSmokeTheory(COMBTheory):
             random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
             for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
                 if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    #if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    #if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
 
     def do_learning(self):
@@ -184,10 +186,12 @@ class QuitAttemptTheory(COMBTheory):
             random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
             for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
                 if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    #if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    #if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
 
     def do_learning(self):
@@ -265,10 +269,12 @@ class QuitSuccessTheory(COMBTheory):
             random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
             for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
                 if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    #if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    #if agent.get_id() == diffusion_model.deltaEt_agents[0]:#if this agent is the head of the shuffled list deltaEt_agents, allocate diffusion to it
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
 
     def do_learning(self):

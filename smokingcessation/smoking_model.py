@@ -718,7 +718,7 @@ class SmokingModel(Model):
                self.s=0 #number of e-cig users of a subgroup
            for subgroup,diffusion_models in self.non_disp_and_disp_diffusion_models.items():
                    for diffusion_model in diffusion_models:    
-                        diffusion_model.do_transformation()
+                        diffusion_model.do_transformation()#calculate Et of diffusion model
                         if self.running_mode == 'debug':#in debug mode, add together Et of both diffusion models and record the total value (ecig prevalence) in Ecig_Et list
                            self.s += diffusion_model.ecig_users
                    if self.running_mode == 'debug':
@@ -747,7 +747,7 @@ class SmokingModel(Model):
         else:#from 2022 for the subgroups using both non-disp ecig and disp ecig, run the non-disposable and disposable diffusion models
            for diffusion_models in self.non_disp_and_disp_diffusion_models.values():
                    for diffusion_model in diffusion_models:    
-                        diffusion_model.do_macro_macro()                                                         
+                        diffusion_model.do_macro_macro()#calculate delatEt of diffusion model                                                         
            diffusion_model=self.disp_diffusion_models[eCigDiffSubGroup.Neversmoked_over1991][0]
            diffusion_model.do_macro_macro() #neversmoker1991+ only use disposable ecig from 2022                         
            for subgroup in [eCigDiffSubGroup.Exsmokerless1940, eCigDiffSubGroup.Exsmoker1941_1960, eCigDiffSubGroup.Smokerless1940]:#these subgroups only use non-disposable ecig from 2010 to 2024
@@ -876,6 +876,9 @@ class SmokingModel(Model):
             for prev in self.ecig_Et[subgroup[0]]:
                 f.write(str(prev)+',')
             f.close()
+            #plot prevalence at each quarter
+            plt.figure()#create a new figure for each plot
+            plt.plot([x for x in range(0,len(self.ecig_Et[subgroup[0]]))], self.ecig_Et[subgroup[0]], "x-", color='blue', markerfacecolor='black', markeredgecolor='black')
             plt.title(subgroup[1])
             plt.xlabel("Tick")
             plt.ylabel("Prevalence of e-cigarette use")

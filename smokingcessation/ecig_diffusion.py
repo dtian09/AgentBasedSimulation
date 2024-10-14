@@ -18,7 +18,6 @@ class eCigDiffusion(MacroEntity):
         self.subgroup=None #the population subgroup of this e-cigarette diffusion model
         self.ecig_type=None #the type of e-cigarette (non-disosable or disposable) modelled by this diffusion model
         self.deltaEt_agents=[] #if deltaEt > 0, deltEt_agents is the list of the agents of this subgroup who will become e-cig users when allocateDiffusion method is called iteratively; if deltaEt < 0, deltEt_agents is the list of the e-cig users who will become non-e-cig users when allocateDiffusion method is called iteratively. 
-        self.ecig_users=0
 
     def set_subgroup(self, subgroup : int):
         self.subgroup=subgroup
@@ -27,10 +26,11 @@ class eCigDiffusion(MacroEntity):
         self.ecig_type=eCigType
 
     def calculate_ecig_users(self):
+        self.ecig_users=0
         for agent_id in self.smoking_model.ecig_diff_subgroups[self.subgroup]:
             agent=self.smoking_model.context.agent((agent_id, self.smoking_model.type, self.smoking_model.rank))
             self.ecig_users += agent.p_ecig_use.get_value()
-    
+
     def calculate_Et(self):#calculate E(t), the prevalence of e-cigarette
         #calculate E(t)=1/N * sum(pEcigUse_i) where i is the ith agent; N is size of the population subgroup (e.g. Ex-smoker<1940) of the diffusion model
         self.calculate_ecig_users()
@@ -50,7 +50,8 @@ class eCigDiffusion(MacroEntity):
             #else deltaEt = integer part of deltaEt
             fraction_part = self.deltaEt % 1 
             if fraction_part > 0:
-                if random.uniform(0, 1) <= fraction_part:
+                #if random.uniform(0, 1) <= fraction_part:
+                if random.uniform(0, 1) >= fraction_part:
                     self.deltaEt=int(self.deltaEt) + 1
             else:
                 self.deltaEt=int(self.deltaEt)
