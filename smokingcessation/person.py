@@ -587,9 +587,11 @@ class Person(MicroAgent):
         elif cstate == AgentState.NEVERSMOKE and self.p_cohort.get_value() == 4:
                 self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991].add(self.get_id())
                 self.eCig_diff_subgroup = eCigDiffSubGroup.Neversmoked_over1991
-        
+        else:
+               self.eCig_diff_subgroup = None #this agent not in any ecig subgroup
+
     def add_agent_to_deltaEtagents(self):        
-        if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None :#This agent uses e-cig at this tick, then, append the agent to the corresponding deltaEt_agents list as appropriate.
+        if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None :#This agent belongs to an e-cig subgroup, then, append the agent to the corresponding deltaEt_agents list as appropriate.
                 for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
                         if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
                                 diffusion_model.deltaEt_agents.append(self.get_id())                                        

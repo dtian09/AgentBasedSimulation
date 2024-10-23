@@ -131,7 +131,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_exsmoker_less1940.q']
         m=self.props['nondisp_diffusion_exsmoker_less1940.m']
         d=self.props['nondisp_diffusion_exsmoker_less1940.d']        
-        self.nondisp_diffusion_exsmoker_less1940 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_exsmoker_less1940.deltaEt']
+        self.nondisp_diffusion_exsmoker_less1940 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_exsmoker_less1940.set_subgroup(eCigDiffSubGroup.Exsmokerless1940)
         self.nondisp_diffusion_exsmoker_less1940.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_exsmoker_less1940.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -140,7 +141,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_exsmoker_1941_1960.q']
         m=self.props['nondisp_diffusion_exsmoker_1941_1960.m']
         d=self.props['nondisp_diffusion_exsmoker_1941_1960.d']
-        self.nondisp_diffusion_exsmoker_1941_1960 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_exsmoker_1941_1960.deltaEt']
+        self.nondisp_diffusion_exsmoker_1941_1960 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_exsmoker_1941_1960.set_subgroup(eCigDiffSubGroup.Exsmoker1941_1960)
         self.nondisp_diffusion_exsmoker_1941_1960.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_exsmoker_1941_1960.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -149,7 +151,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_exsmoker_1961_1980.q']
         m=self.props['nondisp_diffusion_exsmoker_1961_1980.m']
         d=self.props['nondisp_diffusion_exsmoker_1961_1980.d']
-        self.nondisp_diffusion_exsmoker_1961_1980 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_exsmoker_1961_1980.deltaEt']        
+        self.nondisp_diffusion_exsmoker_1961_1980 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_exsmoker_1961_1980.set_subgroup(eCigDiffSubGroup.Exsmoker1961_1980)
         self.nondisp_diffusion_exsmoker_1961_1980.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_exsmoker_1961_1980.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -158,7 +161,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_exsmoker_1981_1990.q']
         m=self.props['nondisp_diffusion_exsmoker_1981_1990.m']
         d=self.props['nondisp_diffusion_exsmoker_1981_1990.d']
-        self.nondisp_diffusion_exsmoker_1981_1990 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_exsmoker_1981_1990.deltaEt']        
+        self.nondisp_diffusion_exsmoker_1981_1990 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_exsmoker_1981_1990.set_subgroup(eCigDiffSubGroup.Exsmoker1981_1990)
         self.nondisp_diffusion_exsmoker_1981_1990.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_exsmoker_1981_1990.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -167,7 +171,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_exsmoker_over1991.q']
         m=self.props['nondisp_diffusion_exsmoker_over1991.m']
         d=self.props['nondisp_diffusion_exsmoker_over1991.d']        
-        self.nondisp_diffusion_exsmoker_over1991 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_exsmoker_over1991.deltaEt']      
+        self.nondisp_diffusion_exsmoker_over1991 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_exsmoker_over1991.set_subgroup(eCigDiffSubGroup.Exsmoker_over1991)
         self.nondisp_diffusion_exsmoker_over1991.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_exsmoker_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -176,7 +181,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_smoker_less1940.q']
         m=self.props['nondisp_diffusion_smoker_less1940.m']
         d=self.props['nondisp_diffusion_smoker_less1940.d']
-        self.nondisp_diffusion_smoker_less1940 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_smoker_less1940.deltaEt']        
+        self.nondisp_diffusion_smoker_less1940 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_smoker_less1940.set_subgroup(eCigDiffSubGroup.Smokerless1940)
         self.nondisp_diffusion_smoker_less1940.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_smoker_less1940.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -184,8 +190,9 @@ class SmokingModel(Model):
         p=self.props['nondisp_diffusion_smoker_1941_1960.p']
         q=self.props['nondisp_diffusion_smoker_1941_1960.q']
         m=self.props['nondisp_diffusion_smoker_1941_1960.m']
-        d=self.props['nondisp_diffusion_smoker_1941_1960.d']        
-        self.nondisp_diffusion_smoker_1941_1960 = eCigDiffusion(p, q, m, d, self)
+        d=self.props['nondisp_diffusion_smoker_1941_1960.d']
+        deltaEt=self.props['nondisp_diffusion_smoker_1941_1960.deltaEt']          
+        self.nondisp_diffusion_smoker_1941_1960 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_smoker_1941_1960.set_subgroup(eCigDiffSubGroup.Smoker1941_1960)
         self.nondisp_diffusion_smoker_1941_1960.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_smoker_1941_1960.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -193,8 +200,9 @@ class SmokingModel(Model):
         p=self.props['nondisp_diffusion_smoker_1961_1980.p']
         q=self.props['nondisp_diffusion_smoker_1961_1980.q']
         m=self.props['nondisp_diffusion_smoker_1961_1980.m']
-        d=self.props['nondisp_diffusion_smoker_1961_1980.d']    
-        self.nondisp_diffusion_smoker_1961_1980 = eCigDiffusion(p, q, m, d, self)
+        d=self.props['nondisp_diffusion_smoker_1961_1980.d']
+        deltaEt=self.props['nondisp_diffusion_smoker_1961_1980.deltaEt']           
+        self.nondisp_diffusion_smoker_1961_1980 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_smoker_1961_1980.set_subgroup(eCigDiffSubGroup.Smoker1961_1980)
         self.nondisp_diffusion_smoker_1961_1980.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_smoker_1961_1980.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -203,7 +211,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_smoker_1981_1990.q']
         m=self.props['nondisp_diffusion_smoker_1981_1990.m']
         d=self.props['nondisp_diffusion_smoker_1981_1990.d']   
-        self.nondisp_diffusion_smoker_1981_1990 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_smoker_1981_1990.deltaEt']        
+        self.nondisp_diffusion_smoker_1981_1990 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_smoker_1981_1990.set_subgroup(eCigDiffSubGroup.Smoker1981_1990)
         self.nondisp_diffusion_smoker_1981_1990.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_smoker_1981_1990.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -212,7 +221,8 @@ class SmokingModel(Model):
         q=self.props['nondisp_diffusion_smoker_over1991.q']
         m=self.props['nondisp_diffusion_smoker_over1991.m']
         d=self.props['nondisp_diffusion_smoker_over1991.d']
-        self.nondisp_diffusion_smoker_over1991 = eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['nondisp_diffusion_smoker_over1991.deltaEt']        
+        self.nondisp_diffusion_smoker_over1991 = eCigDiffusion(p, q, m, d, deltaEt, self)
         self.nondisp_diffusion_smoker_over1991.set_subgroup(eCigDiffSubGroup.Smoker_over1991)
         self.nondisp_diffusion_smoker_over1991.set_eCigType(eCigType.Nondisp)
         self.nondisp_diffusion_smoker_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -222,7 +232,8 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_exsmoker_1961_1980.q']
         m=self.props['disp_diffusion_exsmoker_1961_1980.m']
         d=self.props['disp_diffusion_exsmoker_1961_1980.d']
-        self.disp_diffusion_exsmoker_1961_1980=eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['disp_diffusion_exsmoker_1961_1980.deltaEt']        
+        self.disp_diffusion_exsmoker_1961_1980=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_exsmoker_1961_1980.set_subgroup(eCigDiffSubGroup.Exsmoker1961_1980)
         self.disp_diffusion_exsmoker_1961_1980.set_eCigType(eCigType.Disp)
         self.disp_diffusion_exsmoker_1961_1980.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -231,8 +242,9 @@ class SmokingModel(Model):
         p=self.props['disp_diffusion_exsmoker_1981_1990.p']
         q=self.props['disp_diffusion_exsmoker_1981_1990.q']
         m=self.props['disp_diffusion_exsmoker_1981_1990.m']
-        d=self.props['disp_diffusion_exsmoker_1981_1990.d']  
-        self.disp_diffusion_exsmoker_1981_1990=eCigDiffusion(p, q, m, d, self)
+        d=self.props['disp_diffusion_exsmoker_1981_1990.d']
+        deltaEt=self.props['disp_diffusion_exsmoker_1981_1990.deltaEt']        
+        self.disp_diffusion_exsmoker_1981_1990=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_exsmoker_1981_1990.set_subgroup(eCigDiffSubGroup.Exsmoker1981_1990)
         self.disp_diffusion_exsmoker_1981_1990.set_eCigType(eCigType.Disp)
         self.disp_diffusion_exsmoker_1981_1990.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -242,7 +254,8 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_exsmoker_over1991.q']
         m=self.props['disp_diffusion_exsmoker_over1991.m']
         d=self.props['disp_diffusion_exsmoker_over1991.d'] 
-        self.disp_diffusion_exsmoker_over1991=eCigDiffusion(p, q, m, d, self)    
+        deltaEt=self.props['disp_diffusion_exsmoker_over1991.deltaEt'] 
+        self.disp_diffusion_exsmoker_over1991=eCigDiffusion(p, q, m, d, deltaEt, self)    
         self.disp_diffusion_exsmoker_over1991.set_subgroup(eCigDiffSubGroup.Exsmoker_over1991)
         self.disp_diffusion_exsmoker_over1991.set_eCigType(eCigType.Disp)
         self.disp_diffusion_exsmoker_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -251,8 +264,9 @@ class SmokingModel(Model):
         p=self.props['disp_diffusion_neversmoker_over1991.p']
         q=self.props['disp_diffusion_neversmoker_over1991.q']
         m=self.props['disp_diffusion_neversmoker_over1991.m']
-        d=self.props['disp_diffusion_neversmoker_over1991.d']        
-        self.disp_diffusion_neversmoked_over1991=eCigDiffusion(p, q, m, d, self)
+        d=self.props['disp_diffusion_neversmoker_over1991.d']   
+        deltaEt=self.props['disp_diffusion_neversmoker_over1991.deltaEt']             
+        self.disp_diffusion_neversmoked_over1991=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_neversmoked_over1991.set_subgroup(eCigDiffSubGroup.Neversmoked_over1991)
         self.disp_diffusion_neversmoked_over1991.set_eCigType(eCigType.Disp)
         self.disp_diffusion_neversmoked_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -262,7 +276,8 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_smoker_1941_1960.q']
         m=self.props['disp_diffusion_smoker_1941_1960.m']
         d=self.props['disp_diffusion_smoker_1941_1960.d']    
-        self.disp_diffusion_smoker_1941_1960=eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['disp_diffusion_smoker_1941_1960.deltaEt']    
+        self.disp_diffusion_smoker_1941_1960=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_smoker_1941_1960.set_subgroup(eCigDiffSubGroup.Smoker1941_1960)
         self.disp_diffusion_smoker_1941_1960.set_eCigType(eCigType.Disp)
         self.disp_diffusion_smoker_1941_1960.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -272,7 +287,8 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_smoker_1961_1980.q']
         m=self.props['disp_diffusion_smoker_1961_1980.m']
         d=self.props['disp_diffusion_smoker_1961_1980.d']
-        self.disp_diffusion_smoker_1961_1980=eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['disp_diffusion_smoker_1961_1980.deltaEt']        
+        self.disp_diffusion_smoker_1961_1980=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_smoker_1961_1980.set_subgroup(eCigDiffSubGroup.Smoker1961_1980)
         self.disp_diffusion_smoker_1961_1980.set_eCigType(eCigType.Disp)
         self.disp_diffusion_smoker_1961_1980.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -282,7 +298,8 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_smoker_1981_1990.q']
         m=self.props['disp_diffusion_smoker_1981_1990.m']
         d=self.props['disp_diffusion_smoker_1981_1990.d']        
-        self.disp_diffusion_smoker_1981_1990=eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['disp_diffusion_smoker_1981_1990.deltaEt'] 
+        self.disp_diffusion_smoker_1981_1990=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_smoker_1981_1990.set_subgroup(eCigDiffSubGroup.Smoker1981_1990)
         self.disp_diffusion_smoker_1981_1990.set_eCigType(eCigType.Disp)
         self.disp_diffusion_smoker_1981_1990.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -292,7 +309,8 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_smoker_over1991.q']
         m=self.props['disp_diffusion_smoker_over1991.m']
         d=self.props['disp_diffusion_smoker_over1991.d']
-        self.disp_diffusion_smoker_over1991=eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['disp_diffusion_smoker_over1991.deltaEt']
+        self.disp_diffusion_smoker_over1991=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_smoker_over1991.set_subgroup(eCigDiffSubGroup.Smoker_over1991)
         self.disp_diffusion_smoker_over1991.set_eCigType(eCigType.Disp)
         self.disp_diffusion_smoker_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
@@ -302,19 +320,13 @@ class SmokingModel(Model):
         q=self.props['disp_diffusion_neversmoker_over1991.q']
         m=self.props['disp_diffusion_neversmoker_over1991.m']
         d=self.props['disp_diffusion_neversmoker_over1991.d']
-        self.disp_diffusion_neversmoked_over1991=eCigDiffusion(p, q, m, d, self)
+        deltaEt=self.props['disp_diffusion_neversmoker_over1991.deltaEt']
+        self.disp_diffusion_neversmoked_over1991=eCigDiffusion(p, q, m, d, deltaEt, self)
         self.disp_diffusion_neversmoked_over1991.set_subgroup(eCigDiffSubGroup.Neversmoked_over1991)
         self.disp_diffusion_neversmoked_over1991.set_eCigType(eCigType.Disp)
         self.disp_diffusion_neversmoked_over1991.set_mediator(SmokingRegulatorMediator([eCigDiffusionRegulator(self)]))
         self.disp_diffusion_models[eCigDiffSubGroup.Neversmoked_over1991]=[self.disp_diffusion_neversmoked_over1991]
-        if self.running_mode == 'debug':
-            self.non_disp_Et={}
-            self.non_disp_and_disp_Et={}
-            for k in self.non_disp_diffusion_models.keys():
-                self.non_disp_Et[k]=[] #non disposabl e-cig prevalence of each quarter
-            for k in self.non_disp_and_disp_diffusion_models.keys():
-                self.non_disp_and_disp_Et[k]=[] #list of (non disp ecig users + disp ecig users)/size of this subgroup at each quarter
-
+    
     @staticmethod
     def replace_missing_value_with_zero(df):
         """replace NaN (missing values) with 0 to ignore the attributes in the COMB formulae (since beta*0 is 0)"""
@@ -704,21 +716,7 @@ class SmokingModel(Model):
     
     def do_action_mechanisms(self):
         for agent in self.context.agents(agent_type=self.type):
-            agent.do_action()
-    
-    def init_deltaE_of_non_disposable_diffusion_models(self):
-        #at tick 0 (quarter 1 of 2010) of non-disposable diffusions, initialize deltaEt (new ecig users) of each non-disposable diffusion model to the ecig users of the subgroup of the baseline population
-        for agent in self.context.agents(agent_type=self.type,shuffle=True):
-            agent.count_agent_for_ecig_diffusion_subgroups()
-        for diffusion_models in self.non_disp_diffusion_models.values():#diffusion_models is a list of diffusion models
-            for diffusion_model in diffusion_models:#diffusion model is a list of diffusion models
-                diffusion_model.changeInE(0)                   
-
-    def init_deltaE_of_disposable_diffusion_models(self):
-        #at tick 0 (quarter 1 of 2022) of disposable diffusions, initialize deltaEt (new ecig users) of each disposable diffusion model to the disposable ecig users of the subgroup of the synthetic population
-        for diffusion_models in self.disp_diffusion_models.values():
-               for diffusion_model in diffusion_models:    
-                   diffusion_model.changeInE(0)                                         
+            agent.do_action()                                  
 
     def do_transformational_mechanisms(self):    
         if self.year_of_current_time_step < 2022:#run non-disposable models
@@ -823,11 +821,9 @@ class SmokingModel(Model):
                self.year_number += 1
         self.initialize_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.current_time_step_of_non_disp_diffusions = self.convert_tick_of_ABM_to_tick_of_non_disp_ecig_diffusions()
-        if self.current_time_step ==  self.start_time_of_disp_diffusions:
-            self.init_deltaE_of_disposable_diffusion_models()#at tick 0 (quarter 1 of 2022) of disposable diffusions, initialize deltaE of the disposable diffusion models to the disposable ecig users. 
         if self.year_of_current_time_step < 2022:#before 2022, run non-disposable diffusion models only 
             self.diffusion_models_of_this_tick = self.non_disp_diffusion_models
-        else:#from 2022, run non-disposable and disposable diffusion models of each subgroup which uses both non-disposable and disposable ecig; run the disposable diffusion model of the subgroup (Neversmoked_over1991) which only uses disposable ecig; run the non-disposable diffusion model of each subgroup which only uses non-disposable ecig
+        else:#from 2022, run non-disposable and disposable diffusion models of each subgroup where some individuals use non-disposable and others use disposable ecig; run the disposable diffusion model of the subgroup (Neversmoked_over1991) which only uses disposable ecig; run the non-disposable diffusion model of each subgroup which only uses non-disposable ecig
             self.diffusion_models_of_this_tick = self.non_disp_and_disp_diffusion_models #the non-disposable and disposable diffusion models of the subgroups which use both non-disposable and disposable ecig
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Neversmoked_over1991] = self.disp_diffusion_models[eCigDiffSubGroup.Neversmoked_over1991]#the disposable diffusion model of the subgroup (Neversmoked_over1991) which only uses disposable ecig
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Exsmokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Exsmokerless1940]#the non-disposable diffusion models of the subgroup which only uses non-disposable ecig
@@ -847,11 +843,11 @@ class SmokingModel(Model):
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models
         ###debug
-        for subgroup,diffusion_models in self.non_disp_diffusion_models.items():
-            print('subgroup'+str(subgroup))
-            for diff_model in diffusion_models:
-                print('diffusion model: e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt))
-        print('ecig_Et: '+str(self.ecig_Et))
+        #for subgroup,diffusion_models in self.non_disp_diffusion_models.items():
+        #    print('subgroup'+str(subgroup))
+        #    for diff_model in diffusion_models:
+        #        print('diffusion model: e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt))
+        #print('ecig_Et: '+str(self.ecig_Et))
         ###
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
@@ -900,9 +896,12 @@ class SmokingModel(Model):
             #plot prevalence at each quarter
             plt.figure()#create a new figure for each plot
             plt.plot([x+1 for x in range(0,len(quartersEt))], quartersEt, "x-", color='blue', markerfacecolor='black', markeredgecolor='black')
-            tick_positions = [x+1 for x in range(0,len(quartersEt))]
-            tick_labels = tick_positions
-            plt.xticks(tick_positions, tick_labels)
+            xtick_positions = [x+1 for x in range(0,len(quartersEt))]
+            xtick_labels = xtick_positions
+            plt.xticks(xtick_positions, xtick_labels)
+            ytick_positions = [y/10 for y in range(0,11)]
+            ytick_labels = ytick_positions
+            plt.yticks(ytick_positions, ytick_labels)
             plt.title(subgroup[1])
             plt.xlabel("Quarters")
             plt.ylabel("Prevalence of e-cigarette use")
@@ -924,26 +923,12 @@ class SmokingModel(Model):
                 f.write(str(prev) + ',')
             f.close()
             self.write_ecig_prevalence_to_csv_files_and_plot_graphs()
-            # write states of each agent over the entire simulation period into a csv file
-            '''
-            self.logfile.write('###states of the agents over all time steps###\n')
-            self.logfile.write('id')
-            for i in range(self.current_time_step + 1):
-                self.logfile.write(',' + str(i))
-            self.logfile.write('\n')
-            for agent in self.context.agents(agent_type=self.type):
-                self.logfile.write(str(agent.get_id()))
-                for i in range(self.current_time_step + 1):
-                    self.logfile.write(',' + agent.states[i].name.lower())
-                self.logfile.write('\n')
-            '''
             self.logfile.close()
 
     def init(self):
         self.initialize_ecig_diffusion_subgroups()
         self.init_ecig_diffusions()
-        self.init_population()
-        self.init_deltaE_of_non_disposable_diffusion_models()       
+        self.init_population()      
         self.init_schedule()
 
     def run(self):

@@ -5,15 +5,15 @@ import numpy as np
 import random
 
 class eCigDiffusion(MacroEntity):
-    def __init__(self, p, q, m, d, smoking_model : SmokingModel):
+    def __init__(self, p, q, m, d, deltaEt, smoking_model : SmokingModel):
         super().__init__()
         self.p=p
         self.q=q
         self.m=m
         self.d=d
         self.deltaT=1/3 #deltaT is the time difference in quarters between two consecutive time steps (months) of ABM
-        self.Et=None 
-        self.deltaEt=None 
+        self.Et=0 #default value 0
+        self.deltaEt=deltaEt 
         self.smoking_model=smoking_model
         self.subgroup=None #the population subgroup of this e-cigarette diffusion model
         self.ecig_type=None #the type of e-cigarette (non-disosable or disposable) modelled by this diffusion model
@@ -30,8 +30,8 @@ class eCigDiffusion(MacroEntity):
         for agent_id in self.smoking_model.ecig_diff_subgroups[self.subgroup]:
             agent=self.smoking_model.context.agent((agent_id, self.smoking_model.type, self.smoking_model.rank))
             if agent.ecig_type == self.ecig_type:
-                 self.ecig_users += agent.p_ecig_use.get_value()
-
+                self.ecig_users += agent.p_ecig_use.get_value()
+    
     def calculate_Et(self):#calculate E(t), the prevalence of e-cigarette
         #calculate E(t)=1/N * sum(pEcigUse_i) where i is the ith agent; N is size of the population subgroup (e.g. Ex-smoker<1940) of the diffusion model
         self.calculate_ecig_users()
@@ -57,7 +57,7 @@ class eCigDiffusion(MacroEntity):
             else:
                 self.deltaEt=int(self.deltaEt)
         else:
-            self.deltaEt=self.calculate_ecig_users()#at tick 0, deltaEt is number of ecig users (new users)
+            self.deltaEt=self.ecig_users #at tick 0, deltaEt is number of ecig users (new users)
         self.deltaEt_agents=[] #reset to empty list
 
     def allocateDiffusion(self, p : Person):
