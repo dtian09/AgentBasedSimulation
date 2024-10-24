@@ -13,7 +13,8 @@ class eCigDiffusion(MacroEntity):
         self.d=d
         self.deltaT=1/3 #deltaT is the time difference in quarters between two consecutive time steps (months) of ABM
         self.Et=0 #default value 0
-        self.deltaEt=deltaEt 
+        self.deltaEt=deltaEt
+        self.ecig_users=0
         self.smoking_model=smoking_model
         self.subgroup=None #the population subgroup of this e-cigarette diffusion model
         self.ecig_type=None #the type of e-cigarette (non-disosable or disposable) modelled by this diffusion model
@@ -36,26 +37,25 @@ class eCigDiffusion(MacroEntity):
         #calculate E(t)=1/N * sum(pEcigUse_i) where i is the ith agent; N is size of the population subgroup (e.g. Ex-smoker<1940) of the diffusion model
         self.calculate_ecig_users()
         if len(self.smoking_model.ecig_diff_subgroups[self.subgroup]) > 0:
-            return self.ecig_users/len(self.smoking_model.ecig_diff_subgroups[self.subgroup])
+            self.Et=self.ecig_users/len(self.smoking_model.ecig_diff_subgroups[self.subgroup])
         else:
-            return 0
+            self.Et=0
         
     def changeInE(self, t):#calculate deltaE(t) where t in months
         if t > 0:
             self.deltaEt=self.p*(self.m*np.exp(-self.d*t/3)-self.Et)+(self.q*np.exp(self.d*t/3)/self.m)*self.Et*(self.m*np.exp(-self.d*t/3)-self.Et)
             self.deltaEt=self.deltaEt*self.deltaT
             #sample any fractional agents according to the size of the fractional part of deltaEt (e.g. for 8.9 agents, we get 8 agents for certain and the ninth agent with 90% probability).
-            #draw a random value r from uniform[0,1]
-            #if r <= fraction part
-            #then deltaEt = integer part of delatEt + 1
-            #else deltaEt = integer part of deltaEt
-            fraction_part = self.deltaEt % 1 
-            if fraction_part > 0:
-                #if random.uniform(0, 1) <= fraction_part:
-                if random.uniform(0, 1) >= fraction_part:
-                    self.deltaEt=int(self.deltaEt) + 1
-            else:
-                self.deltaEt=int(self.deltaEt)
+            if self.deltaEt > 0:
+                fraction_part = self.deltaEt % 1 
+                if fraction_part > 0:
+                    if random.uniform(0, 1) >= fraction_part:
+                        self.deltaEt=int(self.deltaEt) + 1
+            elif self.deltaEt < 0:
+                fraction_part = abs(self.deltaEt) % 1 
+                if fraction_part > 0:
+                    if random.uniform(0, 1) >= fraction_part:
+                        self.deltaEt=int(self.deltaEt) - 1
         else:
             self.deltaEt=self.ecig_users #at tick 0, deltaEt is number of ecig users (new users)
         self.deltaEt_agents=[] #reset to empty list
