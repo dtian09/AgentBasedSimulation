@@ -50,12 +50,12 @@ class eCigDiffusion(MacroEntity):
                 fraction_part = self.deltaEt % 1 
                 if fraction_part > 0:
                     if random.uniform(0, 1) >= fraction_part:
-                        self.deltaEt=int(self.deltaEt) + 1
+                        self.deltaEt=int(self.deltaEt) + 1 #add an user
             elif self.deltaEt < 0:
                 fraction_part = abs(self.deltaEt) % 1 
                 if fraction_part > 0:
-                    if random.uniform(0, 1) >= fraction_part:
-                        self.deltaEt=int(self.deltaEt) - 1
+                    if random.uniform(0, 1) >= fraction_part: 
+                        self.deltaEt=int(self.deltaEt) - 1 #add an non-user
         else:
             self.deltaEt=self.ecig_users #at tick 0, deltaEt is number of ecig users (new users)
         self.deltaEt_agents=[] #reset to empty list
