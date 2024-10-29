@@ -1,25 +1,26 @@
 # ABM Version 0.8
 
-ABM version 0.8 runs 1) the COM-B regular smoking theory or STPM initiation probabilities for initiating regular smoking;
-			    	 2) COM-B quit attempt theory or STPM quitting probabilities for making a quit attempt;
-		 		 	 3) COM-B quit success theory or STPM quitting probabilities for quitting successfully;
-					 4) STPM relapse probabilities for relapse.
-                     5) and e-cigarette diffusion models of the subgroups: 
-                     - ex-smoker < 1940
-                     - ex-smoker1941-1960
-                     - ex-smoker1961-1980
-                     - ex-smoker1981-1990
-                     - ex-smoker1991+
-                     - smoker < 1940 
-                     - smoker1941-1960
-                     - smoker1961-1980
-                     - smoker1981-1990
-                     - smoker1991+
-                     - neversmoked1991+
+ABM version 0.8 runs:
+- 1) the COM-B regular smoking theory or STPM initiation probabilities for initiating regular smoking;
+- 2) COM-B quit attempt theory or STPM quitting probabilities for making a quit attempt;
+- 3) COM-B quit success theory or STPM quitting probabilities for quitting successfully;
+- 4) STPM relapse probabilities for relapse and
+- 5) e-cigarette diffusion models of the subgroups: 
+  - ex-smoker < 1940
+  - ex-smoker1941-1960
+  - ex-smoker1961-1980
+  - ex-smoker1981-1990
+  - ex-smoker1991+
+  - smoker < 1940 
+  - smoker1941-1960
+  - smoker1961-1980
+  - smoker1981-1990
+  - smoker1991+
+  - neversmoked1991+
 
 The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on March (quarter 1) 2022. The subgroups which used both non-disposable and disposable e-cigarette from January 2022 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2022. 
 
-Reference: diffusion_parameters.csv
+Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)
 
 ## Installation
 
@@ -73,7 +74,7 @@ env CC=mpicxx pip install repast4py
 pip install numpy pandas
 ```
 ## Run the ABM software
-1. Download the following [data files](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view?usp=drive_link) under the 'data' folder:
+1. Download the following [data files](https://drive.google.com/drive/u/1/folders/1HVtjLumfBiwaYsj0k9p_YA8DKIror6Jx) under the 'data' folder:
 
 - testdata_STPM2011_encriched_with_STS_data.csv
 - testdata_STS2010_Jan_enriched_with_STPM_data.csv
@@ -96,7 +97,7 @@ For example, to use the STPM initiation probabilities for initiating regular smo
 - quitting_behaviour: "COMB"
 - ABM_mode: "debug"
 
-5. Specify the parameters settings of the ABM in the props/model.yaml file. In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980:
+5. Specify the parameters settings of the ABM in the props/model.yaml file. In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980 (Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)):
 
 - disp_diffusion_exsmoker_1961_1980.p: 0.022498286
 - disp_diffusion_exsmoker_1961_1980.q: 0.212213813
@@ -133,6 +134,14 @@ To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_
 ```
 python plot_annual_ecig_diffusions.py
 ```
+The generated plots are saved under a folder 'output/plots'.
+
+## Save the Outputs of the ABM for Future Analysis
+
+To avoid the outputs of the ABM being overwritten when running the ABM with different parameters settings, rename the 'output' folder to a different meaningful name e.g. 'output(deltaEt=0 at tick0)'.
+
+- Note: To generate plots using plot_annual_ecig_diffusions.py in the future, in the function plot_prevalence, set 'dir' to the folder containing the outputs e.g. dir='./output(deltaEt = 0 at tick0)/'.
+
 To deactivate the virtual environment, use the following command 
 ```
 deactivate

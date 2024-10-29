@@ -21,8 +21,9 @@ def create_folder(folder_path):
         print(f"Folder '{folder_path}' already exists.")
 
 def plot_prevalence():
-        dir='./output (ticks=years deltaEt = 0 at tick0)/'
+        #dir='./output (ticks=years deltaEt = 0 at tick0)/'
         #dir='./output (ticks=years deltaEt = ecig users in baseline population at tick0)/'
+        dir='./output/'
         outdir = dir+'plots' #folder to create for plots
         create_folder(outdir)
         filename = dir+'Exsmoker_less1940.csv'
