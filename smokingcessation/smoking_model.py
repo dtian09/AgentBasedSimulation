@@ -809,10 +809,10 @@ class SmokingModel(Model):
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models
         ###debug
-        for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
-            for diff_model in diffusion_models:
-                print('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt)+', e-cig users='+str(diff_model.ecig_users))
-            print('ecig_Et: ',self.ecig_Et[subgroup])
+        #for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
+        #    for diff_model in diffusion_models:
+        #        print('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt)+', e-cig users='+str(diff_model.ecig_users))
+        #    print('ecig_Et: ',self.ecig_Et[subgroup])
         ###
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
@@ -856,7 +856,7 @@ class SmokingModel(Model):
             Et=self.ecig_Et[subgroup[0]]
             for t in ticks_of_plot:
                 ###debug
-                print('t: ',t)
+                #print('t: ',t)
                 ###                
                 if t < len(Et):
                     f.write(str(Et[t])+',')
