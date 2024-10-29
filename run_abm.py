@@ -7,7 +7,6 @@ from mpi4py import MPI
 from repast4py import parameters
 from config.definitions import ROOT_DIR
 from smokingcessation.smoking_model import SmokingModel
-#import sys
 
 def main():
     parser = parameters.create_args_parser()

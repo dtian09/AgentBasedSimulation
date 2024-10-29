@@ -1,9 +1,0 @@
-Tick,Year,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD1,N_smokers_endyear_25-74_IMD1,N_newquitters_endyear_25-74_IMD1,N_ongoingquitters_endyear_25-74_IMD1,N_dead_endyear_25-74_IMD1,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD2,N_smokers_endyear_25-74_IMD2,N_newquitters_endyear_25-74_IMD2,N_ongoingquitters_endyear_25-74_IMD2,N_dead_endyear_25-74_IMD2,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD3,N_smokers_endyear_25-74_IMD3,N_newquitters_endyear_25-74_IMD3,N_ongoingquitters_endyear_25-74_IMD3,N_dead_endyear_25-74_IMD3,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD4,N_smokers_endyear_25-74_IMD4,N_newquitters_endyear_25-74_IMD4,N_ongoingquitters_endyear_25-74_IMD4,N_dead_endyear_25-74_IMD4,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD5,N_smokers_endyear_25-74_IMD5,N_newquitters_endyear_25-74_IMD5,N_ongoingquitters_endyear_25-74_IMD5,N_dead_endyear_25-74_IMD5
-0,2011,0,352,157,94,96,0,401,187,97,113,0,426,184,126,113,0,474,187,137,143,0,481,218,112,149,0
-13,2012,1,350,148,110,90,0,404,167,119,115,0,424,202,111,110,0,476,210,146,118,0,489,226,143,118,0
-25,2013,2,350,173,103,71,0,402,197,106,97,0,430,212,128,90,0,477,235,134,107,0,492,237,145,109,0
-37,2014,3,354,183,97,74,0,398,205,125,66,0,433,227,130,76,0,484,228,156,98,0,501,256,168,75,0
-49,2015,4,349,180,100,69,0,393,205,114,74,0,431,207,135,88,0,489,278,139,70,0,509,268,150,90,0
-61,2016,5,349,179,113,55,0,390,216,103,70,0,427,221,120,86,0,490,261,144,85,0,513,259,161,91,0
-73,2017,6,339,153,117,69,0,387,200,119,68,0,428,207,138,81,0,491,253,149,89,0,521,290,136,94,0
-85,2018,7,340,175,104,58,0,392,199,116,76,0,421,205,137,78,0,489,249,156,83,0,528,307,155,64,0

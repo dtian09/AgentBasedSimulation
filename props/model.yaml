@@ -1,13 +1,23 @@
 regular_smoking_behaviour: "STPM" #"COMB" #
 quitting_behaviour: "COMB" #"STPM"
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
-data_file: "data/testdata.csv" #baseline (synthetic) population
+#data_file: "data/testdata_STPM2011_encriched_with_STS_data.csv" #baseline (synthetic) population
+data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data.csv" #STS Jan 2010 population enriched with STPM variables for verifying ecig diffusions of the ABM 
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
-year_of_baseline: 2011 #year of the baseline popultion at t=0
+#year_of_baseline: 2011 #year of the baseline popultion at t=0
+year_of_baseline: 2010 #year of STS Jan 2010 population - this is for verifying e-cig diffusions of the ABM
+#year_of_baseline: 2022
 #stop.at: 12 #the final time step when the simulation stops 
-stop.at: 97 #year 2018 (where tick 0 is 2011)
+#stop.at: 97 #year 2018. This is the stop time of ABM when tick 1 = Jan 2011
+#stop.at: 171 #March 2024 (for verifying e-cig diffusions). This is the stop time (final tick) of ABM when tick 1 = Jan 2010
+stop.at: 183 #March 2025 (for verifying e-cig diffusions). This is the stop time (final tick) of ABM when tick 1 = Jan 2010
+#set the starting time step of e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
+#start_time_of_non_disp_diffusions: -12 #The ABM starts at Jan 2011 (tick 1) (baseline population is STPM 2011) and non-disposable diffusions start at 1st quarter of 2010 (i.e. -12). 
+#start_time_of_disp_diffusions: 134 #The ABM starts at Jan 2011 (tick 1) (baseline population is STPM 2011) and disposable diffusions start at 1st quarter of 2022. 12 months x (2022-2011) years + 2 months = 134 months in timescale of ABM
+start_time_of_non_disp_diffusions: 3 #ABM starts at Jan 2010 (baseline population is STS Jan 2010) and non-disposable diffusions start at 1st quarter (March) (tick 1) of 2010 
+start_time_of_disp_diffusions: 146   #ABM starts at Jan 2010 and disposable diffusions start at 1st quarter (March) of 2022. start time of disposable diffusions = 12 months x (2022-2010) years + 2 months = 146 months in timescale of ABM
 ###cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = time length of a tick in weeks
 lambda: 0.0368 
 tickInterval: 4.3 #time length of a tick in weeks (4.3 weeks is 1 month)
@@ -63,3 +73,121 @@ success.oSEP.beta: -0.15
 success.C.beta: 0.55
 success.O.beta: 0.08
 success.bias: 0.3
+###parameters of non-disposable e-cigarette diffusion models
+nondisp_diffusion_exsmoker_less1940.p: 0.003758197
+nondisp_diffusion_exsmoker_less1940.q: 0.229035581
+nondisp_diffusion_exsmoker_less1940.m: 0.037511314
+nondisp_diffusion_exsmoker_less1940.d: 0.036539882
+nondisp_diffusion_exsmoker_less1940.deltaEt: 0        #non-disposable ecig users of this subgroup of the STS quarter 1 2010 population
+
+nondisp_diffusion_exsmoker_1941_1960.p: 0.005504545
+nondisp_diffusion_exsmoker_1941_1960.q: 0.178675444
+nondisp_diffusion_exsmoker_1941_1960.m: 0.079986549
+nondisp_diffusion_exsmoker_1941_1960.d: 0.008591772
+nondisp_diffusion_exsmoker_1941_1960.deltaEt: 0
+
+nondisp_diffusion_exsmoker_1961_1980.p: 0.002056844
+nondisp_diffusion_exsmoker_1961_1980.q: 0.274353105
+nondisp_diffusion_exsmoker_1961_1980.m: 0.185261969
+nondisp_diffusion_exsmoker_1961_1980.d: 0.006317934
+nondisp_diffusion_exsmoker_1961_1980.deltaEt: 0
+
+nondisp_diffusion_exsmoker_1981_1990.p: 0.018434694
+nondisp_diffusion_exsmoker_1981_1990.q: 0.056888053
+nondisp_diffusion_exsmoker_1981_1990.m: 0.305145141
+nondisp_diffusion_exsmoker_1981_1990.d: 0.00333133
+nondisp_diffusion_exsmoker_1981_1990.deltaEt: 0
+
+nondisp_diffusion_exsmoker_over1991.p: 0.01165957
+nondisp_diffusion_exsmoker_over1991.q: 0.066603391
+nondisp_diffusion_exsmoker_over1991.m: 0.460888124
+nondisp_diffusion_exsmoker_over1991.d: 0.005969273
+nondisp_diffusion_exsmoker_over1991.deltaEt: 0
+
+nondisp_diffusion_smoker_less1940.p: 0.015402176
+nondisp_diffusion_smoker_less1940.q: 0
+nondisp_diffusion_smoker_less1940.m: 0.381729487
+nondisp_diffusion_smoker_less1940.d: 0.026180617
+#nondisp_diffusion_smoker_less1940.deltaEt: 1
+nondisp_diffusion_smoker_less1940.deltaEt: 0
+
+nondisp_diffusion_smoker_1941_1960.p: 0.003835209
+nondisp_diffusion_smoker_1941_1960.q: 0.509743924
+nondisp_diffusion_smoker_1941_1960.m: 0.253764344
+nondisp_diffusion_smoker_1941_1960.d: 0.014872495
+nondisp_diffusion_smoker_1941_1960.deltaEt: 0
+
+nondisp_diffusion_smoker_1961_1980.p: 0.004379892
+nondisp_diffusion_smoker_1961_1980.q: 0.414263224
+nondisp_diffusion_smoker_1961_1980.m: 0.269310273
+nondisp_diffusion_smoker_1961_1980.d: 0.008524794
+#nondisp_diffusion_smoker_1961_1980.deltaEt: 2
+nondisp_diffusion_smoker_1961_1980.deltaEt: 0
+
+nondisp_diffusion_smoker_1981_1990.p: 0.001560501
+nondisp_diffusion_smoker_1981_1990.q: 0.479817395
+nondisp_diffusion_smoker_1981_1990.m: 0.275738064
+nondisp_diffusion_smoker_1981_1990.d: 0.008461148
+nondisp_diffusion_smoker_1981_1990.deltaEt: 0
+
+nondisp_diffusion_smoker_over1991.p: 0.031225
+nondisp_diffusion_smoker_over1991.q: 0
+nondisp_diffusion_smoker_over1991.m: 0.38406994
+nondisp_diffusion_smoker_over1991.d: 0.003796005
+nondisp_diffusion_smoker_over1991.deltaEt: 0
+
+###parameters of disposable e-cigarette diffusion models
+disp_diffusion_exsmoker_1961_1980.p: 0.022498286
+disp_diffusion_exsmoker_1961_1980.q: 0.212213813
+disp_diffusion_exsmoker_1961_1980.m: 0.066939661
+disp_diffusion_exsmoker_1961_1980.d: 0
+disp_diffusion_exsmoker_1961_1980.deltaEt: 3        #disposable ecig users of this subgroup of the STS quarter 1 2022 population
+#disp_diffusion_exsmoker_1961_1980.deltaEt: 0
+
+disp_diffusion_exsmoker_1981_1990.p: 0.027271206
+disp_diffusion_exsmoker_1981_1990.q: 0.26953012
+disp_diffusion_exsmoker_1981_1990.m: 0.147392194
+disp_diffusion_exsmoker_1981_1990.d: 0
+disp_diffusion_exsmoker_1981_1990.deltaEt: 2
+#disp_diffusion_exsmoker_1981_1990.deltaEt: 0
+
+disp_diffusion_exsmoker_over1991.p: 0.023752782
+disp_diffusion_exsmoker_over1991.q: 0.676752244
+disp_diffusion_exsmoker_over1991.m: 0.188576789
+disp_diffusion_exsmoker_over1991.d: 0
+disp_diffusion_exsmoker_over1991.deltaEt: 8
+#disp_diffusion_exsmoker_over1991.deltaEt: 0
+
+disp_diffusion_neversmoker_over1991.p: 0.062797757
+disp_diffusion_neversmoker_over1991.q: 0.013828888
+disp_diffusion_neversmoker_over1991.m: 0.168710846
+disp_diffusion_neversmoker_over1991.d: 0
+disp_diffusion_neversmoker_over1991.deltaEt: 0
+
+disp_diffusion_smoker_1941_1960.p: 0.021535006
+disp_diffusion_smoker_1941_1960.q: 0.281268212
+disp_diffusion_smoker_1941_1960.m: 0.082087835
+disp_diffusion_smoker_1941_1960.d: 0
+disp_diffusion_smoker_1941_1960.deltaEt: 5
+#disp_diffusion_smoker_1941_1960.deltaEt: 0
+
+disp_diffusion_smoker_1961_1980.p: 0.048385301
+disp_diffusion_smoker_1961_1980.q: 0.149544709
+disp_diffusion_smoker_1961_1980.m: 0.159809392
+disp_diffusion_smoker_1961_1980.d: 0
+disp_diffusion_smoker_1961_1980.deltaEt: 7
+#disp_diffusion_smoker_1961_1980.deltaEt: 0
+
+disp_diffusion_smoker_1981_1990.p: 0.042294685
+disp_diffusion_smoker_1981_1990.q: 0.305195422
+disp_diffusion_smoker_1981_1990.m: 0.196089806
+disp_diffusion_smoker_1981_1990.d: 0
+disp_diffusion_smoker_1981_1990.deltaEt: 12
+#disp_diffusion_smoker_1981_1990.deltaEt: 0
+
+disp_diffusion_smoker_over1991.p: 0.08912984
+disp_diffusion_smoker_over1991.q: 0.225566855
+disp_diffusion_smoker_over1991.m: 0.314435515
+disp_diffusion_smoker_over1991.d: 0
+disp_diffusion_smoker_over1991.deltaEt: 45
+#disp_diffusion_smoker_over1991.deltaEt: 0

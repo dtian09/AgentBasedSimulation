@@ -3,6 +3,27 @@ from enum import Enum, IntEnum
 
 ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 
+class eCigType(IntEnum):
+    "define types of e-cigarette"
+    Nondisp = 1
+    Disp = 2
+
+class eCigDiffSubGroup(IntEnum):
+    """
+    define the subgroups of non-disposable and disposable e-cigarette diffusion models
+    """
+    Exsmokerless1940 = 1
+    Exsmoker1941_1960 = 2
+    Exsmoker1961_1980 = 3
+    Exsmoker1981_1990 = 4
+    Exsmoker_over1991 = 5
+    Smokerless1940 = 6
+    Smoker1941_1960 = 7
+    Smoker1961_1980 = 8
+    Smoker1981_1990 = 9
+    Smoker_over1991 = 10
+    Neversmoked_over1991 = 11
+
 class SubGroup(IntEnum):
     """
     define the subgroups (calibration targets) in whole population counts 
@@ -27,6 +48,12 @@ class Theories(Enum):
     QUITSUCCESS = 3
     RELAPSESSTPM = 4
 
+#class Regulators(Enum):
+#    """
+#    Enum class that lists the available regulators of macro entities
+#    """
+#    eCigDiffReg = 1
+#    SocialNetworkReg = 2 
 
 class AgentState(Enum):
     """

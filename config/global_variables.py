@@ -1,4 +1,4 @@
-###definition of global variables to represent calibration targets
+###declaration of global variables to represent calibration targets
 #Initiation of age cateory=[agelowerbound,ageupperbound] by sex)
 agelowerbound=16
 ageupperbound=24

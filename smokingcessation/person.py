@@ -27,6 +27,7 @@ class Person(MicroAgent):
                  varenicline_use: int = None,
                  cig_consumption_prequit: int = None,
                  ecig_use: int = None,
+                 ecig_type: int = None,
                  states: List[AgentState] = None,
                  years_since_quit=None,
                  reg_smoke_theory=None,
@@ -78,7 +79,14 @@ class Person(MicroAgent):
         self.p_years_since_quit = PersonalAttribute(
                 # number of years since quit smoking for an ex-smoker, NA for quitter, never_smoker and smoker
                 name='pYearsSinceQuit')
-        self.p_years_since_quit.set_value(years_since_quit)           
+        self.p_years_since_quit.set_value(years_since_quit)
+        self.eCig_diff_subgroup=None
+        if ecig_use == 1 and ecig_type == 1:
+            self.ecig_type=eCigType.Disp
+        elif ecig_use == 1 and ecig_type != 1:
+            self.ecig_type=eCigType.Nondisp
+        else:#ecig_use == 0
+            self.ecig_type=None         
         if regular_smoking_behaviour=='COMB':#if the regular smoking COMB model is used by the ABM, add its Level 2 attributes associated with the personal attributes to their lists
             self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
             self.p_age.set_value(age)
@@ -540,3 +548,55 @@ class Person(MicroAgent):
                             g.N_dead_endyear_ages3_IMD4 += 1
                     elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
                             g.N_dead_endyear_ages3_IMD5 += 1
+
+    def count_agent_for_ecig_diffusion_subgroups(self):
+        #count this agent for the following e-cigarette diffusion subgroups
+        #p_cohort: <1940 (0), 1941-1960 (1), 1961-1980 (2), 1981-1990 (3), 1991+ (4)
+        #then, add this agent to the deltaEt_agent list of each diffusion model as appropriate
+        cstate = self.get_current_state()
+        if cstate == AgentState.EXSMOKER and self.p_cohort.get_value() == 0:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Exsmokerless1940].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmokerless1940
+        elif cstate == AgentState.EXSMOKER and self.p_cohort.get_value() == 1:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1941_1960].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1941_1960
+        elif cstate == AgentState.EXSMOKER and self.p_cohort.get_value() == 2:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1961_1980].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1961_1980  
+        elif cstate == AgentState.EXSMOKER and self.p_cohort.get_value() == 3:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1981_1990].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker1981_1990
+        elif cstate == AgentState.EXSMOKER and self.p_cohort.get_value() == 4:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker_over1991].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Exsmoker_over1991
+        elif cstate == AgentState.SMOKER and self.p_cohort.get_value() == 0:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Smokerless1940].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smokerless1940
+        elif cstate == AgentState.SMOKER and self.p_cohort.get_value() == 1:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1941_1960].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker1941_1960
+        elif cstate == AgentState.SMOKER and self.p_cohort.get_value() == 2:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1961_1980].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker1961_1980  
+        elif cstate == AgentState.SMOKER and self.p_cohort.get_value() == 3:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1981_1990].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker1981_1990
+        elif cstate == AgentState.SMOKER and self.p_cohort.get_value() == 4:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Smoker_over1991].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Smoker_over1991
+        elif cstate == AgentState.NEVERSMOKE and self.p_cohort.get_value() == 4:
+                self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991].add(self.get_id())
+                self.eCig_diff_subgroup = eCigDiffSubGroup.Neversmoked_over1991
+        else:
+               self.eCig_diff_subgroup = None #this agent not in any ecig subgroup
+
+    def add_agent_to_deltaEtagents(self):        
+        if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None :#This agent belongs to an e-cig subgroup, then, append the agent to the corresponding deltaEt_agents list as appropriate.
+                for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
+                        if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
+                                diffusion_model.deltaEt_agents.append(self.get_id())                                        
+                        elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
+                                diffusion_model.deltaEt_agents.append(self.get_id())
+                    
+                           
+        
