@@ -19,6 +19,8 @@ ABM version 0.8 runs 1) the COM-B regular smoking theory or STPM initiation prob
 
 The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on March (quarter 1) 2022. The subgroups which used both non-disposable and disposable e-cigarette from January 2022 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2022. 
 
+Reference: diffusion_parameters.csv
+
 ## Installation
 
 The ABM software runs on Linux or MacOS operating systems (OS). The ABM software can also be run on Windows 10 or 11 OS by firstly installing the Windows Subsystem for Linux (WSL) on the Windows OS and secondly running the ABM software on WSL (see links below). 
@@ -71,7 +73,8 @@ env CC=mpicxx pip install repast4py
 pip install numpy pandas
 ```
 ## Run the ABM software
-1. Download the following data files under the 'data' folder:
+1. Download the following [data files](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view?usp=drive_link) under the 'data' folder:
+
 - testdata_STPM2011_encriched_with_STS_data.csv
 - testdata_STS2010_Jan_enriched_with_STPM_data.csv
 - initiation_prob1month_STPM.csv
@@ -124,6 +127,12 @@ Additionally, when running in the 'debug mode', the following 2 files are output
 - plots (e.g. ecig_prevalence_Smoker_over1991.jpeg) of the e-cigarette prevalence predicted by the diffusion models.
 - Exsmoker1981_1990.csv etc. (the e-cigarette prevalence predicted by the diffusion models)
 
+## Generate 2-D Plots of E-cigarette Prevalence (Output of Diffusion Models)
+
+To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_1990.csv etc. run the command:
+```
+python plot_annual_ecig_diffusions.py
+```
 To deactivate the virtual environment, use the following command 
 ```
 deactivate
