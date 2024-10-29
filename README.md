@@ -1,3 +1,4 @@
+
 # ABM Version 0.8
 
 ABM version 0.8 runs:
@@ -85,6 +86,7 @@ pip install numpy pandas
 2. Activate the virtual environment my_env as described above.
 
 3. Move into the repository directory.
+
 ```
 cd abm-software-all-version
 ```
@@ -109,10 +111,6 @@ In particular, deltaEt can be set to 0 (default value) or the actual number ('3'
 
 6. Use the following command to run the ABM model.
 
-```
-python run_abm.py props/model.yaml
-```
- 
 ## Outputs of ABM
 
 ABM outputs calibration targets in the following files under the 'output' folder:
@@ -121,7 +119,8 @@ ABM outputs calibration targets in the following files under the 'output' folder
 		3) Initiation_IMD.csv,
 		4) Quit_age_sex.csv,
 		5) Quit_IMD.csv.
-Additionally, when running in the 'debug mode', the following 2 files are output:
+
+Additionally, when running in the 'debug mode', the following files are output:
 
 - logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
