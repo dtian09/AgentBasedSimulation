@@ -88,7 +88,7 @@ pip install numpy pandas
 3. Move into the repository directory.
 
 ```
-cd abm-software-all-version
+cd smokingABM
 ```
 
 4. Specify the behaviour model to use for initiating regular smoking, making a quit attempt and quitting successfully.
@@ -112,6 +112,10 @@ For example, to use the STPM initiation probabilities for initiating regular smo
 ecigUsersOfDiffusionBaselinePopulation specifies the actual number of the disposable (non-disposable) e-cigarette users of the subgroups in the baseline populations of the diffusion processes (i.e. the quarter 1 2022 STS population for disposable diffusion models and quarter 1 2010 STS population for non-disposable diffusion models). To initialize deltaEt of the diffusion models to the actual number of the e-cigarette user (ecigUsersOfDiffusionBaselinePopulation), initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population is set to 1. To initialize deltaEt of the diffusion models to 0, initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population is set to 0. 
 
 6. Use the following command to run the ABM model.
+
+```
+python run_abm.py props/model.yaml
+```
 
 ## Outputs of ABM
 
