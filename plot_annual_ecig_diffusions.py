@@ -13,12 +13,8 @@ def read_prevalence_file_into_list(filename):
 
 def create_folder(folder_path):
     import os
-    # Check if the folder exists, and if not, create it
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-        print(f"Folder '{folder_path}' created.")
-    else:
-        print(f"Folder '{folder_path}' already exists.")
 
 def plot_prevalence():
         #dir='./output (ticks=years deltaEt = 0 at tick0)/'
@@ -81,5 +77,6 @@ def plot_prevalence():
             plt.xlabel("Year")
             plt.ylabel("Prevalence of e-cigarette use")
             plt.savefig(outdir+'/ecig_prevalence_'+subgroup[1]+'.jpeg', format='jpeg')
+        print(F"Plots were saved to '{outdir}'.")
 
 plot_prevalence()

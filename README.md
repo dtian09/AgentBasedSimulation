@@ -116,16 +116,16 @@ python run_abm.py props/model.yaml
 ## Outputs of ABM
 
 ABM outputs calibration targets in the following files under the 'output' folder:
-		1) whole_population_counts.csv, 
-		2) Initiation_sex.csv, 
-		3) Initiation_IMD.csv,
-		4) Quit_age_sex.csv,
-		5) Quit_IMD.csv.
-Additionally, when running in the 'debug mode', the following 2 files are output:
+- 1) whole_population_counts.csv
+- 2) Initiation_sex.csv
+- 3) Initiation_IMD.csv
+- 4) Quit_age_sex.csv
+- 5) Quit_IMD.csv
+
+Additionally, when running in the 'debug mode', the following files are output:
 
 - logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
-- plots (e.g. ecig_prevalence_Smoker_over1991.jpeg) of the e-cigarette prevalence predicted by the diffusion models.
 - Exsmoker1981_1990.csv etc. (the e-cigarette prevalence predicted by the diffusion models)
 
 ## Generate 2-D Plots of E-cigarette Prevalence (Output of Diffusion Models)
@@ -134,7 +134,7 @@ To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_
 ```
 python plot_annual_ecig_diffusions.py
 ```
-The generated plots are saved under a folder 'output/plots'.
+The generated plots ecig_prevalence_Smoker_over1991.jpeg etc. are saved under a folder 'output/plots'.
 
 ## Save the Outputs of the ABM for Future Analysis
 
