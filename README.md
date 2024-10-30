@@ -1,3 +1,4 @@
+
 # ABM Version 0.8
 
 ABM version 0.8 runs:
@@ -85,6 +86,7 @@ pip install numpy pandas
 2. Activate the virtual environment my_env as described above.
 
 3. Move into the repository directory.
+
 ```
 cd abm-software-all-version
 ```
@@ -111,10 +113,6 @@ ecigUsersOfDiffusionBaselinePopulation specifies the actual number of the dispos
 
 6. Use the following command to run the ABM model.
 
-```
-python run_abm.py props/model.yaml
-```
- 
 ## Outputs of ABM
 
 ABM outputs calibration targets in the following files under the 'output' folder:
