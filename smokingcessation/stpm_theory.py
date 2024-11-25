@@ -78,6 +78,7 @@ class RelapseSTPMTheory(STPMTheory):
                                                      str(agent.p_years_since_quit.get_value()) +
                                                      '. probability of relapse=0.\n')
             '''
+        self.smoking_model.allocateDiffusionToAgent(agent)
 
     def do_action(self, agent: MicroAgent):
         agent.tick_counter_ex_smoker += 1
@@ -117,9 +118,7 @@ class InitiationSTPMTheory(STPMTheory):
             self.prob_behaviour = float(matched.iat[0,-1])
         else:
             self.prob_behaviour = 0
-            #if self.smoking_model.running_mode == 'debug':
-            #   self.smoking_model.logfile.write('no match in initiation probabilities file for this agent: ' +
-            #                                    str(agent) + '. probability of initiation=0.\n')
+        self.smoking_model.allocateDiffusionToAgent(agent)
 
     def do_action(self, agent: MicroAgent):
         self.threshold = random.uniform(0, 1)
@@ -154,7 +153,8 @@ class QuitSTPMTheory(STPMTheory):
             #if self.smoking_model.running_mode == 'debug':
             #   self.smoking_model.logfile.write('no match in quit probabilities file for this agent: ' +
             #                                    str(agent) + '. probability of quit=0.\n')
-
+        self.smoking_model.allocateDiffusionToAgent(agent)
+        
     def do_action(self, agent: MicroAgent):
         self.threshold = random.uniform(0, 1)
         if agent.get_current_state() == AgentState.SMOKER:            

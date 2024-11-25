@@ -18,42 +18,7 @@ class SmokingTheoryMediator(TheoryMediator):
             if not isinstance(theory.name, Theories):
                 raise ValueError(f'{theory.name} must be an instance of the class Theories.')
             self.theory_map[theory.name] = theory
-    '''
-    def get_current_theory_of_agent(self, agent: MicroAgent) -> Theory:
-        cstate = agent.get_current_state()
-        if cstate == AgentState.NEVERSMOKE:
-            return self.theory_map[Theories.REGSMOKE]
-        elif cstate == AgentState.SMOKER:
-            return self.theory_map[Theories.QUITATTEMPT]
-        elif cstate == AgentState.NEWQUITTER:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER1:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER2:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER3:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER4:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER5:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER6:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER7:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER8:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER9:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER10:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.ONGOINGQUITTER11:
-            return self.theory_map[Theories.QUITSUCCESS]
-        elif cstate == AgentState.EXSMOKER:
-            return self.theory_map[Theories.RELAPSESSTPM]
-        else:
-            raise ValueError(f'{cstate} is not an acceptable agent state')
-    '''
+    
     def mediate_situation(self, agent: Person):
         cstate = agent.get_current_state()
         if cstate == AgentState.NEVERSMOKE:

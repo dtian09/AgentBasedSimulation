@@ -8,6 +8,7 @@ from config.definitions import ROOT_DIR, AgentState, SubGroup, eCigDiffSubGroup,
 from mbssm.model import Model
 import config.global_variables as g
 import os
+import random
         
 class SmokingModel(Model):
 
@@ -63,6 +64,8 @@ class SmokingModel(Model):
         if self.regular_smoking_behaviour=='STPM':
             self.initiation_prob_file = f'{ROOT_DIR}/' + self.props["initiation_prob_file"]
             self.initiation_prob = pd.read_csv(self.initiation_prob_file,header=0) 
+        elif self.regular_smoking_behaviour=='COMB':
+            pass
         else:
             sys.exit('invalid regular smoking behaviour: '+self.regular_smoking_behaviour)
         if self.quitting_behaviour=='STPM':
@@ -90,13 +93,15 @@ class SmokingModel(Model):
                 self.logfile.write('the quit attempt COM-B model, quit success COM-B model ')
             elif self.quitting_behaviour=='STPM':
                 print('STPM quitting transition probabilities ')
-                self.logfile.write('the STPM quitting transition probabilities')
+                self.logfile.write('the STPM quitting transition probabilities ')
             print('and the STPM relapse transition probabilities.')
             self.logfile.write('and the STPM relapse transition probabilities.\n')  
             if self.props['initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population']==1:
                 print('Initialize the deltaEt parameter of e-cigarette diffusion models to the number of e-cigarette users of the subgroups in the diffusion baseline population.')
+                self.logfile.write('Initialize the deltaEt parameter of e-cigarette diffusion models to the number of e-cigarette users of the subgroups in the diffusion baseline population.\n')
             elif self.props['initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population']==0:
                 print('Initialize the deltaEt parameter of e-cigarette diffusion models to 0 (default value).')
+                self.logfile.write('Initialize the deltaEt parameter of e-cigarette diffusion models to 0 (default value).\n')
             else:
                 sys.exit(F"Invalid option for initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population in props/model.yaml: '{self.props['initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population']}'.\n Expected 1 or 0.")
             self.ecig_Et = {                                       
@@ -826,7 +831,18 @@ class SmokingModel(Model):
                 return 0
         else:
             sys.exit('start time of disposable diffusions: '+str(self.start_time_of_disp_diffusions)+' < start time of ABM: '+str(self.current_time_step)+'. ABM should start before disposable diffusions start.')
-        
+
+    def allocateDiffusionToAgent(self,agent):#change an agent to an ecig user    
+        if self.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
+            random.shuffle(self.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
+            for diffusion_model in self.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
+                if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
+                        diffusion_model.allocateDiffusion(agent)
+                elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
+                    if agent.get_id() in diffusion_model.deltaEt_agents:
+                        diffusion_model.allocateDiffusion(agent)
+
     def do_per_tick(self):
         self.current_time_step += 1
         self.tick_counter += 1
@@ -853,9 +869,9 @@ class SmokingModel(Model):
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Exsmoker1941_1960] = self.non_disp_diffusion_models[eCigDiffSubGroup.Exsmoker1941_1960]
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Smokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Smokerless1940]
             self.current_time_step_of_disp_diffusions = self.convert_tick_of_ABM_to_tick_of_disp_ecig_diffusions()
+        self.init_population_counts()
         self.calculate_calibration_targets_and_ecig_diffusion_subgroups_and_do_situational_mechanisms()
         self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
-        self.init_population_counts()
         if self.current_time_step == self.end_year_tick:
             self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
             self.file_initiation_imd.write(self.get_subgroups_of_ages_imd_for_initiation())
@@ -874,7 +890,11 @@ class SmokingModel(Model):
             if self.tick_counter == 12:
                 self.tick_counter = 0
         if self.running_mode == 'debug':
-            self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) + '\n')
+            self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) +': smoking prevalence=' + str(p) + '%.\n')
+            for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
+                for diff_model in diffusion_models:
+                    self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt)+', e-cig users='+str(diff_model.ecig_users)+'\n')
+                    self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
 
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
@@ -883,12 +903,22 @@ class SmokingModel(Model):
     def write_ecig_prevalence_to_csv_files(self):
         l=[0 for _ in range(0,self.start_time_of_disp_diffusions-1)] 
         self.ecig_Et[eCigDiffSubGroup.Neversmoked_over1991]= l + self.ecig_Et[eCigDiffSubGroup.Neversmoked_over1991] #neversmoker1991+ only used disposable ecig from 2022 and did not use ecig before 2022
-        ticks_of_plot=[]
-        t=1 #index of January of a year in Et list
-        while t < self.stop_at:
-            ticks_of_plot.append(t)
-            t+=12 #tick of January of next year
-        import matplotlib.pyplot as plt
+        indices_to_plot=[] #indices of ecig_Et list to plot diffusions
+        quarter_indices=[] #indices of quarters 
+        indx=0 #index of 1st January in ecig_Et list
+        quarter_indx=2 #index of 1st March 
+        if self.running_mode=='debug':
+            self.logfile.write('indices of e-cigarette prevalence to plot\n')
+        while indx+1 <= self.stop_at:
+            indices_to_plot.append(indx)
+            if self.running_mode=='debug':
+                self.logfile.write(str(indx)+'\n')
+            indx+=12 #indx of next January
+        while quarter_indx+1 <= self.stop_at:
+            quarter_indices.append(quarter_indx)
+            if self.running_mode=='debug':
+                self.logfile.write(str(quarter_indx)+'\n')
+            quarter_indx+=3
         for subgroup in [(eCigDiffSubGroup.Exsmokerless1940,"Exsmoker_less1940"),
                         (eCigDiffSubGroup.Exsmoker1941_1960,"Exsmoker1941_1960"),
                         (eCigDiffSubGroup.Exsmoker1961_1980,"Exsmoker1961_1980"),
@@ -900,14 +930,19 @@ class SmokingModel(Model):
                         (eCigDiffSubGroup.Smoker1981_1990,"Smoker1981_1990"),
                         (eCigDiffSubGroup.Smoker_over1991,"Smoker_over1991"),
                         (eCigDiffSubGroup.Neversmoked_over1991,"Neversmoked_over1991")]:
-            f=open(f'{ROOT_DIR}/output/'+subgroup[1]+'.csv', 'w')            
+            f=open(f'{ROOT_DIR}/output/'+subgroup[1]+'.csv', 'w')
+            f2=open(f'{ROOT_DIR}/output/'+subgroup[1]+'_quarters.csv', 'w')
+            f3=open(f'{ROOT_DIR}/output/'+subgroup[1]+'_all_months.csv', 'w')
             Et=self.ecig_Et[subgroup[0]]
-            for t in ticks_of_plot:
-                if t < len(Et):
-                    f.write(str(Et[t])+',')
-                else:
-                    break
+            for indx in indices_to_plot:                
+                f.write(str(Et[indx])+',')
+            for indx in quarter_indices:
+                f2.write(str(Et[indx])+',')
+            for prev in Et:
+                f3.write(str(prev)+',')
             f.close()
+            f2.close()
+            f3.close()
                         
     def collect_data(self):
         #save outputs of ABM to files

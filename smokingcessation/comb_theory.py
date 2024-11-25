@@ -98,6 +98,8 @@ class RegSmokeTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
+        self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
+        '''
         if self.smoking_model.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
             random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
             for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
@@ -107,6 +109,7 @@ class RegSmokeTheory(COMBTheory):
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
                     if agent.get_id() in diffusion_model.deltaEt_agents:
                         diffusion_model.allocateDiffusion(agent)
+        '''
 
     def do_learning(self):
         pass
@@ -180,15 +183,7 @@ class QuitAttemptTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
-        if self.smoking_model.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
-            random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
-            for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
-                if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
-                elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+        self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user        
 
     def do_learning(self):
         pass
@@ -261,15 +256,7 @@ class QuitSuccessTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         if self.smoking_model.tick_counter == 12:
             agent.increment_age()
-        if self.smoking_model.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
-            random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
-            for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
-                if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
-                elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+        self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
 
     def do_learning(self):
         pass

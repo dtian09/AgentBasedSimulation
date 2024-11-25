@@ -18,31 +18,44 @@ def create_folder(folder_path):
 
 def plot_prevalence():
         #dir='./output (ticks=years deltaEt = 0 at tick0)/'
-        #dir='./output (ticks=years deltaEt = ecig users in baseline population at tick0)/'
+        #dir='./output (all COM-B models deltaEt = ecig users in baseline population at tick0)/'
         dir='./output/'
-        outdir = dir+'plots' #folder to create for plots
+        outdir = dir+'plots' #folder to create for plots of 
+        #dir='./output2/'
+        #outdir = dir+'plots_of_quarters_prevalence' #folder to create for plots
         create_folder(outdir)
-        filename = dir+'Exsmoker_less1940.csv'
+        filename = dir+'Exsmoker_less1940.csv' #ecig prevalence of every January from start to end of simulation
+        #filename = dir+'Exsmoker_less1940_quarters.csv'
         exsmokerless1940=read_prevalence_file_into_list(filename)
         filename = dir+'Exsmoker1941_1960.csv'
+        #filename = dir+'Exsmoker1941_1960_quarters.csv'
         exsmoker1941_1960=read_prevalence_file_into_list(filename)
         filename = dir+'Exsmoker1961_1980.csv'
+        #filename = dir+'Exsmoker1961_1980_quarters.csv'
         exsmoker1961_1980=read_prevalence_file_into_list(filename)
         filename = dir+'Exsmoker1981_1990.csv'
+        #filename = dir+'Exsmoker1981_1990_quarters.csv'
         exsmoker1981_1990=read_prevalence_file_into_list(filename)
         filename = dir+'Exsmoker_over1991.csv'
+        #filename = dir+'Exsmoker_over1991_quarters.csv'
         exsmoker_over1991=read_prevalence_file_into_list(filename)
         filename = dir+'Smoker_less1940.csv'
+        #filename = dir+'Smoker_less1940_quarters.csv'
         smokerless1940=read_prevalence_file_into_list(filename)
         filename = dir+'Smoker1941_1960.csv'
+        #filename = dir+'Smoker1941_1960_quarters.csv'
         smoker1941_1960=read_prevalence_file_into_list(filename)
         filename = dir+'Smoker1961_1980.csv'
+        #filename = dir+'Smoker1961_1980_quarters.csv'
         smoker1961_1980=read_prevalence_file_into_list(filename)
         filename = dir+'Smoker1981_1990.csv'
+        #filename = dir+'Smoker1981_1990_quarters.csv'
         smoker1981_1990=read_prevalence_file_into_list(filename)
         filename = dir+'Smoker_over1991.csv'
+        #filename = dir+'Smoker_over1991_quarters.csv'
         smoker_over1991=read_prevalence_file_into_list(filename)
         filename = dir+'Neversmoked_over1991.csv'
+        #filename = dir+'Neversmoked_over1991_quarters.csv'
         neversmoked_over1991=read_prevalence_file_into_list(filename)
         for subgroup in [(exsmokerless1940,"Exsmoker_less1940"),
                         (exsmoker1941_1960,"Exsmoker1941_1960"),
@@ -79,4 +92,5 @@ def plot_prevalence():
             plt.savefig(outdir+'/ecig_prevalence_'+subgroup[1]+'.jpeg', format='jpeg')
         print(F"Plots were saved to '{outdir}'.")
 
-plot_prevalence()
+if __name__ == "__main__":
+    plot_prevalence()
