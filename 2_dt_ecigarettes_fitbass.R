@@ -205,6 +205,7 @@ ecig_prevalence <- sts_sub %>%
 
 full_predicted <- list()
 
+'''
 # putting it all together?
 ecig_parameters <- do.call(rbind,ecig_parameters) %>% mutate(type="e-cig")
 disposable_parameters <- do.call(rbind, disposable_parameters) %>% mutate(type="disposable",d=0)
@@ -213,7 +214,7 @@ parameters <- rbind(ecig_parameters, disposable_parameters) %>%
   mutate(cat = paste0(smokstat, cohort)) %>% distinct()
 
 write.csv(parameters,"X:/Shared/code/ABM_software/smokingABM/diffusion_parameters.csv",row.names=F)
-
+'''
 parameters <- read.csv("U:/smoking cessation/ABM software/charlotte/diffusion_parameters.csv")
   
 full_predicted <- list()
@@ -223,7 +224,7 @@ remove_trailing_na <- function(vec){
 }
 
 get_ABM_Bass_model_predictions <- function(){
-  serverfolder <- "X:/Shared/code/ABM_software/smokingABM/output/"
+  serverfolder <- "X:/Shared/code/ABM_software/smokingABM/output2/"
   setwd(serverfolder)
   ht <- list() #hashtable with key=subgroup and value=vector of predicted prevalence 
   cat = c('Ex-smoker<1940','Ex-smoker1941-1960','Ex-smoker1961-1980','Ex-smoker1981-1990',   
