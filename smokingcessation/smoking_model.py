@@ -906,7 +906,8 @@ class SmokingModel(Model):
         indices_to_plot=[] #indices of ecig_Et list to plot diffusions
         quarter_indices=[] #indices of quarters 
         indx=0 #index of 1st January in ecig_Et list
-        quarter_indx=2 #index of 1st March 
+        #quarter_indx=2 #index of next quarter (index 2 is 1st March and quarter1)
+        quarter_indx=0 #index of next quarter (index 0 is 1st January and quarter1)
         if self.running_mode=='debug':
             self.logfile.write('indices of e-cigarette prevalence to plot\n')
         while indx+1 <= self.stop_at:
