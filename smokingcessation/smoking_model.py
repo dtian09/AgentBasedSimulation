@@ -22,6 +22,8 @@ class SmokingModel(Model):
         self.type = 0 #the type of the agents in the population. all agents have the same type 
         self.rank: int = self.comm.Get_rank()
         self.props = params
+        self.age_of_sale=18
+        self.seed = random.seed(self.props["seed"]) #set the random seed of ABM
         self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2013 data)
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
@@ -43,16 +45,12 @@ class SmokingModel(Model):
         self.uptake_betas = {}
         self.attempt_betas = {}  # hashmap to store betas of the COMB formula of quit attempt theory
         self.success_betas = {}  # hashmap to store betas of the COMB formula of quit success theory
-        self.store_betas_of_comb_formulae_into_maps()
-        # hashmap to store the level 2 attributes of the COMB formula of regular smoking theory
-        self.level2_attributes_of_uptake_formula = {'C': [], 'O': [], 'M': []}
-        # hashmap to store the level 2 attributes of the COMB formula of quit attempt theory
-        self.level2_attributes_of_attempt_formula = {'C': [], 'O': [], 'M': []}
-        # hashmap to store the level 2 attributes of the COMB formula of quit success theory
-        self.level2_attributes_of_success_formula = {'C': [], 'O': [], 'M': []}
+        self.store_betas_of_comb_formulae_into_maps()        
+        self.level2_attributes_of_uptake_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of regular smoking theory
+        self.level2_attributes_of_attempt_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of quit attempt theory
+        self.level2_attributes_of_success_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of quit success theory
         self.store_level2_attributes_of_comb_formulae_into_maps()
-        # get the list of level 2 attribute names
-        self.level2_attributes_names = list(self.data.filter(regex='^[com]').columns)
+        self.level2_attributes_names = list(self.data.filter(regex='^[com]').columns)#get the level 2 attribute names from the data file
         self.relapse_prob = pd.read_csv(self.relapse_prob_file, header=0)  # read in STPM relapse probabilities
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
         self.start_time_of_non_disp_diffusions = self.props['start_time_of_non_disp_diffusions']
@@ -77,8 +75,8 @@ class SmokingModel(Model):
             sys.exit('invalid quitting behaviour: '+self.quitting_behaviour)
         self.tick_counter = 0
         self.initialize_ecig_diffusion_subgroups()
-        if not os.path.exists('./output'):
-            os.makedirs('./output')
+        if not os.path.exists(f'{ROOT_DIR}/output'):
+            os.makedirs(f'{ROOT_DIR}/output', exist_ok=True)
         if self.running_mode == 'debug':
             self.logfile = open(f'{ROOT_DIR}/output/logfile.txt', 'w')
             self.logfile.write('debug mode\n')
@@ -486,7 +484,7 @@ class SmokingModel(Model):
 
         for i in range(self.size_of_population):
             subgroup=None
-            init_state = self.data.at[i, 'state']
+            init_state = self.data.at[i, 'bState']
             if init_state == 'never_smoker':
                 states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
                 if self.data.at[i,'pGender']==1:#1=male
@@ -511,67 +509,67 @@ class SmokingModel(Model):
                     subgroup=SubGroup.NEWQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.NEWQUITTERFEMALE 
-            elif init_state == 'ongoingquitter1':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 1:
                 states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter2':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 2:
                 states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter3':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 3:
                 states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter4':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 4:
                 states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
                 if self.data.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                    subgroup=SubGroup.ONGOINGQUITTERMALE 
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter5':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 5:
                 states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter6':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 6:
                 states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter7':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 7:
                 states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter8':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 8:
                 states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter9':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 9:
                 states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter10':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 10:
                 states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter11':
+            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 11:
                 states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
@@ -606,12 +604,15 @@ class SmokingModel(Model):
                     mental_health_conds=self.data.at[i, 'pMentalHealthCondition'],
                     alcohol=self.data.at[i, 'pAlcoholConsumption'],
                     expenditure=self.data.at[i, 'pExpenditure'],
-                    nrt_use=self.data.at[i, 'pNRTUse'],
+                    prescription_nrt=self.data.at[i, 'pPrescriptionNRT'],
+                    over_counter_nrt=self.data.at[i, 'pOverCounterNRT'],
                     varenicline_use=self.data.at[i, 'pVareniclineUse'],
                     ecig_use=self.data.at[i, 'pECigUse'],
                     ecig_type=self.data.at[i, 'alldisposable'],
-                    cig_consumption_prequit=self.data.at[i, 'pCigConsumptionPrequit'],
-                    years_since_quit=self.data.at[i, 'pYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+                    cig_consumption=self.data.at[i, 'bCigConsumption'],
+                    years_since_quit=self.data.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+                    number_of_recent_quit_attempts=self.data.at[i, 'bNumberOfRecentQuitAttempts'],
+                    months_since_quit=self.data.at[i, 'bMonthsSinceQuit'],
                     states=states,
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
@@ -906,7 +907,6 @@ class SmokingModel(Model):
         indices_to_plot=[] #indices of ecig_Et list to plot diffusions
         quarter_indices=[] #indices of quarters 
         indx=0 #index of 1st January in ecig_Et list
-        #quarter_indx=2 #index of next quarter (index 2 is 1st March and quarter1)
         quarter_indx=0 #index of next quarter (index 0 is 1st January and quarter1)
         if self.running_mode=='debug':
             self.logfile.write('indices of e-cigarette prevalence to plot\n')
@@ -933,14 +933,22 @@ class SmokingModel(Model):
                         (eCigDiffSubGroup.Neversmoked_over1991,"Neversmoked_over1991")]:
             f=open(f'{ROOT_DIR}/output/'+subgroup[1]+'.csv', 'w')
             f2=open(f'{ROOT_DIR}/output/'+subgroup[1]+'_quarters.csv', 'w')
-            f3=open(f'{ROOT_DIR}/output/'+subgroup[1]+'_all_months.csv', 'w')
-            Et=self.ecig_Et[subgroup[0]]
-            for indx in indices_to_plot:                
-                f.write(str(Et[indx])+',')
-            for indx in quarter_indices:
-                f2.write(str(Et[indx])+',')
-            for prev in Et:
-                f3.write(str(prev)+',')
+            f3=open(f'{ROOT_DIR}/output/'+subgroup[1]+'_all_months.csv', 'w')            
+            f.write(str(self.ecig_Et[subgroup[0]][indices_to_plot[0]]))
+            i=1
+            while i < len(indices_to_plot):                
+                f.write(','+str(self.ecig_Et[subgroup[0]][indices_to_plot[i]]))
+                i+=1
+            f2.write(str(self.ecig_Et[subgroup[0]][quarter_indices[0]]))
+            i2=1
+            while i2 < len(quarter_indices):
+                f2.write(','+str(self.ecig_Et[subgroup[0]][quarter_indices[i2]]))
+                i2+=1
+            f3.write(str(self.ecig_Et[subgroup[0]][0]))
+            i3=1
+            while i3 < len(self.ecig_Et[subgroup[0]]):
+                f3.write(','+str(self.ecig_Et[subgroup[0]][i3]))
+                i3+=1
             f.close()
             f2.close()
             f3.close()
