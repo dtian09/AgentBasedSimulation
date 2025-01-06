@@ -77,113 +77,94 @@ success.C.beta: 0.55
 success.O.beta: 0.08
 success.bias: 0.3
 ###parameters of non-disposable e-cigarette diffusion models
-initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population: 0 #1 or 0 (initialize deltaEt to 0 (default))
 
 nondisp_diffusion_exsmoker_less1940.p: 0.003758197
 nondisp_diffusion_exsmoker_less1940.q: 0.229035581
 nondisp_diffusion_exsmoker_less1940.m: 0.037511314
 nondisp_diffusion_exsmoker_less1940.d: 0.036539882
-nondisp_diffusion_exsmoker_less1940.ecigUsersOfDiffusionBaselinePopulation: 0        #the prior knowledge on the number of non-disposable ecig users of this subgroup of the STS quarter 1 2010 population (non-disposable diffusion baseline population)
 
 nondisp_diffusion_exsmoker_1941_1960.p: 0.005504545
 nondisp_diffusion_exsmoker_1941_1960.q: 0.178675444
 nondisp_diffusion_exsmoker_1941_1960.m: 0.079986549
 nondisp_diffusion_exsmoker_1941_1960.d: 0.008591772
-nondisp_diffusion_exsmoker_1941_1960.ecigUsersOfDiffusionBaselinePopulation: 0
 
 nondisp_diffusion_exsmoker_1961_1980.p: 0.002056844
 nondisp_diffusion_exsmoker_1961_1980.q: 0.274353105
 nondisp_diffusion_exsmoker_1961_1980.m: 0.185261969
 nondisp_diffusion_exsmoker_1961_1980.d: 0.006317934
-nondisp_diffusion_exsmoker_1961_1980.ecigUsersOfDiffusionBaselinePopulation: 0
 
 nondisp_diffusion_exsmoker_1981_1990.p: 0.018434694
 nondisp_diffusion_exsmoker_1981_1990.q: 0.056888053
 nondisp_diffusion_exsmoker_1981_1990.m: 0.305145141
 nondisp_diffusion_exsmoker_1981_1990.d: 0.00333133
-nondisp_diffusion_exsmoker_1981_1990.ecigUsersOfDiffusionBaselinePopulation: 0
 
 nondisp_diffusion_exsmoker_over1991.p: 0.01165957
 nondisp_diffusion_exsmoker_over1991.q: 0.066603391
 nondisp_diffusion_exsmoker_over1991.m: 0.460888124
 nondisp_diffusion_exsmoker_over1991.d: 0.005969273
-nondisp_diffusion_exsmoker_over1991.ecigUsersOfDiffusionBaselinePopulation: 0
 
 nondisp_diffusion_smoker_less1940.p: 0.015402176
 nondisp_diffusion_smoker_less1940.q: 0
 nondisp_diffusion_smoker_less1940.m: 0.381729487
 nondisp_diffusion_smoker_less1940.d: 0.026180617
-nondisp_diffusion_smoker_less1940.ecigUsersOfDiffusionBaselinePopulation: 1
 
 nondisp_diffusion_smoker_1941_1960.p: 0.003835209
 nondisp_diffusion_smoker_1941_1960.q: 0.509743924
 nondisp_diffusion_smoker_1941_1960.m: 0.253764344
 nondisp_diffusion_smoker_1941_1960.d: 0.014872495
-nondisp_diffusion_smoker_1941_1960.ecigUsersOfDiffusionBaselinePopulation: 0
 
 nondisp_diffusion_smoker_1961_1980.p: 0.004379892
 nondisp_diffusion_smoker_1961_1980.q: 0.414263224
 nondisp_diffusion_smoker_1961_1980.m: 0.269310273
 nondisp_diffusion_smoker_1961_1980.d: 0.008524794
-nondisp_diffusion_smoker_1961_1980.ecigUsersOfDiffusionBaselinePopulation: 2
 
 nondisp_diffusion_smoker_1981_1990.p: 0.001560501
 nondisp_diffusion_smoker_1981_1990.q: 0.479817395
 nondisp_diffusion_smoker_1981_1990.m: 0.275738064
 nondisp_diffusion_smoker_1981_1990.d: 0.008461148
-nondisp_diffusion_smoker_1981_1990.ecigUsersOfDiffusionBaselinePopulation: 0
 
 nondisp_diffusion_smoker_over1991.p: 0.031225
 nondisp_diffusion_smoker_over1991.q: 0
 nondisp_diffusion_smoker_over1991.m: 0.38406994
 nondisp_diffusion_smoker_over1991.d: 0.003796005
-nondisp_diffusion_smoker_over1991.ecigUsersOfDiffusionBaselinePopulation: 0
 
 ###parameters of disposable e-cigarette diffusion models
 disp_diffusion_exsmoker_1961_1980.p: 0.022498286
 disp_diffusion_exsmoker_1961_1980.q: 0.212213813
 disp_diffusion_exsmoker_1961_1980.m: 0.066939661
 disp_diffusion_exsmoker_1961_1980.d: 0
-disp_diffusion_exsmoker_1961_1980.ecigUsersOfDiffusionBaselinePopulation: 3        #the prior knowledge on the number of disposable ecig users of this subgroup of the STS quarter 1 2022 population (disposable diffusion baseline population)
 
 disp_diffusion_exsmoker_1981_1990.p: 0.027271206
 disp_diffusion_exsmoker_1981_1990.q: 0.26953012
 disp_diffusion_exsmoker_1981_1990.m: 0.147392194
 disp_diffusion_exsmoker_1981_1990.d: 0
-disp_diffusion_exsmoker_1981_1990.ecigUsersOfDiffusionBaselinePopulation: 2
 
 disp_diffusion_exsmoker_over1991.p: 0.023752782
 disp_diffusion_exsmoker_over1991.q: 0.676752244
 disp_diffusion_exsmoker_over1991.m: 0.188576789
 disp_diffusion_exsmoker_over1991.d: 0
-disp_diffusion_exsmoker_over1991.ecigUsersOfDiffusionBaselinePopulation: 8
 
 disp_diffusion_neversmoker_over1991.p: 0.062797757
 disp_diffusion_neversmoker_over1991.q: 0.013828888
 disp_diffusion_neversmoker_over1991.m: 0.168710846
 disp_diffusion_neversmoker_over1991.d: 0
-disp_diffusion_neversmoker_over1991.ecigUsersOfDiffusionBaselinePopulation: 0
 
 disp_diffusion_smoker_1941_1960.p: 0.021535006
 disp_diffusion_smoker_1941_1960.q: 0.281268212
 disp_diffusion_smoker_1941_1960.m: 0.082087835
 disp_diffusion_smoker_1941_1960.d: 0
-disp_diffusion_smoker_1941_1960.ecigUsersOfDiffusionBaselinePopulation: 5
 
 disp_diffusion_smoker_1961_1980.p: 0.048385301
 disp_diffusion_smoker_1961_1980.q: 0.149544709
 disp_diffusion_smoker_1961_1980.m: 0.159809392
 disp_diffusion_smoker_1961_1980.d: 0
-disp_diffusion_smoker_1961_1980.ecigUsersOfDiffusionBaselinePopulation: 7
 
 disp_diffusion_smoker_1981_1990.p: 0.042294685
 disp_diffusion_smoker_1981_1990.q: 0.305195422
 disp_diffusion_smoker_1981_1990.m: 0.196089806
 disp_diffusion_smoker_1981_1990.d: 0
-disp_diffusion_smoker_1981_1990.ecigUsersOfDiffusionBaselinePopulation: 12
 
 disp_diffusion_smoker_over1991.p: 0.08912984
 disp_diffusion_smoker_over1991.q: 0.225566855
 disp_diffusion_smoker_over1991.m: 0.314435515
 disp_diffusion_smoker_over1991.d: 0
-disp_diffusion_smoker_over1991.ecigUsersOfDiffusionBaselinePopulation: 45

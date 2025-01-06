@@ -5,7 +5,7 @@ import numpy as np
 import random
 
 class eCigDiffusion(MacroEntity):
-    def __init__(self, p, q, m, d, deltaEt, smoking_model : SmokingModel):
+    def __init__(self, p, q, m, d, smoking_model : SmokingModel):
         super().__init__()
         self.p=p
         self.q=q
@@ -13,7 +13,7 @@ class eCigDiffusion(MacroEntity):
         self.d=d
         self.deltaT=1/3 #deltaT is the time difference in quarters between two consecutive time steps (months) of ABM
         self.Et=0 #default value 0
-        self.deltaEt=deltaEt
+        self.deltaEt=0
         self.ecig_users=0
         self.smoking_model=smoking_model
         self.subgroup=None #the population subgroup of this e-cigarette diffusion model

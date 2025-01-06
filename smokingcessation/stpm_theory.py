@@ -1,13 +1,12 @@
 import pandas as pd
 import random
-import numpy as np
 from abc import abstractmethod
 from config.definitions import AgentState
 from config.definitions import AgentBehaviour
+from config.definitions import Theories
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 from smokingcessation.smoking_model import SmokingModel
-
 
 class STPMTheory(Theory):
     def __init__(self, name, smoking_model: SmokingModel):
@@ -79,6 +78,11 @@ class RelapseSTPMTheory(STPMTheory):
             agent.add_behaviour(AgentBehaviour.RELAPSE)
             agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.b_years_since_quit = 0
+            if agent.smoking_model.quitting_behaviour=='COMB':
+                agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
+                agent.mediator.theory_map[Theories.QUITSUCCESS].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
+                agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
+                agent.mediator.theory_map[Theories.QUITSUCCESS].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()

@@ -80,6 +80,7 @@ class Person(MicroAgent):
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
         self.eCig_diff_subgroup=None
+        self.preQuitAddictionStrength=None 
         if ecig_use == 1 and ecig_type == 1:
             self.ecig_type=eCigType.Disp
         elif ecig_use == 1 and ecig_type == 0:
@@ -109,6 +110,7 @@ class Person(MicroAgent):
             self.p_expenditure.add_level2_attribute(reg_smoke_theory.level2_attributes['oExpenditurePerStick'])
             self.p_expenditure.set_value(expenditure)
         if quitting_behaviour=='COMB':#if quit attempt COM-B model and quit success COM-B model are used by this ABM, add their Level 2 attributes associated with the personal attributes to the personal attributes' lists
+            self.preQuitAddictionStrength=quit_attempt_theory.level2_attributes['cCigAddictStrength'].get_value()
             self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
             self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
             self.p_age.set_value(age)
