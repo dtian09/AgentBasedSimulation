@@ -21,16 +21,22 @@ class STPMTheory(Theory):
     def do_action(self, agent: MicroAgent):
         pass
 
+class DeathSTPMTheory(STPMTheory):
+    def __init__(self, name, smoking_model: SmokingModel):
+        super().__init__(name, smoking_model)
+        
+    #def do_situation(self, agent: MicroAgent):
+    #    if self.smoking_model.tick_counter == 12:
+            #check for death conditioned on current age, smoking status and sex before running the smoking behavior models
+            #apply death or increment age
+            #the smokers group in stpm death model includes quitters as well as smokers 
 
 class RelapseSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name, smoking_model)
         
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
         # retrieve probability of relapse of the matching person from STPM transition probabilities file
-        #self.years_since_quit = agent.p_years_since_quit.get_value()
         if (agent.b_years_since_quit > 0) and (agent.b_years_since_quit < 10):
             matched = self.smoking_model.relapse_prob[
                 (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
@@ -64,6 +70,7 @@ class RelapseSTPMTheory(STPMTheory):
         else:
             self.prob_behaviour = 0
         self.smoking_model.allocateDiffusionToAgent(agent)
+        #update values of the dynamic variables of agents based on Harry's equations
 
     def do_action(self, agent: MicroAgent):
         agent.tick_counter_ex_smoker += 1
@@ -95,8 +102,6 @@ class InitiationSTPMTheory(STPMTheory):
         super().__init__(name, smoking_model)
 
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
         matched = self.smoking_model.initiation_prob[
                 (self.smoking_model.initiation_prob['age'] == agent.p_age.get_value()) &
                 (self.smoking_model.initiation_prob['year'] == self.smoking_model.year_of_current_time_step) &
@@ -127,8 +132,6 @@ class QuitSTPMTheory(STPMTheory):
         super().__init__(name, smoking_model)
 
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
         matched = self.smoking_model.quit_prob[
                 (self.smoking_model.quit_prob['age'] == agent.p_age.get_value()) &
                 (self.smoking_model.quit_prob['year'] == self.smoking_model.year_of_current_time_step) &

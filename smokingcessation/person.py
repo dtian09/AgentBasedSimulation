@@ -139,6 +139,10 @@ class Person(MicroAgent):
          else:
              self.p_difficulty_of_access.set_value(self.smoking_model.age_of_sale - self.p_age.get_value())
 
+    #def update_dynamic_variables(self): update dynamic personal attributes and other attributes e.g. bCigConsumption
+        #call update_difficulty_of_access()
+        #update bCigConsumption
+
     def init_behaviour_buffer(self):
         """
         The behaviour buffer stores the self's behaviours (COMB and STPM behaviours) over the last 12 months

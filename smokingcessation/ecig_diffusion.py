@@ -58,7 +58,7 @@ class eCigDiffusion(MacroEntity):
     def changeInE(self, t):#calculate deltaE(t) of next time step t where t in months (time scale of the ABM)
         #changeInE is called by do_macro_macro method of eCigDiffusionRegulator class
         if t > 0:
-            self.deltaEt=self.p*(self.m*np.exp(-self.d*t/3)-self.Et)+(self.q*np.exp(self.d*t/3)/self.m)*self.Et*(self.m*np.exp(-self.d*t/3)-self.Et)
+            self.deltaEt=self.p*(self.m*np.exp(-self.d*t)-self.Et)+(self.q*np.exp(self.d*t)/self.m)*self.Et*(self.m*np.exp(-self.d*t)-self.Et)
             self.deltaEt=self.deltaEt*self.deltaT*len(self.smoking_model.ecig_diff_subgroups[self.subgroup])
             #sample any fractional agents according to the size of the fractional part of deltaEt (e.g. for 8.9 agents, we get 8 agents for certain and the ninth agent with 90% probability).
             if self.deltaEt > 0:#change deltaEt non-e-cigarette users to e-cigarette users 
@@ -71,7 +71,5 @@ class eCigDiffusion(MacroEntity):
                 if fraction_part > 0:
                     if random.uniform(0, 1) >= fraction_part: 
                         self.deltaEt=int(self.deltaEt) - 1 #to create an non-user
-        else:
-            self.deltaEt=self.ecig_users #at tick 0, deltaEt is number of ecig users (new users)
         self.deltaEt_agents=[] #reset to empty list to hold the new e-cigarette users/non-users of the next time step
 

@@ -22,6 +22,7 @@ class COMBTheory(Theory):
         self.comp_m: Level1Attribute
         self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
         self.power = 0  # power within logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
+        self.indx_of_agent = indx_of_agent
         self.store_level2_attributes_into_map(indx_of_agent)
 
     def store_level2_attributes_into_map(self, indx_of_agent: int):
@@ -34,6 +35,14 @@ class COMBTheory(Theory):
                 # ignore this level 2 attribute by set it to 0 so that 0*beta=0 in the COMB formula.
                 at_obj = Level2AttributeInt(name=level2_attribute_name, value=0)
                 self.level2_attributes[level2_attribute_name] = at_obj
+            elif level2_attribute_name == 'mUseofNRT':
+                agent=self.smoking_model.context.agent((indx_of_agent, self.smoking_model.type, self.smoking_model.rank))
+                if agent.pOverCounterNRT.get_value()==1 or agent.pPrescriptionNRT.get_value()==1:
+                  val = 1
+                else:
+                  val = 0 
+                at_obj = Level2AttributeInt(name=level2_attribute_name, value=val)
+                self.level2_attributes[level2_attribute_name] = at_obj
             elif type(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) is np.int64:
                 at_obj = Level2AttributeInt(name=level2_attribute_name,
                                             value=self.smoking_model.data.at[indx_of_agent, level2_attribute_name])
@@ -44,7 +53,7 @@ class COMBTheory(Theory):
                 self.level2_attributes[level2_attribute_name] = at_obj
             else:
                 sstr = ' is not int64 or float64 and not stored into the level2_attributes hashmap.'
-                sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)
+                sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)            
         if self.level2_attributes['mSmokerIdentity'].get_value()==2: #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
             at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=0)
             self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
@@ -52,9 +61,9 @@ class COMBTheory(Theory):
             at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=1)
             self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
         else:
-            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value())
-            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj #-1=’don’t know’ or 4=’not stated’.
-   
+            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value()) #-1=’don’t know’ or 4=’not stated’.
+            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj 
+
     @abstractmethod
     def do_situation(self, agent: MicroAgent):  # run the situation mechanism of the agent of this theory
         pass
@@ -94,12 +103,15 @@ class RegSmokeTheory(COMBTheory):
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
 
-    def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age() #The increment of the year updates the agent's age
-            agent.update_difficulty_of_access() #The increment of the year updates the agent's difficulty of access
+    def do_situation(self, agent: MicroAgent):        
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
-
+        if self.smoking_model.tick_counter == 12:
+            agent.update_difficulty_of_access()
+        #update values of the dynamic variables (dynamic COM and personal attributes) of this agent
+        #pPrescriptionNRT
+        #pVareniclineUse
+        #...
+        
     def do_learning(self):
         pass
 
@@ -169,9 +181,18 @@ class QuitAttemptTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user        
+        #update values of the dynamic variables (dynamic COM and personal attributes) of this agent
+        #pPrescriptionNRT
+        #pVareniclineUse
+        #... 
+        #update mUseofNRT = pOverCounterNRT or pPrescriptionNRT
+        agent=self.smoking_model.context.agent((self.indx_of_agent, self.smoking_model.type, self.smoking_model.rank))
+        if agent.pOverCounterNRT.get_value()==1 or agent.pPrescriptionNRT.get_value()==1:
+           val = 1
+        else:
+           val = 0
+        self.level2_attributes['mUseofNRT'].set_value(val)
 
     def do_learning(self):
         pass
@@ -234,7 +255,6 @@ class QuitAttemptTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.SMOKER)
-            self.level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)            
         agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
 
 class QuitSuccessTheory(COMBTheory):
@@ -243,10 +263,13 @@ class QuitSuccessTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
-
+        #update values of the dynamic variables (dynamic COM and personal attributes) of this agent
+        #pVareniclineUse
+        #pPrescriptionNRT
+        #cUseOfBehaviourSupport
+        #cCytisineUse
+        
     def do_learning(self):
         pass
 
