@@ -4,7 +4,7 @@ regular_smoking_behaviour: "STPM" #"COMB"
 quitting_behaviour: "STPM" #"COMB" 
 #data_file: "data/data_synth20_01_2025.csv" #baseline (synthetic) population (2011 HSE population enriched with STS variables)
 #data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data.csv" #STS Jan 2010 population enriched with STPM variables for verifying ecig diffusions of the ABM 
-data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data_subgroup_replicated.csv" #with subgroup ex-smoker 1991+ (size 8) replicated 10 times (size 80 )
+data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data_subgroup_replicated10times.csv" #with subgroup ex-smoker 1991+ (size 8) replicated 10 times (size 80 )
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file

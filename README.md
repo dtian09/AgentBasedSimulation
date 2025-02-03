@@ -19,7 +19,7 @@ ABM version 0.8 runs:
   - smoker1991+
   - neversmoked1991+
 
-The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on March (quarter 1) 2022. The subgroups which used both non-disposable and disposable e-cigarette from January 2022 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2022. 
+The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on January 2021. The subgroups which used both non-disposable and disposable e-cigarette from January 2021 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2021. 
 
 Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)
 
@@ -77,15 +77,18 @@ pip install numpy pandas
 ## Run the ABM software
 1. Download the following [data files](https://drive.google.com/drive/u/1/folders/1HVtjLumfBiwaYsj0k9p_YA8DKIror6Jx) under the 'data' folder:
 
+- testdata_STS2010_Jan_enriched_with_STPM_data_subgroup_replicated10times.csv
 - testdata_STPM2011_encriched_with_STS_data.csv
 - testdata_STS2010_Jan_enriched_with_STPM_data.csv
 - initiation_prob1month_STPM.csv
 - relapse_prob1month_STPM.csv
 - quit_prob1month_STPM.csv
 
-2. Activate the virtual environment my_env as described above.
+2. Download the [monthly_diffusion_parameters.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) and [monthly_bass_observed_predicted.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) under the 'monthly diffusion models' folder.
 
-3. Move into the repository directory.
+3. Activate the virtual environment my_env as described above.
+
+4. Move into the repository directory.
 
 ```
 cd smokingABM
@@ -101,15 +104,10 @@ For example, to use the STPM initiation probabilities for initiating regular smo
 
 5. Specify the parameters settings of the ABM in the props/model.yaml file. In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980 (Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)):
 
-- initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population: 1
-
 - disp_diffusion_exsmoker_1961_1980.p: 0.022498286
 - disp_diffusion_exsmoker_1961_1980.q: 0.212213813
 - disp_diffusion_exsmoker_1961_1980.m: 0.066939661
 - disp_diffusion_exsmoker_1961_1980.d: 0
-- disp_diffusion_exsmoker_1961_1980.ecigUsersOfDiffusionBaselinePopulation: 3
-
-ecigUsersOfDiffusionBaselinePopulation specifies the actual number of the disposable (non-disposable) e-cigarette users of the subgroups in the baseline populations of the diffusion processes (i.e. the quarter 1 2022 STS population for disposable diffusion models and quarter 1 2010 STS population for non-disposable diffusion models). To initialize deltaEt of the diffusion models to the actual number of the e-cigarette user (ecigUsersOfDiffusionBaselinePopulation), initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population is set to 1. To initialize deltaEt of the diffusion models to 0, initialize_deltaEt_to_ecig_users_of_diffusion_baseline_population is set to 0. 
 
 6. Use the following command to run the ABM model.
 
@@ -132,6 +130,10 @@ Additionally, when running in the 'debug mode', the following files are output:
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
 - Exsmoker1981_1990.csv etc. (the e-cigarette prevalence predicted by the diffusion models)
 
+## Verification of the E-cigarette Diffusion Models of the ABM
+
+Run 'monthly diffusion models/plot_bass_comparison_dt.R' to compare on the same plots the predictions of the diffusion models of the ABM against those of the diffusion models in R and the observed data (this comparison is performed between January 2010 and Januray 2034). 
+
 ## Generate 2-D Plots of E-cigarette Prevalence (Output of Diffusion Models)
 
 To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_1990.csv etc. run the command:
@@ -139,12 +141,6 @@ To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_
 python plot_annual_ecig_diffusions.py
 ```
 The generated plots ecig_prevalence_Smoker_over1991.jpeg etc. are saved under a folder 'output/plots'.
-
-## Save the Outputs of the ABM for Future Analysis
-
-To avoid the outputs of the ABM being overwritten when running the ABM with different parameters settings, rename the 'output' folder to a different meaningful name e.g. 'output(deltaEt=0 at tick0)'.
-
-- Note: To generate plots using plot_annual_ecig_diffusions.py in the future, in the function plot_prevalence, set 'dir' to the folder containing the outputs e.g. dir='./output(deltaEt = 0 at tick0)/'.
 
 To deactivate the virtual environment, use the following command 
 ```
