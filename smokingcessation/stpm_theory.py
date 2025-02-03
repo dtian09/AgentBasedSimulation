@@ -21,7 +21,7 @@ class STPMTheory(Theory):
     def do_action(self, agent: MicroAgent):
         pass
 
-class DeathSTPMTheory(STPMTheory):
+class DemographicsSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name, smoking_model)
         
@@ -36,9 +36,25 @@ class RelapseSTPMTheory(STPMTheory):
         super().__init__(name, smoking_model)
         
     def do_situation(self, agent: MicroAgent):
+        self.smoking_model.allocateDiffusionToAgent(agent)
+        #update values of the dynamic variables of agents based on Harry's equations
+
+    def do_action(self, agent: MicroAgent):
+        agent.tick_counter_ex_smoker += 1
+        if agent.tick_counter_ex_smoker == 12:
+            agent.b_years_since_quit += 1
+            agent.tick_counter_ex_smoker = 0
         # retrieve probability of relapse of the matching person from STPM transition probabilities file
         if (agent.b_years_since_quit > 0) and (agent.b_years_since_quit < 10):
-            matched = self.smoking_model.relapse_prob[
+            if self.smoking_model.year_of_current_time_step < 2011:
+                matched = self.smoking_model.relapse_prob[
+                (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
+                (self.smoking_model.relapse_prob['year'] == 2011) &
+                (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
+                (self.smoking_model.relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
+                (self.smoking_model.relapse_prob['time_since_quit'] == agent.b_years_since_quit)]
+            else:
+                matched = self.smoking_model.relapse_prob[
                 (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
                 (self.smoking_model.relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
                 (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
@@ -49,34 +65,28 @@ class RelapseSTPMTheory(STPMTheory):
                 self.prob_behaviour = float(matched.iat[0, -1])
             else:
                 self.prob_behaviour = 0
-                #if self.smoking_model.running_mode == 'debug':
-                #    self.smoking_model.logfile.write('no match in relapse probabilities file for this agent: ' +
-                #                                     str(agent) + '. probability of relapse=0.\n')
-        elif agent.b_years_since_quit >= 10:  # retrieve the probability of years since quit of 10
-            matched = self.smoking_model.relapse_prob[
-                (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
-                (self.smoking_model.relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
-                (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
-                (self.smoking_model.relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
-                (self.smoking_model.relapse_prob['time_since_quit'] == 10)]
+        elif agent.b_years_since_quit >= 10:  # retrieve the probability of 10 years since quit
+            if self.smoking_model.year_of_current_time_step < 2011:
+                matched = self.smoking_model.relapse_prob[
+                    (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
+                    (self.smoking_model.relapse_prob['year'] == 2011) &
+                    (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
+                    (self.smoking_model.relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
+                    (self.smoking_model.relapse_prob['time_since_quit'] == 10)]
+            else:
+                  matched = self.smoking_model.relapse_prob[
+                    (self.smoking_model.relapse_prob['age'] == agent.p_age.get_value()) &
+                    (self.smoking_model.relapse_prob['year'] == self.smoking_model.year_of_current_time_step) &
+                    (self.smoking_model.relapse_prob['sex'] == agent.p_gender.get_value()) &
+                    (self.smoking_model.relapse_prob['imd_quintile'] == agent.p_imd_quintile.get_value()) &
+                    (self.smoking_model.relapse_prob['time_since_quit'] == 10)]
             matched = pd.DataFrame(matched)
             if len(matched) > 0:
                 self.prob_behaviour = float(matched.iat[0,-1])
             else:
                 self.prob_behaviour = 0
-                #if self.smoking_model.running_mode == 'debug':
-                #    self.smoking_model.logfile.write('no match in relapse probabilities file for this agent: ' +
-                #                                     str(agent) + '. probability of relapse=0.\n')
         else:
             self.prob_behaviour = 0
-        self.smoking_model.allocateDiffusionToAgent(agent)
-        #update values of the dynamic variables of agents based on Harry's equations
-
-    def do_action(self, agent: MicroAgent):
-        agent.tick_counter_ex_smoker += 1
-        if agent.tick_counter_ex_smoker == 12:
-            agent.b_years_since_quit += 1
-            agent.tick_counter_ex_smoker = 0
         self.threshold = random.uniform(0, 1)
         if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
@@ -102,19 +112,26 @@ class InitiationSTPMTheory(STPMTheory):
         super().__init__(name, smoking_model)
 
     def do_situation(self, agent: MicroAgent):
-        matched = self.smoking_model.initiation_prob[
+        self.smoking_model.allocateDiffusionToAgent(agent)
+
+    def do_action(self, agent: MicroAgent):
+        if self.smoking_model.year_of_current_time_step < 2011: #STPM initiation probabilites start from 2011, so match the agent with STPM 2011 data
+            matched = self.smoking_model.initiation_prob[
+                (self.smoking_model.initiation_prob['age'] == agent.p_age.get_value()) &
+                (self.smoking_model.initiation_prob['year'] == 2011) &
+                (self.smoking_model.initiation_prob['sex'] == agent.p_gender.get_value()) &
+                (self.smoking_model.initiation_prob['imd_quintile'] == agent.p_imd_quintile.get_value())]
+        else:    
+            matched = self.smoking_model.initiation_prob[
                 (self.smoking_model.initiation_prob['age'] == agent.p_age.get_value()) &
                 (self.smoking_model.initiation_prob['year'] == self.smoking_model.year_of_current_time_step) &
                 (self.smoking_model.initiation_prob['sex'] == agent.p_gender.get_value()) &
                 (self.smoking_model.initiation_prob['imd_quintile'] == agent.p_imd_quintile.get_value())]
-        matched = pd.DataFrame(matched)
+        matched = pd.DataFrame(matched)        
         if len(matched) > 0:
             self.prob_behaviour = float(matched.iat[0,-1])
         else:
             self.prob_behaviour = 0
-        self.smoking_model.allocateDiffusionToAgent(agent)
-
-    def do_action(self, agent: MicroAgent):
         self.threshold = random.uniform(0, 1)
         if self.prob_behaviour >= self.threshold:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
@@ -132,7 +149,17 @@ class QuitSTPMTheory(STPMTheory):
         super().__init__(name, smoking_model)
 
     def do_situation(self, agent: MicroAgent):
-        matched = self.smoking_model.quit_prob[
+        self.smoking_model.allocateDiffusionToAgent(agent)
+        
+    def do_action(self, agent: MicroAgent):
+        if self.smoking_model.year_of_current_time_step < 2011: #STPM initiation probabilites start from 2011, so match this agent with STPM 2011 data
+            matched = self.smoking_model.initiation_prob[
+                (self.smoking_model.initiation_prob['age'] == agent.p_age.get_value()) &
+                (self.smoking_model.initiation_prob['year'] == 2011) &
+                (self.smoking_model.initiation_prob['sex'] == agent.p_gender.get_value()) &
+                (self.smoking_model.initiation_prob['imd_quintile'] == agent.p_imd_quintile.get_value())]
+        else:            
+            matched = self.smoking_model.quit_prob[
                 (self.smoking_model.quit_prob['age'] == agent.p_age.get_value()) &
                 (self.smoking_model.quit_prob['year'] == self.smoking_model.year_of_current_time_step) &
                 (self.smoking_model.quit_prob['sex'] == agent.p_gender.get_value()) &
@@ -142,12 +169,6 @@ class QuitSTPMTheory(STPMTheory):
             self.prob_behaviour = float(matched.iat[0,-1])
         else:
             self.prob_behaviour = 0
-            #if self.smoking_model.running_mode == 'debug':
-            #   self.smoking_model.logfile.write('no match in quit probabilities file for this agent: ' +
-            #                                    str(agent) + '. probability of quit=0.\n')
-        self.smoking_model.allocateDiffusionToAgent(agent)
-        
-    def do_action(self, agent: MicroAgent):
         self.threshold = random.uniform(0, 1)
         if agent.get_current_state() == AgentState.SMOKER:            
             if self.prob_behaviour >= self.threshold:

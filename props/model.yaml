@@ -2,8 +2,9 @@ seed: 1 #the random seed of the ABM
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" 
 quitting_behaviour: "STPM" #"COMB" 
-#data_file: "data/data_synth20_01_2025.csv" #baseline (synthetic) population (HSE population enriched with STS variables)
-data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data.csv" #STS Jan 2010 population enriched with STPM variables for verifying ecig diffusions of the ABM 
+#data_file: "data/data_synth20_01_2025.csv" #baseline (synthetic) population (2011 HSE population enriched with STS variables)
+#data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data.csv" #STS Jan 2010 population enriched with STPM variables for verifying ecig diffusions of the ABM 
+data_file: "data/testdata_STS2010_Jan_enriched_with_STPM_data_subgroup_replicated.csv" #with subgroup ex-smoker 1991+ (size 8) replicated 10 times (size 80 )
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
@@ -11,8 +12,8 @@ quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability f
 year_of_baseline: 2010 #year of STS Jan 2010 population - this is for verifying e-cig diffusions of the ABM
 #stop.at: 12 #the final time step when the simulation stops 
 #stop.at: 97 #year 2018. This is the stop time of ABM when tick 1 = Jan 2011
-stop.at: 193 #January 2026 (for verifying e-cig diffusions). This is the stop time (final tick) of ABM when tick 1 = Jan 2010
-#stop.at: 288 #January 2034 (for verifying e-cig diffusions). This is the stop time (final tick) of ABM when tick 1 = Jan 2010
+#stop.at: 194 #January 2026 (for verifying e-cig diffusions). This is the stop time (final tick) of ABM when tick 1 = Jan 2010
+stop.at: 289 #January 2034 (for verifying e-cig diffusions). This is the stop time (final tick) of ABM when tick 1 = Jan 2010. (2034 - 2011) * 12 + 13 = 289
 #set the starting time step of the monthly e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
 difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions: 0 #non-disposable diffusions start at January 2010 (tick 1) and year of baseline population = 2010
 difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions: 132   #disposable diffusions start at January 2021 and year of baseline population = 2010. 12 x (2021-2010) = 132

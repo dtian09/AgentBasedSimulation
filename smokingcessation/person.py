@@ -595,13 +595,14 @@ class Person(MicroAgent):
         else:
                self.eCig_diff_subgroup = None #this agent not in any ecig subgroup
 
-    def add_agent_to_deltaEtagents(self):        
-        if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None :#This agent belongs to an e-cig subgroup, then, append the agent to the corresponding deltaEt_agents list as appropriate.
-                for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
-                        if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
-                                diffusion_model.deltaEt_agents.append(self.get_id())                                        
-                        elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
-                                diffusion_model.deltaEt_agents.append(self.get_id())
+    #def add_agent_to_deltaEtagents(self):        
+    #    if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None :#This agent belongs to an e-cig subgroup, then, append the agent to the corresponding deltaEt_agents list as appropriate.
+    #            for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
+    #                    diffusion_model.set_deltaEt_agents_to_emptylist()
+    #                    if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
+    #                            diffusion_model.deltaEt_agents.append(self.get_id())                                        
+    #                    elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
+    #                            diffusion_model.deltaEt_agents.append(self.get_id())
                     
                            
         

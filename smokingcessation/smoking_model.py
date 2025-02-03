@@ -96,17 +96,17 @@ class SmokingModel(Model):
             print('and the STPM relapse transition probabilities.')
             self.logfile.write('and the STPM relapse transition probabilities.\n')  
             self.ecig_Et = {                                       
-                            eCigDiffSubGroup.Exsmokerless1940:[0], #ecig prevalence of each tick from tick 0 ()
-                            eCigDiffSubGroup.Exsmoker1941_1960:[0],
-                            eCigDiffSubGroup.Exsmoker1961_1980:[0],
-                            eCigDiffSubGroup.Exsmoker1981_1990:[0],
-                            eCigDiffSubGroup.Exsmoker_over1991:[0],
-                            eCigDiffSubGroup.Smokerless1940:[0],
-                            eCigDiffSubGroup.Smoker1941_1960:[0],
-                            eCigDiffSubGroup.Smoker1961_1980:[0],
-                            eCigDiffSubGroup.Smoker1981_1990:[0],
-                            eCigDiffSubGroup.Smoker_over1991:[0],
-                            eCigDiffSubGroup.Neversmoked_over1991:[0]}
+                            eCigDiffSubGroup.Exsmokerless1940:[], #ecig prevalence of each tick starting from tick 1 (January)
+                            eCigDiffSubGroup.Exsmoker1941_1960:[],
+                            eCigDiffSubGroup.Exsmoker1961_1980:[],
+                            eCigDiffSubGroup.Exsmoker1981_1990:[],
+                            eCigDiffSubGroup.Exsmoker_over1991:[],
+                            eCigDiffSubGroup.Smokerless1940:[],
+                            eCigDiffSubGroup.Smoker1941_1960:[],
+                            eCigDiffSubGroup.Smoker1961_1980:[],
+                            eCigDiffSubGroup.Smoker1981_1990:[],
+                            eCigDiffSubGroup.Smoker_over1991:[],
+                            eCigDiffSubGroup.Neversmoked_over1991:[]}
 
     def initialize_ecig_diffusion_subgroups(self):
         self.ecig_diff_subgroups={}
@@ -683,7 +683,7 @@ class SmokingModel(Model):
             agent.count_agent_for_quit_subgroups_by_ages_sex()
             agent.count_agent_for_quit_subgroups_by_ages_imd()
             agent.count_agent_for_ecig_diffusion_subgroups()
-            agent.add_agent_to_deltaEtagents()
+            #agent.add_agent_to_deltaEtagents()
             agent.do_action()
     
     def do_situation_mechanisms(self):
@@ -731,11 +731,9 @@ class SmokingModel(Model):
             random.shuffle(self.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
             for diffusion_model in self.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
                 if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+                    diffusion_model.allocateDiffusion(agent)
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+                    diffusion_model.allocateDiffusion(agent)
 
     def do_per_tick(self):
         self.current_time_step += 1
@@ -762,7 +760,7 @@ class SmokingModel(Model):
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Exsmokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Exsmokerless1940]#the non-disposable diffusion model of the subgroup which only uses non-disposable ecig
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Exsmoker1941_1960] = self.non_disp_diffusion_models[eCigDiffSubGroup.Exsmoker1941_1960]
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Smokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Smokerless1940]
-            self.current_time_step_of_disp_diffusions = max(0, self.current_time - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
+            self.current_time_step_of_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
         self.init_population_counts()
         #check agents die or alive
         #if agents die, delete them from the population
@@ -776,7 +774,7 @@ class SmokingModel(Model):
             g.initialize_global_variables_of_subgroups()        
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models
-        self.do_situation_mechanisms()#create e-cigarette users according to delta E[t] and increment agents' age if 12 months have passed
+        self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
@@ -789,7 +787,7 @@ class SmokingModel(Model):
             self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) +': smoking prevalence=' + str(p) + '%.\n')
             for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
                 for diff_model in diffusion_models:
-                    self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+', deltaEt='+str(diff_model.deltaEt)+', e-cig users='+str(diff_model.ecig_users)+'\n')
+                    self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+'\n')
                     self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
 
     def init_schedule(self):
