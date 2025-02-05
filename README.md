@@ -77,6 +77,7 @@ pip install numpy pandas
 ## Run the ABM software
 1. Download the following [data files](https://drive.google.com/drive/u/1/folders/1HVtjLumfBiwaYsj0k9p_YA8DKIror6Jx) under the 'data' folder:
 
+- testdata_STS2010_Jan_enriched_with_STPM_data_3subgroups_replicated10times.csv
 - testdata_STS2010_Jan_enriched_with_STPM_data_subgroup_replicated10times.csv
 - testdata_STPM2011_encriched_with_STS_data.csv
 - testdata_STS2010_Jan_enriched_with_STPM_data.csv
