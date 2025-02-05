@@ -11,7 +11,7 @@ class eCigDiffusion(MacroEntity):
         self.q=q
         self.m=m
         self.d=d
-        self.deltaT=1/3 #deltaT is the time difference in quarters between two consecutive time steps (months) of ABM
+        self.deltaT=1 #deltaT is the time difference in quarters between two consecutive time steps (months) of ABM
         self.Et=0 #default value 0
         self.deltaEt=0
         self.ecig_users=0
@@ -61,11 +61,11 @@ class eCigDiffusion(MacroEntity):
             if self.deltaEt > 0:#change deltaEt non-e-cigarette users to e-cigarette users 
                 fraction_part = self.deltaEt % 1 
                 if fraction_part > 0:
-                    if random.uniform(0, 1) >= fraction_part:
+                    if random.uniform(0, 1) <= fraction_part:
                         self.deltaEt=int(self.deltaEt) + 1 #to create a user
             elif self.deltaEt < 0:#change |delta Et| e-cigarette users to e-cigarette non-users
                 fraction_part = abs(self.deltaEt) % 1 
                 if fraction_part > 0:
-                    if random.uniform(0, 1) >= fraction_part: 
+                    if random.uniform(0, 1) <= fraction_part: 
                         self.deltaEt=int(self.deltaEt) - 1 #to create an non-user
 
