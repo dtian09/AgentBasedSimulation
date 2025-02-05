@@ -21,7 +21,7 @@ ABM version 0.8 runs:
 
 The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on January 2021. The subgroups which used both non-disposable and disposable e-cigarette from January 2021 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2021. 
 
-Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)
+Reference: [monthly_diffusion_parameters.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2)
 
 ## Installation
 
