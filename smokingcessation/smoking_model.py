@@ -9,7 +9,9 @@ from mbssm.model import Model
 import config.global_variables as g
 import os
 import random
-        
+from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
+from smokingcessation.smoking_regulator_mediator import SmokingRegulatorMediator
+from smokingcessation.geographic_smoking_prevalence_regulator import GeographicSmokingPrevalenceRegulator
 class SmokingModel(Model):
 
     def __init__(self, comm, params: Dict):
@@ -26,12 +28,17 @@ class SmokingModel(Model):
         self.seed = self.props["seed"]
         random.seed(self.seed) #set the random seed of ABM
         self.data_file: str = self.props["data_file"]  # the baseline synthetic population (STAPM 2013 data)
+        self.regionalSmokingPrevalenceFile = self.props["regional_prevalence"]
+        self.regionalSmokingPrevalence=None 
+        self.readInRegionalPrevalence()
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
         self.year_of_current_time_step = self.props["year_of_baseline"]
         self.year_number = 0
         self.current_time_step = 0
+        self.tick_counter = 0 #count the number of months of the current year
+        self.formatted_month = None #formatted month: Nov-06, Dec-10 etc.
         self.start_year_tick = 1 #tick of January of the current year
         self.end_year_tick = 12 #tick of December of the current year
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
@@ -74,8 +81,9 @@ class SmokingModel(Model):
             pass
         else:
             sys.exit('invalid quitting behaviour: '+self.quitting_behaviour)
-        self.tick_counter = 0
         self.initialize_ecig_diffusion_subgroups()
+        self.geographicSmokingPrevalence = GeographicSmokingPrevalence(self)
+        self.geographicSmokingPrevalence.set_mediator(SmokingRegulatorMediator([GeographicSmokingPrevalenceRegulator(self)]))
         if not os.path.exists(f'{ROOT_DIR}/output'):
             os.makedirs(f'{ROOT_DIR}/output', exist_ok=True)
         if self.running_mode == 'debug':
@@ -108,6 +116,43 @@ class SmokingModel(Model):
                             eCigDiffSubGroup.Smoker_over1991:[],
                             eCigDiffSubGroup.Neversmoked_over1991:[]}
 
+    def format_month_and_year(self):
+        #convert the current month and current year to format: Nov-06, Dec-10 etc.
+        month=self.smoking_model.tick_counter
+        year=self.smoking_model.year_of_current_time_step
+        from datetime import datetime
+        self.formatted_month = datetime(year, month, 1).strftime("%b-%y")
+    
+    def readInRegionalPrevalence(self):
+        #read in the regional smoking prevalences between 2011 and 2019 into dataframe
+        df=pd.read_csv(f'{ROOT_DIR}/' + self.regionalSmokingPrevalenceFile, encoding='ISO-8859-1')
+        #match patterns: 01/01/2011,01/12/2011..01/12/2019
+        pattern = r"^(01/(0[1-9]|1[0-2])/201[1-9])$"
+        self.regionalSmokingPrevalence = df[df["month"].str.match(pattern, na=False)]
+        self.regionalSmokingPrevalence = self.regionalSmokingPrevalence[['month','region','prevalence']]
+        #encode region as integers:
+        #1 = North East
+        #2 = North West
+        #3 = Yorkshire and The Humber
+        #4 = East Midlands
+        #5 = West Midlands
+        #6 = East of England
+        #7 = London
+        #8 = South East
+        #9 = South West
+        region_mapping = {
+            "North East": 1,
+            "North West": 2,
+            "Yorkshire and The Humber": 3,
+            "East Midlands": 4,
+            "West Midlands": 5,
+            "East of England": 6,
+            "London": 7,
+            "South East": 8,
+            "South West": 9
+        }
+        self.regionalSmokingPrevalence["region"] = self.regionalSmokingPrevalence["region"].map(region_mapping)
+    
     def initialize_ecig_diffusion_subgroups(self):
         self.ecig_diff_subgroups={}
         self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmokerless1940]=set()
@@ -497,6 +542,7 @@ class SmokingModel(Model):
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE                        
             else:
+                print(init_state)
                 raise ValueError(f'{init_state} is not an acceptable agent state')
             if self.regular_smoking_behaviour=='COMB':
                 rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
@@ -716,7 +762,9 @@ class SmokingModel(Model):
         else:#from 2021 for the subgroups using both non-disp ecig and disp ecig, run the non-disposable and disposable diffusion models
            for diffusion_models in self.diffusion_models_of_this_tick.values():
                for diffusion_model in diffusion_models:    
-                   diffusion_model.do_macro_macro()                                                       
+                   diffusion_model.do_macro_macro()
+        if self.year_of_current_time_step >= 2011 and self.year_of_current_time_step <= 2019:
+            self.geographicSmokingPrevalence.do_macro_macro()                                              
                   
     def smoking_prevalence(self):
         smokers = 0
@@ -748,6 +796,7 @@ class SmokingModel(Model):
             if self.tick_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
+        self.format_month_and_year()
         print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
         self.initialize_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
@@ -773,7 +822,7 @@ class SmokingModel(Model):
             self.file_quit_imd.write(self.get_subgroups_of_ages_imd_for_quit())
             g.initialize_global_variables_of_subgroups()        
         self.do_transformational_mechanisms()#compute Et of diffusion models
-        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models
+        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographci regional smoking prevalence of this month for years 2011 and 2019 only.
         self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1

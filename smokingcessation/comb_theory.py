@@ -111,7 +111,11 @@ class RegSmokeTheory(COMBTheory):
         #pPrescriptionNRT
         #pVareniclineUse
         #...
-        
+        #update oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=prev)
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+
     def do_learning(self):
         pass
 
@@ -193,6 +197,7 @@ class QuitAttemptTheory(COMBTheory):
         else:
            val = 0
         self.level2_attributes['mUseofNRT'].set_value(val)
+        #update oPrevalenceOfSmokingInGeographicLocality
 
     def do_learning(self):
         pass
@@ -269,6 +274,7 @@ class QuitSuccessTheory(COMBTheory):
         #pPrescriptionNRT
         #cUseOfBehaviourSupport
         #cCytisineUse
+        #update oPrevalenceOfSmokingInGeographicLocality
         
     def do_learning(self):
         pass
