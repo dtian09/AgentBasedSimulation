@@ -25,6 +25,7 @@ class Person(MicroAgent):
                  expenditure: int = None,
                  prescription_nrt: int = None,
                  over_counter_nrt: int = None,
+                 use_of_nrt : int = None,
                  varenicline_use: int = None,
                  cig_consumption: int = None,
                  ecig_use: int = None,
@@ -75,6 +76,8 @@ class Person(MicroAgent):
         self.p_prescription_nrt.set_value(prescription_nrt)
         self.p_over_counter_nrt = PersonalAttribute(name='pOverCounterNRT')
         self.p_over_counter_nrt.set_value(over_counter_nrt)
+        self.p_use_of_nrt = PersonalAttribute(name='pUseOfNRT')
+        self.p_use_of_nrt.set_value(use_of_nrt)
         self.p_varenicline_use = PersonalAttribute(name='pVareniclineUse')
         self.p_varenicline_use.set_value(varenicline_use)
         self.p_ecig_use = PersonalAttribute(name='pECigUse')

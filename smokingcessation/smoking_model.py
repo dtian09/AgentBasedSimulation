@@ -9,9 +9,6 @@ from mbssm.model import Model
 import config.global_variables as g
 import os
 import random
-from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
-from smokingcessation.smoking_regulator_mediator import SmokingRegulatorMediator
-from smokingcessation.geographic_smoking_prevalence_regulator import GeographicSmokingPrevalenceRegulator
 class SmokingModel(Model):
 
     def __init__(self, comm, params: Dict):
@@ -81,9 +78,6 @@ class SmokingModel(Model):
             pass
         else:
             sys.exit('invalid quitting behaviour: '+self.quitting_behaviour)
-        self.initialize_ecig_diffusion_subgroups()
-        self.geographicSmokingPrevalence = GeographicSmokingPrevalence(self)
-        self.geographicSmokingPrevalence.set_mediator(SmokingRegulatorMediator([GeographicSmokingPrevalenceRegulator(self)]))
         if not os.path.exists(f'{ROOT_DIR}/output'):
             os.makedirs(f'{ROOT_DIR}/output', exist_ok=True)
         if self.running_mode == 'debug':
@@ -117,17 +111,16 @@ class SmokingModel(Model):
                             eCigDiffSubGroup.Neversmoked_over1991:[]}
 
     def format_month_and_year(self):
-        #convert the current month and current year to format: Nov-06, Dec-10 etc.
-        month=self.smoking_model.tick_counter
-        year=self.smoking_model.year_of_current_time_step
+        #convert the current month and current year of the ABM to the format: Nov-06, Dec-10 etc.
+        month=self.tick_counter
+        year=self.year_of_current_time_step
         from datetime import datetime
         self.formatted_month = datetime(year, month, 1).strftime("%b-%y")
     
     def readInRegionalPrevalence(self):
         #read in the regional smoking prevalences between 2011 and 2019 into dataframe
         df=pd.read_csv(f'{ROOT_DIR}/' + self.regionalSmokingPrevalenceFile, encoding='ISO-8859-1')
-        #match patterns: 01/01/2011,01/12/2011..01/12/2019
-        pattern = r"^(01/(0[1-9]|1[0-2])/201[1-9])$"
+        pattern = r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-1[1-9]$"#match months: Jan-11,Feb-11,...,Dec-19
         self.regionalSmokingPrevalence = df[df["month"].str.match(pattern, na=False)]
         self.regionalSmokingPrevalence = self.regionalSmokingPrevalence[['month','region','prevalence']]
         #encode region as integers:
@@ -143,7 +136,7 @@ class SmokingModel(Model):
         region_mapping = {
             "North East": 1,
             "North West": 2,
-            "Yorkshire and The Humber": 3,
+            "Yorkshire and the Humber": 3,
             "East Midlands": 4,
             "West Midlands": 5,
             "East of England": 6,
@@ -152,8 +145,16 @@ class SmokingModel(Model):
             "South West": 9
         }
         self.regionalSmokingPrevalence["region"] = self.regionalSmokingPrevalence["region"].map(region_mapping)
-    
-    def initialize_ecig_diffusion_subgroups(self):
+
+    def init_geographic_regional_prevalence(self):
+        from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
+        from smokingcessation.smoking_regulator_mediator import SmokingRegulatorMediator
+        from smokingcessation.geographic_smoking_prevalence_regulator import GeographicSmokingPrevalenceRegulator
+
+        self.geographicSmokingPrevalence = GeographicSmokingPrevalence(self)
+        self.geographicSmokingPrevalence.set_mediator(SmokingRegulatorMediator([GeographicSmokingPrevalenceRegulator(self)]))
+        
+    def init_ecig_diffusion_subgroups(self):
         self.ecig_diff_subgroups={}
         self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmokerless1940]=set()
         self.ecig_diff_subgroups[eCigDiffSubGroup.Exsmoker1941_1960]=set()
@@ -166,7 +167,7 @@ class SmokingModel(Model):
         self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker1981_1990]=set()
         self.ecig_diff_subgroups[eCigDiffSubGroup.Smoker_over1991]=set()
         self.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991]=set()
-        
+    
     def init_ecig_diffusions(self):
         from smokingcessation.ecig_diffusion import eCigDiffusion
         from smokingcessation.smoking_regulator_mediator import SmokingRegulatorMediator
@@ -451,91 +452,91 @@ class SmokingModel(Model):
         for i in range(self.size_of_population):
             subgroup=None
             init_state = self.data.at[i, 'bState']
-            if init_state == 'never_smoker':
+            if init_state == 0:
                 states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.NEVERSMOKERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.NEVERSMOKERFEMALE
-            elif init_state == 'ex-smoker':
+            elif init_state == 1:
                 states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.EXSMOKERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.EXSMOKERFEMALE 
-            elif init_state == 'smoker':
+            elif init_state == 4:
                 states = [AgentState.SMOKER, AgentState.SMOKER]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.SMOKERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.SMOKERFEMALE 
-            elif init_state == 'newquitter':
+            elif init_state == 2:
                 states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.NEWQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.NEWQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 1:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 1:
                 states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 2:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 2:
                 states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 3:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 3:
                 states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 4:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 4:
                 states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE 
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 5:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 5:
                 states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 6:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 6:
                 states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 7:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 7:
                 states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 8:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 8:
                 states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 9:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 9:
                 states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 10:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 10:
                 states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
                 elif self.data.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 'ongoingquitter' and self.data.at[i,'bMonthsSinceQuit'] == 11:
+            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 11:
                 states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]
                 if self.data.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
@@ -568,14 +569,15 @@ class SmokingModel(Model):
                     sep=self.data.at[i, 'pSEP'],
                     region=self.data.at[i, 'pRegion'],
                     social_housing=self.data.at[i, 'pSocialHousing'],
-                    mental_health_conds=self.data.at[i, 'pMentalHealthCondition'],
+                    mental_health_conds=self.data.at[i, 'pMentalHealthConditions'],
                     alcohol=self.data.at[i, 'pAlcoholConsumption'],
                     expenditure=self.data.at[i, 'pExpenditure'],
                     prescription_nrt=self.data.at[i, 'pPrescriptionNRT'],
                     over_counter_nrt=self.data.at[i, 'pOverCounterNRT'],
-                    varenicline_use=self.data.at[i, 'pVareniclineUse'],
+                    use_of_nrt=self.data.at[i, 'pUseOfNRT'],
                     ecig_use=self.data.at[i, 'pECigUse'],
-                    ecig_type=self.data.at[i, 'alldisposable'],
+                    ecig_type=self.data.at[i, 'pECigType'],                    
+                    varenicline_use=self.data.at[i, 'pVareniclineUse'],
                     cig_consumption=self.data.at[i, 'bCigConsumption'],
                     years_since_quit=self.data.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
                     number_of_recent_quit_attempts=self.data.at[i, 'bNumberOfRecentQuitAttempts'],
@@ -798,7 +800,7 @@ class SmokingModel(Model):
                self.year_number += 1
         self.format_month_and_year()
         print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
-        self.initialize_ecig_diffusion_subgroups()#reset subgroups to empty sets
+        self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
         if self.year_of_current_time_step < 2021:#before 2021, run non-disposable diffusion models only 
@@ -838,6 +840,7 @@ class SmokingModel(Model):
                 for diff_model in diffusion_models:
                     self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+'\n')
                     self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
+            self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
 
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
@@ -881,8 +884,9 @@ class SmokingModel(Model):
             self.logfile.close()
 
     def init(self):
-        self.initialize_ecig_diffusion_subgroups()
+        self.init_ecig_diffusion_subgroups()
         self.init_ecig_diffusions()
+        self.init_geographic_regional_prevalence()
         self.init_population()      
         self.init_schedule()
 
