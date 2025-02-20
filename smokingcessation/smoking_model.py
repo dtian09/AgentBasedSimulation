@@ -115,6 +115,7 @@ class SmokingModel(Model):
         month=self.tick_counter
         year=self.year_of_current_time_step
         from datetime import datetime
+        print('month: ',month)#debug
         self.formatted_month = datetime(year, month, 1).strftime("%b-%y")
     
     def readInRegionalPrevalence(self):
@@ -829,11 +830,8 @@ class SmokingModel(Model):
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
-        if self.current_time_step == 13:
+        if self.tick_counter == 12:
             self.tick_counter = 0
-        elif self.current_time_step > 13:
-            if self.tick_counter == 12:
-                self.tick_counter = 0
         if self.running_mode == 'debug':
             self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) +': smoking prevalence=' + str(p) + '%.\n')
             for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
