@@ -5,7 +5,7 @@ from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
 import config.global_variables as g
-
+#import ipdb
 class Person(MicroAgent):
     def __init__(self,
                  smoking_model: SmokingModel,
@@ -43,12 +43,12 @@ class Person(MicroAgent):
         super().__init__(id=id, type=type, rank=rank)
         self.smoking_model = smoking_model        
         self.b_states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
-        self.behaviour_buffer = None
         self.b_months_since_quit = months_since_quit #Only tracked for the ongoing quitter state.
         self.b_cig_consumption = cig_consumption 
         self.b_number_of_recent_quit_attempts = number_of_recent_quit_attempts
         self.b_years_since_quit = years_since_quit        
         self.tick_counter_ex_smoker = 0  # count number of consecutive ticks when the self stays as an ex-smoker
+        #ipdb.set_trace()#debug
         self.init_behaviour_buffer() #initialize the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
         self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
@@ -148,44 +148,37 @@ class Person(MicroAgent):
 
     def init_behaviour_buffer(self):
         """
-        The behaviour buffer stores this agent's behaviours (COMB and STPM behaviours) over the last 12 months
-        (12 ticks with each tick represents 1 month)
-        COMB behaviours: 'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure'
-        STPM behaviours: 'relapse', 'no relapse'
-        At each tick, the behaviour buffer (a list) stores one of the 8 behaviours:
-        'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure', 'relapse' and 'no relapse'
-        At tick 0, initialize the behaviour buffer of the agent as follows:
-       
-        
+        The behaviour buffer stores this agent's 'quit attempt behaviours' (1) and 'not quit attempt behaviours' (0) over the last 12 months
+        (12 ticks with each tick represents 1 month).
+        The behaviour buffer is initialized at t=0 as follows:
+        X: number of quit attempts in past 12 months
+        1. Generate a random permutation of indices 0,...,11
+        2. Take first X indices of the permutation
+        3. Assign quit attempt behaviours (1s) to the X indices and 'not quit attempt behaviours (0s) to the other indices
         """
-        behaviours = [e for e in AgentBehaviour]
-        self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
-        self.k = 0
-        if self.b_states[0] == AgentState.NEWQUITTER:
-            i = random.randint(0, 11)
-            self.behaviour_buffer[i] = AgentBehaviour.QUITATTEMPT
-            for j in range(i + 1, 12):
-                self.behaviour_buffer[j] = AgentBehaviour.QUITSUCCESS
-                self.k += 1
-            for q in range(0, i):  # set random behaviours to indices: 0, 1,..., i-1
-                self.behaviour_buffer[q] = behaviours[random.randint(0, len(behaviours) - 1)]
-        elif self.b_states[0] == AgentState.NEVERSMOKE:
-            for i in range(0, 12):
-                self.behaviour_buffer[i] = AgentBehaviour.NOUPTAKE
-        elif self.b_states[0] == AgentState.EXSMOKER:
-            for i in range(0, 12):
-                self.behaviour_buffer[i] = AgentBehaviour.NORELAPSE
-        elif self.b_states[0] == AgentState.SMOKER:
-            for i in range(0, 12):
-                self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]
-        elif self.b_states[0] in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
-                        AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
-                        AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
-                        AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
-            for i in range(0, 12):
-                self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]    
+        self.behaviour_buffer = [0 for _ in range(0, 12)]#The behaviour buffer stores this agent's 'quit attempt behaviours' (1) and 'not quit attempt behaviours' (0) over the last 12 months
+        perm = random.sample(range(12), 12)
+        i=0
+        while i < self.b_number_of_recent_quit_attempts:
+              self.behaviour_buffer[perm[i]]=1
+              i+=1
+
+    def add_behaviour(self, behaviour: AgentBehaviour):
+        if not isinstance(behaviour, AgentBehaviour):
+            raise ValueError(f'{behaviour} is not an acceptable self behaviour')
+        elif behaviour == AgentBehaviour.QUITATTEMPT:
+            self.behaviour_buffer.append(1)
         else:
-            raise ValueError(f'{self.b_states[0]} is not an acceptable self state')
+            self.behaviour_buffer.append(0)
+
+    def delete_oldest_behaviour(self):
+        if len(self.behaviour_buffer) > 0:
+            del self.behaviour_buffer[0]
+        else:
+            raise ValueError('Attempting to delete a behaviour from an empty buffer')
+
+    def count_quit_attempt_behaviour(self):
+        return sum(self.behaviour_buffer)
 
     def update_ec_ig_use(self, eciguse: int):
         self.ecig_use = eciguse
@@ -209,22 +202,6 @@ class Person(MicroAgent):
 
     def increment_age(self):
         self.p_age.set_value(self.p_age.value + 1)
-
-    def add_behaviour(self, behaviour: AgentBehaviour):
-        if not isinstance(behaviour, AgentBehaviour):
-            raise ValueError(f'{behaviour} is not an acceptable self behaviour')
-        self.behaviour_buffer.append(behaviour)
-
-    def delete_oldest_behaviour(self):
-        if len(self.behaviour_buffer) > 0:
-            del self.behaviour_buffer[0]
-        else:
-            raise ValueError('Attempting to delete a behaviour from an empty buffer')
-
-    def count_behaviour(self, behaviour: AgentBehaviour):
-        if not isinstance(behaviour, AgentBehaviour):
-            raise ValueError(f'{behaviour} is not an acceptable self behaviour')
-        return self.behaviour_buffer.count(behaviour)
 
     def get_current_theory_of_agent(self):
         return self.get_mediator().get_current_theory_of_agent(self)

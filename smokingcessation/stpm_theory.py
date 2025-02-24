@@ -183,7 +183,7 @@ class QuitSTPMTheory(STPMTheory):
                 # append the agent's new behaviour to its behaviour buffer
                 agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
                 agent.set_state_of_next_time_step(state=AgentState.SMOKER)
-            agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
+            agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
         elif agent.get_current_state() in (AgentState.NEWQUITTER, AgentState.ONGOINGQUITTER1,
                                             AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3, 
                                             AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5, 
@@ -223,10 +223,9 @@ class QuitSTPMTheory(STPMTheory):
                     agent.set_state_of_next_time_step(AgentState.EXSMOKER)
                     agent.b_months_since_quit=0
             else:
-                # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
                 agent.delete_oldest_behaviour()
-                # append the agent's new behaviour to its behaviour buffer
                 agent.add_behaviour(AgentBehaviour.QUITFAILURE)
                 agent.set_state_of_next_time_step(AgentState.SMOKER)
-                agent.b_months_since_quit = 0
-            agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
+                agent.b_months_since_quit=0
+            agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
+

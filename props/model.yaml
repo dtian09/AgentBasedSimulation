@@ -2,13 +2,15 @@ seed: 1 #the random seed of the ABM
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" 
 quitting_behaviour: "STPM" #"COMB" 
-data_file: "data/data_synth20_01_2025.csv" #baseline (synthetic) population (2011 HSE population enriched with STS variables)
+#data_file: "data/data_synth20_01_2025.csv" #baseline (synthetic) population (2011 HSE population enriched with STS variables)
+data_file: "data/subset1000.csv" #random subset of population for testing
 regional_prevalence: "data/Regional smoking trends data for Robin.csv" #monthly regional smoking prevalence
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
 year_of_baseline: 2011 #year of the baseline popultion at t=0
-stop.at: 109 #January 2020  (covers the time period (2011 to 2019) for reading in regional smoking prevalence) where tick 1 = Jan 2010. (2020 - 2011) * 12 + 1 = 109 
+stop.at: 13 #January 2012 (for testing regional smoking prevalence)
+#stop.at: 109 #January 2020  (covers the time period (2011 to 2019) for reading in regional smoking prevalence) where tick 1 = Jan 2010. (2020 - 2011) * 12 + 1 = 109 
 #set the starting time step of the monthly e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
 difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions: -12 #for non-disposable diffusions start at January 2010 (i.e. -12) and year of baseline population = 2011. 
 difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions: 120 #for disposable diffusions start at January 2021 and year of baseline population = 2011. 12 x (2021-2011) = 120

@@ -264,7 +264,7 @@ class QuitAttemptTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.SMOKER)
-        agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
+        agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
 
 class QuitSuccessTheory(COMBTheory):
 
@@ -396,5 +396,5 @@ class QuitSuccessTheory(COMBTheory):
             agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.b_months_since_quit = 0
             self.level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
-        agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
+        agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
 
