@@ -9,6 +9,8 @@ from mbssm.model import Model
 import config.global_variables as g
 import os
 import random
+#import ipdb
+
 class SmokingModel(Model):
 
     def __init__(self, comm, params: Dict):
@@ -60,6 +62,7 @@ class SmokingModel(Model):
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
         self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions = self.props['difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions']
         self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions = self.props['difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions']        
+        #ipdb.set_trace()#debug
         if self.running_mode == 'debug':
             self.smoking_prevalence_l = list()
         self.regular_smoking_behaviour = self.props['regular_smoking_behaviour'] #COMB or STPM
@@ -732,7 +735,6 @@ class SmokingModel(Model):
             agent.count_agent_for_quit_subgroups_by_ages_sex()
             agent.count_agent_for_quit_subgroups_by_ages_imd()
             agent.count_agent_for_ecig_diffusion_subgroups()
-            #agent.add_agent_to_deltaEtagents()
             agent.do_action()
     
     def do_situation_mechanisms(self):

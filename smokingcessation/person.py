@@ -148,29 +148,15 @@ class Person(MicroAgent):
 
     def init_behaviour_buffer(self):
         """
-        The behaviour buffer stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
+        The behaviour buffer stores this agent's behaviours (COMB and STPM behaviours) over the last 12 months
         (12 ticks with each tick represents 1 month)
         COMB behaviours: 'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure'
         STPM behaviours: 'relapse', 'no relapse'
         At each tick, the behaviour buffer (a list) stores one of the 8 behaviours:
         'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure', 'relapse' and 'no relapse'
-        (behaviours of a quitter over last 12 months (12 ticks):
-            random behaviour (tick 1)..., random behaviour (tick i-1), quit attempt (tick i), quit success,..., quit success (tick 12)
-            or
-            random behaviour (tick 1),...,random behaviour (tick 12),quit attempt (tick 12))
-        At tick 0, initialize the behaviour buffer of the self to its historical behaviours as follows:
-        or a quitter in the baseline population (i.e. at tick 0) {
-            select a random index i of the buffer (0=< i =< 11);
-            set the cell at i to 'quit attempt';
-            set all the cells at i+1,i+2...,11 to 'quit success';
-            set the cells at 0,...,i-1 to random behaviours;
-        }
-        for a non-quitter in the baseline population {
-            set each cell of the behaviour buffer to a random behaviour;
-        }
-        k: count of number of consecutive quit successes done at the current state
-        Initialize k to the number of consecutive quit successes following the last quit attempt in the behaviour_buffer
-        to the end of the behaviourBuffer
+        At tick 0, initialize the behaviour buffer of the agent as follows:
+       
+        
         """
         behaviours = [e for e in AgentBehaviour]
         self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
