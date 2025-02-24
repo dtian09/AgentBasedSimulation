@@ -3,7 +3,7 @@
 library(hseclean)
 library(tidyverse)
 
-wd<-"U:/smoking cessation/code/"
+wd<-"X:/Shared/code/ABM_software/smokingABM/"
 setwd(wd)
 
 source("create_test_data_functions.R")

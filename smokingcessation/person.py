@@ -23,12 +23,16 @@ class Person(MicroAgent):
                  mental_health_conds: int = None,
                  alcohol: int = None,
                  expenditure: int = None,
-                 nrt_use: int = None,
+                 prescription_nrt: int = None,
+                 over_counter_nrt: int = None,
+                 use_of_nrt : int = None,
                  varenicline_use: int = None,
-                 cig_consumption_prequit: int = None,
+                 cig_consumption: int = None,
                  ecig_use: int = None,
                  ecig_type: int = None,
                  states: List[AgentState] = None,
+                 number_of_recent_quit_attempts = None,
+                 months_since_quit=None,
                  years_since_quit=None,
                  reg_smoke_theory=None,
                  quit_attempt_theory=None,
@@ -38,12 +42,14 @@ class Person(MicroAgent):
                  ):
         super().__init__(id=id, type=type, rank=rank)
         self.smoking_model = smoking_model        
-        self.states = states #list of states. states[t] is the self's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
+        self.b_states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
         self.behaviour_buffer = None
-        self.k = None
+        self.b_months_since_quit = months_since_quit #Only tracked for the ongoing quitter state.
+        self.b_cig_consumption = cig_consumption 
+        self.b_number_of_recent_quit_attempts = number_of_recent_quit_attempts
+        self.b_years_since_quit = years_since_quit        
         self.tick_counter_ex_smoker = 0  # count number of consecutive ticks when the self stays as an ex-smoker
-        self.init_behaviour_buffer_and_k() #initialize: the behaviour buffer which stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
-                                           #            k, number of consecutive quit successes following the last quit attempt in the behaviourBuffer to end of the
+        self.init_behaviour_buffer() #initialize the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
         self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
         self.p_gender = PersonalAttribute(name='pGender')
@@ -66,30 +72,30 @@ class Person(MicroAgent):
         self.p_alcohol_consumption.set_value(alcohol)
         self.p_expenditure = PersonalAttribute(name='pExpenditure')
         self.p_expenditure.set_value(expenditure)
-        self.p_nrt_use = PersonalAttribute(name='pNRTuse')
-        self.p_nrt_use.set_value(nrt_use)
+        self.p_prescription_nrt = PersonalAttribute(name='pPrescriptionNRT')
+        self.p_prescription_nrt.set_value(prescription_nrt)
+        self.p_over_counter_nrt = PersonalAttribute(name='pOverCounterNRT')
+        self.p_over_counter_nrt.set_value(over_counter_nrt)
+        self.p_use_of_nrt = PersonalAttribute(name='pUseOfNRT')
+        self.p_use_of_nrt.set_value(use_of_nrt)
         self.p_varenicline_use = PersonalAttribute(name='pVareniclineUse')
         self.p_varenicline_use.set_value(varenicline_use)
-        self.p_cig_consumption_prequit = PersonalAttribute(name='pCigConsumptionPrequit')
-        self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
-        self.p_number_of_recent_quit_attempts = PersonalAttribute(name='pNumberOfRecentQuitAttempts')
-        self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))       
-        self.p_years_since_quit = PersonalAttribute(
-                # number of years since quit smoking for an ex-smoker, NA for quitter, never_smoker and smoker
-                name='pYearsSinceQuit')
-        self.p_years_since_quit.set_value(years_since_quit)
         self.eCig_diff_subgroup=None
+        self.preQuitAddictionStrength=None 
         if ecig_use == 1 and ecig_type == 1:
             self.ecig_type=eCigType.Disp
-        elif ecig_use == 1 and ecig_type != 1:
+        elif ecig_use == 1 and ecig_type == 0:
             self.ecig_type=eCigType.Nondisp
         else:#ecig_use == 0
             self.ecig_type=None         
         if regular_smoking_behaviour=='COMB':#if the regular smoking COMB model is used by the ABM, add its Level 2 attributes associated with the personal attributes to their lists
             self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
             self.p_age.set_value(age)
+            self.p_difficulty_of_access = PersonalAttribute(name='pDifficultyOfAccess')       
+            self.p_difficulty_of_access.add_level2_attribute(reg_smoke_theory.level2_attributes['oDifficultyOfAccess'])
+            self.update_difficulty_of_access()
             self.p_gender.add_level2_attribute(reg_smoke_theory.level2_attributes['mGender'])
             self.p_gender.set_value(gender)
             self.p_educational_level.add_level2_attribute(reg_smoke_theory.level2_attributes['oEducationalLevel'])
@@ -102,13 +108,12 @@ class Person(MicroAgent):
             self.p_mental_health_conditions.set_value(mental_health_conds)
             self.p_alcohol_consumption.add_level2_attribute(reg_smoke_theory.level2_attributes['cAlcoholConsumption'])
             self.p_alcohol_consumption.set_value(alcohol)
-            self.p_expenditure.set_value(expenditure)
-            self.p_nrt_use.set_value(nrt_use)
-            self.p_varenicline_use.set_value(varenicline_use)
-            self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
             self.p_ecig_use.add_level2_attribute(reg_smoke_theory.level2_attributes['cEcigaretteUse'])
             self.p_ecig_use.set_value(ecig_use)
+            self.p_expenditure.add_level2_attribute(reg_smoke_theory.level2_attributes['oExpenditurePerStick'])
+            self.p_expenditure.set_value(expenditure)
         if quitting_behaviour=='COMB':#if quit attempt COM-B model and quit success COM-B model are used by this ABM, add their Level 2 attributes associated with the personal attributes to the personal attributes' lists
+            self.preQuitAddictionStrength=quit_attempt_theory.level2_attributes['cCigAddictStrength'].get_value()
             self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
             self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
             self.p_age.set_value(age)
@@ -122,52 +127,41 @@ class Person(MicroAgent):
             self.p_mental_health_conditions.add_level2_attribute(quit_success_theory.level2_attributes['cMentalHealthConditions'])
             self.p_mental_health_conditions.set_value(mental_health_conds)
             self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['cAlcoholConsumption'])
-            self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['oAlcoholConsumption'])
             self.p_alcohol_consumption.set_value(alcohol)
-            self.p_expenditure.add_level2_attribute(quit_attempt_theory.level2_attributes['mSpendingOnCig'])
-            self.p_expenditure.set_value(expenditure)
-            self.p_nrt_use.add_level2_attribute(quit_success_theory.level2_attributes['cPrescriptionNRT'])
-            self.p_nrt_use.add_level2_attribute(quit_attempt_theory.level2_attributes['mUseOfNRT'])
-            self.p_nrt_use.set_value(nrt_use)
-            self.p_varenicline_use.add_level2_attribute(quit_success_theory.level2_attributes['cVareniclineUse'])
-            self.p_varenicline_use.set_value(varenicline_use)
-            self.p_cig_consumption_prequit.add_level2_attribute(quit_success_theory.level2_attributes['cCigConsumptionPrequit'])
-            self.p_cig_consumption_prequit.set_value(cig_consumption_prequit)
             self.p_ecig_use.add_level2_attribute(quit_success_theory.level2_attributes['cEcigaretteUse'])
             self.p_ecig_use.set_value(ecig_use)
-            self.p_number_of_recent_quit_attempts.add_level2_attribute(quit_attempt_theory.level2_attributes['mNumberOfRecentQuitAttempts'])
-            self.p_number_of_recent_quit_attempts.set_value(self.count_behaviour(AgentBehaviour.QUITATTEMPT))       
-        
-    def init_behaviour_buffer_and_k(self):
+            self.p_prescription_nrt.add_level2_attribute(quit_success_theory.level2_attributes['cPrescriptionNRT'])
+            self.p_prescription_nrt.set_value(prescription_nrt)
+            self.p_varenicline_use.add_level2_attribute(quit_success_theory.level2_attributes['cVareniclineUse'])
+            self.p_varenicline_use.set_value(varenicline_use)
+            
+    def update_difficulty_of_access(self):
+         #difficulty of access is 0 if agent's age >= age of sale and +1 for every year below.         
+         if self.p_age.get_value() >= self.smoking_model.age_of_sale:
+                self.p_difficulty_of_access.set_value(0)
+         else:
+             self.p_difficulty_of_access.set_value(self.smoking_model.age_of_sale - self.p_age.get_value())
+
+    #def update_dynamic_variables(self): update dynamic personal attributes and other attributes e.g. bCigConsumption
+        #call update_difficulty_of_access()
+        #update bCigConsumption
+
+    def init_behaviour_buffer(self):
         """
-        The behaviour buffer stores the self's behaviours (COMB and STPM behaviours) over the last 12 months
+        The behaviour buffer stores this agent's behaviours (COMB and STPM behaviours) over the last 12 months
         (12 ticks with each tick represents 1 month)
         COMB behaviours: 'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure'
         STPM behaviours: 'relapse', 'no relapse'
         At each tick, the behaviour buffer (a list) stores one of the 8 behaviours:
         'uptake', 'no uptake', 'quit attempt', 'no quit attempt', 'quit success', 'quit failure', 'relapse' and 'no relapse'
-        (behaviours of a quitter over last 12 months (12 ticks):
-            random behaviour (tick 1)..., random behaviour (tick i-1), quit attempt (tick i), quit success,..., quit success (tick 12)
-            or
-            random behaviour (tick 1),...,random behaviour (tick 12),quit attempt (tick 12))
-        At tick 0, initialize the behaviour buffer of the self to its historical behaviours as follows:
-        or a quitter in the baseline population (i.e. at tick 0) {
-            select a random index i of the buffer (0=< i =< 11);
-            set the cell at i to 'quit attempt';
-            set all the cells at i+1,i+2...,11 to 'quit success';
-            set the cells at 0,...,i-1 to random behaviours;
-        }
-        for a non-quitter in the baseline population {
-            set each cell of the behaviour buffer to a random behaviour;
-        }
-        k: count of number of consecutive quit successes done at the current state
-        Initialize k to the number of consecutive quit successes following the last quit attempt in the behaviour_buffer
-        to the end of the behaviourBuffer
+        At tick 0, initialize the behaviour buffer of the agent as follows:
+       
+        
         """
         behaviours = [e for e in AgentBehaviour]
         self.behaviour_buffer = [behaviours[random.randint(0, len(behaviours) - 1)] for _ in range(0, 12)]
         self.k = 0
-        if self.states[0] == AgentState.NEWQUITTER:
+        if self.b_states[0] == AgentState.NEWQUITTER:
             i = random.randint(0, 11)
             self.behaviour_buffer[i] = AgentBehaviour.QUITATTEMPT
             for j in range(i + 1, 12):
@@ -175,23 +169,23 @@ class Person(MicroAgent):
                 self.k += 1
             for q in range(0, i):  # set random behaviours to indices: 0, 1,..., i-1
                 self.behaviour_buffer[q] = behaviours[random.randint(0, len(behaviours) - 1)]
-        elif self.states[0] == AgentState.NEVERSMOKE:
+        elif self.b_states[0] == AgentState.NEVERSMOKE:
             for i in range(0, 12):
                 self.behaviour_buffer[i] = AgentBehaviour.NOUPTAKE
-        elif self.states[0] == AgentState.EXSMOKER:
+        elif self.b_states[0] == AgentState.EXSMOKER:
             for i in range(0, 12):
                 self.behaviour_buffer[i] = AgentBehaviour.NORELAPSE
-        elif self.states[0] == AgentState.SMOKER:
+        elif self.b_states[0] == AgentState.SMOKER:
             for i in range(0, 12):
                 self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]
-        elif self.states[0] in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
+        elif self.b_states[0] in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
                         AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
                         AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
                         AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
             for i in range(0, 12):
                 self.behaviour_buffer[i] = behaviours[random.randint(0, len(behaviours) - 1)]    
         else:
-            raise ValueError(f'{self.states[0]} is not an acceptable self state')
+            raise ValueError(f'{self.b_states[0]} is not an acceptable self state')
 
     def update_ec_ig_use(self, eciguse: int):
         self.ecig_use = eciguse
@@ -199,16 +193,16 @@ class Person(MicroAgent):
     def set_state_of_next_time_step(self, state: AgentState):
         if not isinstance(state, AgentState):
             raise ValueError(f'{state} is not an acceptable self state')
-        self.states.append(state)
+        self.b_states.append(state)
 
     def get_previous_state(self):
         if self.smoking_model.current_time_step > 0:
-            return self.states[self.smoking_model.get_current_time_step-1]
+            return self.b_states[self.smoking_model.get_current_time_step-1]
         else:
-            return self.states[0]
+            return self.b_states[0]
         
     def get_current_state(self):  # get the self's state at the current time step
-        return self.states[self.smoking_model.current_time_step]
+        return self.b_states[self.smoking_model.current_time_step]
 
     def get_current_time_step(self):
         return self.smoking_model.current_time_step
@@ -588,15 +582,6 @@ class Person(MicroAgent):
                 self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991].add(self.get_id())
                 self.eCig_diff_subgroup = eCigDiffSubGroup.Neversmoked_over1991
         else:
-               self.eCig_diff_subgroup = None #this agent not in any ecig subgroup
-
-    def add_agent_to_deltaEtagents(self):        
-        if self.smoking_model.diffusion_models_of_this_tick.get(self.eCig_diff_subgroup)!=None :#This agent belongs to an e-cig subgroup, then, append the agent to the corresponding deltaEt_agents list as appropriate.
-                for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[self.eCig_diff_subgroup]:
-                        if diffusion_model.deltaEt > 0 and self.p_ecig_use.get_value()==0 and (len(diffusion_model.deltaEt_agents) < diffusion_model.deltaEt):
-                                diffusion_model.deltaEt_agents.append(self.get_id())                                        
-                        elif diffusion_model.deltaEt < 0 and self.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == self.ecig_type and (len(diffusion_model.deltaEt_agents) < abs(diffusion_model.deltaEt)):
-                                diffusion_model.deltaEt_agents.append(self.get_id())
-                    
+               self.eCig_diff_subgroup = None #this agent not in any ecig subgroup                
                            
         

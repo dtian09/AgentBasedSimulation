@@ -22,18 +22,26 @@ class COMBTheory(Theory):
         self.comp_m: Level1Attribute
         self.level2_attributes: Dict = {}  # a hashmap with keys=level 2 attribute names, values=Level2Attribute objects
         self.power = 0  # power within logistic regression: 1/(1+e^power) where power=-(bias+beta1*x1+...,betak*xk)
+        self.indx_of_agent = indx_of_agent
         self.store_level2_attributes_into_map(indx_of_agent)
 
     def store_level2_attributes_into_map(self, indx_of_agent: int):
         """store the level 2 attributes of agent i from data dataframe of smoking model class into a map
         <l2AttributeName : string, object : Level2Attribute>
         """
-
         for level2_attribute_name in self.smoking_model.level2_attributes_names:
             if np.isnan(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]):
                 # level 2 attribute has NaN (missing value)
                 # ignore this level 2 attribute by set it to 0 so that 0*beta=0 in the COMB formula.
                 at_obj = Level2AttributeInt(name=level2_attribute_name, value=0)
+                self.level2_attributes[level2_attribute_name] = at_obj
+            elif level2_attribute_name == 'mUseofNRT':
+                agent=self.smoking_model.context.agent((indx_of_agent, self.smoking_model.type, self.smoking_model.rank))
+                if agent.pOverCounterNRT.get_value()==1 or agent.pPrescriptionNRT.get_value()==1:
+                  val = 1
+                else:
+                  val = 0 
+                at_obj = Level2AttributeInt(name=level2_attribute_name, value=val)
                 self.level2_attributes[level2_attribute_name] = at_obj
             elif type(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) is np.int64:
                 at_obj = Level2AttributeInt(name=level2_attribute_name,
@@ -45,7 +53,7 @@ class COMBTheory(Theory):
                 self.level2_attributes[level2_attribute_name] = at_obj
             else:
                 sstr = ' is not int64 or float64 and not stored into the level2_attributes hashmap.'
-                sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)
+                sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)            
         if self.level2_attributes['mSmokerIdentity'].get_value()==2: #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
             at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=0)
             self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
@@ -53,9 +61,9 @@ class COMBTheory(Theory):
             at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=1)
             self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
         else:
-            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value())
-            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj #-1=’don’t know’ or 4=’not stated’.
-   
+            at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value()) #-1=’don’t know’ or 4=’not stated’.
+            self.level2_attributes['mNonSmokerSelfIdentity']=at_obj 
+
     @abstractmethod
     def do_situation(self, agent: MicroAgent):  # run the situation mechanism of the agent of this theory
         pass
@@ -95,18 +103,18 @@ class RegSmokeTheory(COMBTheory):
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
 
-    def do_situation(self, agent: MicroAgent):
+    def do_situation(self, agent: MicroAgent):        
+        self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
         if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
-        if self.smoking_model.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
-            random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
-            for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
-                if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
-                elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+            agent.update_difficulty_of_access()
+        #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
+        #pPrescriptionNRT
+        #pVareniclineUse
+        #bCigConsumption
+        #oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
 
     def do_learning(self):
         pass
@@ -170,25 +178,30 @@ class RegSmokeTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOUPTAKE)
             agent.set_state_of_next_time_step(AgentState.NEVERSMOKE)
-        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
-
+        
 class QuitAttemptTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
-        if self.smoking_model.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
-            random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
-            for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
-                if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
-                elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+        self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user        
+        #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
+        #pPrescriptionNRT
+        #pVareniclineUse
+        #bCigConsumption
+        #oReceiptOfGPAdvice
+        #mUseofNRT = pOverCounterNRT or pPrescriptionNRT
+        agent=self.smoking_model.context.agent((self.indx_of_agent, self.smoking_model.type, self.smoking_model.rank))
+        if agent.pOverCounterNRT.get_value()==1 or agent.pPrescriptionNRT.get_value()==1:
+           val = 1
+        else:
+           val = 0
+        self.level2_attributes['mUseofNRT'].set_value(val)
+        #update oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
 
     def do_learning(self):
         pass
@@ -251,7 +264,7 @@ class QuitAttemptTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.SMOKER)
-        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
+        agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
 
 class QuitSuccessTheory(COMBTheory):
 
@@ -259,17 +272,17 @@ class QuitSuccessTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
-        if self.smoking_model.tick_counter == 12:
-            agent.increment_age()
-        if self.smoking_model.diffusion_models_of_this_tick.get(agent.eCig_diff_subgroup)!=None:
-            random.shuffle(self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup])
-            for diffusion_model in self.smoking_model.diffusion_models_of_this_tick[agent.eCig_diff_subgroup]:
-                if diffusion_model.deltaEt > 0 and agent.p_ecig_use.get_value()==0:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
-                elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
-                    if agent.get_id() in diffusion_model.deltaEt_agents:
-                        diffusion_model.allocateDiffusion(agent)
+        self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
+        #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent        
+        #pPrescriptionNRT
+        #pVareniclineUse        
+        #bCigConsumption
+        #cUseOfBehaviourSupport
+        #cCytisineUse
+        #update oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
 
     def do_learning(self):
         pass
@@ -336,7 +349,7 @@ class QuitSuccessTheory(COMBTheory):
             agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
-            agent.k += 1
+            agent.b_months_since_quit += 1
             #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
             self.level2_attributes['cCigAddictStrength'].set_value(np.round(self.level2_attributes['cCigAddictStrength'].get_value() * np.exp(self.smoking_model.lbda*self.smoking_model.tickInterval)))
             #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
@@ -349,38 +362,39 @@ class QuitSuccessTheory(COMBTheory):
             else:
                 self.level2_attributes['mSmokerIdentity'].set_value(1)
                 self.level2_attributes['mNonSmokerSelfIdentity'].set_value(1)
-            if agent.k < 12:
-                if agent.k==1:
+            if agent.b_months_since_quit < 12:
+                if agent.b_months_since_quit==1:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER1)
-                elif agent.k==2:
+                elif agent.b_months_since_quit==2:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER2)
-                elif agent.k==3:
+                elif agent.b_months_since_quit==3:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER3)
-                elif agent.k==4:
+                elif agent.b_months_since_quit==4:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER4)
-                elif agent.k==5:
+                elif agent.b_months_since_quit==5:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER5)
-                elif agent.k==6:
+                elif agent.b_months_since_quit==6:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER6)
-                elif agent.k==7:
+                elif agent.b_months_since_quit==7:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER7)
-                elif agent.k==8:
+                elif agent.b_months_since_quit==8:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER8)
-                elif agent.k==9:
+                elif agent.b_months_since_quit==9:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER9)
-                elif agent.k==10:
+                elif agent.b_months_since_quit==10:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER10)
-                elif agent.k==11:
+                elif agent.b_months_since_quit==11:
                     agent.set_state_of_next_time_step(AgentState.ONGOINGQUITTER11)
-            else:#k==12
+            else:#b_months_since_quit==12
                 agent.set_state_of_next_time_step(AgentState.EXSMOKER)
-                agent.k=0
+                agent.b_months_since_quit=0
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.QUITFAILURE)
             agent.set_state_of_next_time_step(AgentState.SMOKER)
-            agent.k = 0
-        agent.p_number_of_recent_quit_attempts.set_value(agent.count_behaviour(AgentBehaviour.QUITATTEMPT))
+            agent.b_months_since_quit = 0
+            self.level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
+        agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
 
