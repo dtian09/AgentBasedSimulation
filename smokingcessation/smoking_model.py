@@ -118,7 +118,7 @@ class SmokingModel(Model):
         month=self.months_counter
         year=self.year_of_current_time_step
         from datetime import datetime
-        print('month: ',month)#debug
+        #print('month: ',month)#debug
         self.formatted_month = datetime(year, month, 1).strftime("%b-%y")
     
     def readInRegionalPrevalence(self):
@@ -448,106 +448,110 @@ class SmokingModel(Model):
                                             ' formula')
                                     sys.exit(level2attribute + sstr)
     def init_agents(self):
+        #initialize the baseline agent population at tick 0
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
         from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
         from smokingcessation.stpm_theory import RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
 
-        for i in range(self.size_of_population):
+        baseline_agents=self.data[self.data['year']==self.year_of_current_time_step]#the current year: year of baseline population 
+        (r, _) = baseline_agents.shape
+        if r==0:
+            sys.exit(F"No baseline population is initialized at year: '{self.year_of_current_time_step}'\n")
+        for i in range(r):
             subgroup=None
-            init_state = self.data.at[i, 'bState']
+            init_state = baseline_agents.at[i, 'bState']
             if init_state == 0:
                 states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.NEVERSMOKERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.NEVERSMOKERFEMALE
             elif init_state == 1:
                 states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.EXSMOKERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.EXSMOKERFEMALE 
             elif init_state == 4:
                 states = [AgentState.SMOKER, AgentState.SMOKER]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.SMOKERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.SMOKERFEMALE 
             elif init_state == 2:
                 states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.NEWQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.NEWQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 1:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 1:
                 states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 2:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 2:
                 states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 3:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 3:
                 states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 4:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 4:
                 states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE 
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 5:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 5:
                 states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 6:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 6:
                 states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 7:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 7:
                 states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 8:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 8:
                 states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 9:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 9:
                 states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 10:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 10:
                 states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and self.data.at[i,'bMonthsSinceQuit'] == 11:
+            elif init_state == 3 and baseline_agents.at[i,'bMonthsSinceQuit'] == 11:
                 states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]
-                if self.data.at[i,'pGender']==1:#1=male
+                if baseline_agents.at[i,'pGender']==1:#1=male
                     subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif self.data.at[i,'pGender']==2:#2=female:
+                elif baseline_agents.at[i,'pGender']==2:#2=female:
                     subgroup=SubGroup.ONGOINGQUITTERFEMALE                        
             else:
-                print(init_state)
                 raise ValueError(f'{init_state} is not an acceptable agent state')
             if self.regular_smoking_behaviour=='COMB':
                 rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
@@ -565,27 +569,27 @@ class SmokingModel(Model):
                     i,
                     self.type,
                     self.rank,
-                    age=self.data.at[i, 'pAge'],
-                    gender=self.data.at[i, 'pGender'],
-                    cohort=self.data.at[i, 'pCohort'],
-                    qimd=self.data.at[i, 'pIMDquintile'],
-                    educational_level=self.data.at[i, 'pEducationalLevel'],
-                    sep=self.data.at[i, 'pSEP'],
-                    region=self.data.at[i, 'pRegion'],
-                    social_housing=self.data.at[i, 'pSocialHousing'],
-                    mental_health_conds=self.data.at[i, 'pMentalHealthConditions'],
-                    alcohol=self.data.at[i, 'pAlcoholConsumption'],
-                    expenditure=self.data.at[i, 'pExpenditure'],
-                    prescription_nrt=self.data.at[i, 'pPrescriptionNRT'],
-                    over_counter_nrt=self.data.at[i, 'pOverCounterNRT'],
-                    use_of_nrt=self.data.at[i, 'pUseOfNRT'],
-                    ecig_use=self.data.at[i, 'pECigUse'],
-                    ecig_type=self.data.at[i, 'pECigType'],                    
-                    varenicline_use=self.data.at[i, 'pVareniclineUse'],
-                    cig_consumption=self.data.at[i, 'bCigConsumption'],
-                    years_since_quit=self.data.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
-                    number_of_recent_quit_attempts=self.data.at[i, 'bNumberOfRecentQuitAttempts'],
-                    months_since_quit=self.data.at[i, 'bMonthsSinceQuit'],
+                    age=baseline_agents.at[i, 'pAge'],
+                    gender=baseline_agents.at[i, 'pGender'],
+                    cohort=baseline_agents.at[i, 'pCohort'],
+                    qimd=baseline_agents.at[i, 'pIMDquintile'],
+                    educational_level=baseline_agents.at[i, 'pEducationalLevel'],
+                    sep=baseline_agents.at[i, 'pSEP'],
+                    region=baseline_agents.at[i, 'pRegion'],
+                    social_housing=baseline_agents.at[i, 'pSocialHousing'],
+                    mental_health_conds=baseline_agents.at[i, 'pMentalHealthConditions'],
+                    alcohol=baseline_agents.at[i, 'pAlcoholConsumption'],
+                    expenditure=baseline_agents.at[i, 'pExpenditure'],
+                    prescription_nrt=baseline_agents.at[i, 'pPrescriptionNRT'],
+                    over_counter_nrt=baseline_agents.at[i, 'pOverCounterNRT'],
+                    use_of_nrt=baseline_agents.at[i, 'pUseOfNRT'],
+                    ecig_use=baseline_agents.at[i, 'pECigUse'],
+                    ecig_type=baseline_agents.at[i, 'pECigType'],                    
+                    varenicline_use=baseline_agents.at[i, 'pVareniclineUse'],
+                    cig_consumption=baseline_agents.at[i, 'bCigConsumption'],
+                    years_since_quit=baseline_agents.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+                    number_of_recent_quit_attempts=baseline_agents.at[i, 'bNumberOfRecentQuitAttempts'],
+                    months_since_quit=baseline_agents.at[i, 'bMonthsSinceQuit'],
                     states=states,
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
@@ -788,6 +792,166 @@ class SmokingModel(Model):
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
                     diffusion_model.allocateDiffusion(agent)
 
+    def init_new_16_yrs_agents(self):#initialize new 16 years old agents in every January from 2012
+        from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
+        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
+        from smokingcessation.stpm_theory import RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
+        from smokingcessation.person import Person
+    
+        new_agents=self.data[self.data['year']==self.year_of_current_time_step]#from 2012
+        (r, _) = new_agents.shape
+        if r==0:
+            print(F"no new agents initialized at year: '{self.year_of_current_time_step}'\n")
+        for i in range(r):
+            #the agents did not exist before the current tick, their states at previous ticks take dummy values e.g. NA
+            states=[]
+            t=0
+            while t < self.current_time_step:#assign the new agents with dummy states for the previous ticks
+                states.append(np.NA)
+                t+=1
+            subgroup=None
+            init_state = new_agents.at[i, 'bState']
+            if init_state == 0:
+                states.append(AgentState.NEVERSMOKE)
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.NEVERSMOKERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.NEVERSMOKERFEMALE
+            elif init_state == 1:
+                states = [AgentState.EXSMOKER, AgentState.EXSMOKER]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.EXSMOKERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.EXSMOKERFEMALE 
+            elif init_state == 4:
+                states = [AgentState.SMOKER, AgentState.SMOKER]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.SMOKERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.SMOKERFEMALE 
+            elif init_state == 2:
+                states = [AgentState.NEWQUITTER, AgentState.NEWQUITTER]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.NEWQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.NEWQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 1:
+                states = [AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER1]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 2:
+                states = [AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER2]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 3:
+                states = [AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER3]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 4:
+                states = [AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER4]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE 
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 5:
+                states = [AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER5]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 6:
+                states = [AgentState.ONGOINGQUITTER6, AgentState.ONGOINGQUITTER6]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 7:
+                states = [AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER7]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 8:
+                states = [AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER8]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 9:
+                states = [AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER9]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 10:
+                states = [AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER10]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
+            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 11:
+                states = [AgentState.ONGOINGQUITTER11, AgentState.ONGOINGQUITTER11]
+                if new_agents.at[i,'pGender']==1:#1=male
+                    subgroup=SubGroup.ONGOINGQUITTERMALE
+                elif new_agents.at[i,'pGender']==2:#2=female:
+                    subgroup=SubGroup.ONGOINGQUITTERFEMALE                        
+            else:
+                raise ValueError(f'{init_state} is not an acceptable agent state')
+            if self.regular_smoking_behaviour=='COMB':
+                rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
+            else:#STPM
+                rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
+            if self.quitting_behaviour=='COMB':
+                qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
+                qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
+            else:#STPM
+                qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
+                qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
+            relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
+            id=self.size_of_population+i #id of this agent
+            self.context.add(Person(
+                    self,
+                    id,
+                    self.type,
+                    self.rank,
+                    age=new_agents.at[i, 'pAge'],
+                    gender=new_agents.at[i, 'pGender'],
+                    cohort=new_agents.at[i, 'pCohort'],
+                    qimd=new_agents.at[i, 'pIMDquintile'],
+                    educational_level=new_agents.at[i, 'pEducationalLevel'],
+                    sep=new_agents.at[i, 'pSEP'],
+                    region=new_agents.at[i, 'pRegion'],
+                    social_housing=new_agents.at[i, 'pSocialHousing'],
+                    mental_health_conds=new_agents.at[i, 'pMentalHealthConditions'],
+                    alcohol=new_agents.at[i, 'pAlcoholConsumption'],
+                    expenditure=new_agents.at[i, 'pExpenditure'],
+                    prescription_nrt=new_agents.at[i, 'pPrescriptionNRT'],
+                    over_counter_nrt=new_agents.at[i, 'pOverCounterNRT'],
+                    use_of_nrt=new_agents.at[i, 'pUseOfNRT'],
+                    ecig_use=new_agents.at[i, 'pECigUse'],
+                    ecig_type=new_agents.at[i, 'pECigType'],                    
+                    varenicline_use=new_agents.at[i, 'pVareniclineUse'],
+                    cig_consumption=new_agents.at[i, 'bCigConsumption'],
+                    years_since_quit=new_agents.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
+                    number_of_recent_quit_attempts=new_agents.at[i, 'bNumberOfRecentQuitAttempts'],
+                    months_since_quit=new_agents.at[i, 'bMonthsSinceQuit'],
+                    states=states,
+                    reg_smoke_theory=rsmoke_theory,
+                    quit_attempt_theory=qattempt_theory,
+                    quit_success_theory=qsuccess_theory,
+                    regular_smoking_behaviour=self.regular_smoking_behaviour,
+                    quitting_behaviour=self.quitting_behaviour))
+            mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory])
+            agent = self.context.agent((id, self.type, self.rank))
+            agent.set_mediator(mediator)
+            self.population_counts[subgroup]+=1
+
     def do_per_tick(self):
         self.current_time_step += 1
         self.months_counter += 1
@@ -797,10 +961,14 @@ class SmokingModel(Model):
         if self.current_time_step == 13:
             self.year_of_current_time_step += 1
             self.year_number += 1
+            #initialize new 16 years old agents in January of 2012
+            self.init_new_16_yrs_agents()
         elif self.current_time_step > 13:
             if self.months_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
+               #initialize new 16 years old agents in January of 2013,...,final year
+               self.init_new_16_yrs_agents()
         self.format_month_and_year()
         print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
         self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
@@ -816,8 +984,6 @@ class SmokingModel(Model):
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Smokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Smokerless1940]
             self.current_time_step_of_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
         self.init_population_counts()
-        #check agents die or alive
-        #if agents die, delete them from the population
         self.calculate_calibration_targets_and_ecig_diffusion_subgroups_and_do_action_mechanisms()
         self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
         if self.current_time_step == self.end_year_tick:
