@@ -43,11 +43,11 @@ class Person(MicroAgent):
         super().__init__(id=id, type=type, rank=rank)
         self.smoking_model = smoking_model        
         self.b_states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
-        self.b_months_since_quit = months_since_quit #Only tracked for the ongoing quitter state.
+        self.b_months_since_quit = months_since_quit #number of months of maintaining the quit behhaviour; only tracked for the ongoing quitter state.
         self.b_cig_consumption = cig_consumption 
         self.b_number_of_recent_quit_attempts = number_of_recent_quit_attempts
         self.b_years_since_quit = years_since_quit        
-        self.tick_counter_ex_smoker = 0  # count number of consecutive ticks when the self stays as an ex-smoker
+        self.months_counter_ex_smoker = 0  # count number of consecutive months when the self stays as an ex-smoker
         #ipdb.set_trace()#debug
         self.init_behaviour_buffer() #initialize the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
         self.p_age = PersonalAttribute(name='pAge') 
@@ -83,7 +83,8 @@ class Person(MicroAgent):
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
         self.eCig_diff_subgroup=None
-        self.preQuitAddictionStrength=None 
+        self.preQuitAddictionStrength=None
+        #pPercentile #[1,100] percentile of quantity of cigarettes smoked per day
         if ecig_use == 1 and ecig_type == 1:
             self.ecig_type=eCigType.Disp
         elif ecig_use == 1 and ecig_type == 0:

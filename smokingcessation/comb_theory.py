@@ -105,7 +105,7 @@ class RegSmokeTheory(COMBTheory):
 
     def do_situation(self, agent: MicroAgent):        
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
-        if self.smoking_model.tick_counter == 12:
+        if self.smoking_model.months_counter == 12:
             agent.update_difficulty_of_access()
         #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
         #pPrescriptionNRT

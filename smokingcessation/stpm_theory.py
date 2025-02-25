@@ -26,7 +26,7 @@ class DemographicsSTPMTheory(STPMTheory):
         super().__init__(name, smoking_model)
         
     #def do_situation(self, agent: MicroAgent):
-    #    if self.smoking_model.tick_counter == 12:
+    #    if self.smoking_model.months_counter == 12:
             #check for death conditioned on current age, smoking status and sex before running the smoking behavior models
             #apply death or increment age
             #the smokers group in stpm death model includes quitters as well as smokers 
@@ -40,10 +40,10 @@ class RelapseSTPMTheory(STPMTheory):
         #update values of the dynamic variables of agents based on Harry's equations
 
     def do_action(self, agent: MicroAgent):
-        agent.tick_counter_ex_smoker += 1
-        if agent.tick_counter_ex_smoker == 12:
+        agent.months_counter_ex_smoker += 1
+        if agent.months_counter_ex_smoker == 12:
             agent.b_years_since_quit += 1
-            agent.tick_counter_ex_smoker = 0
+            agent.months_counter_ex_smoker = 0
         # retrieve probability of relapse of the matching person from STPM transition probabilities file
         if (agent.b_years_since_quit > 0) and (agent.b_years_since_quit < 10):
             if self.smoking_model.year_of_current_time_step < 2011:

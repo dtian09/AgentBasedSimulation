@@ -36,7 +36,7 @@ class SmokingModel(Model):
         self.year_of_current_time_step = self.props["year_of_baseline"]
         self.year_number = 0
         self.current_time_step = 0
-        self.tick_counter = 0 #count the number of months of the current year
+        self.months_counter = 0 #count the number of months of the current year
         self.formatted_month = None #formatted month: Nov-06, Dec-10 etc.
         self.start_year_tick = 1 #tick of January of the current year
         self.end_year_tick = 12 #tick of December of the current year
@@ -115,7 +115,7 @@ class SmokingModel(Model):
 
     def format_month_and_year(self):
         #convert the current month and current year of the ABM to the format: Nov-06, Dec-10 etc.
-        month=self.tick_counter
+        month=self.months_counter
         year=self.year_of_current_time_step
         from datetime import datetime
         print('month: ',month)#debug
@@ -605,7 +605,7 @@ class SmokingModel(Model):
             self.population_counts[subgroup]=0
 
     def init_population(self):
-        self.tick_counter = 0
+        self.months_counter = 0
         self.current_time_step = 0
         (r, _) = self.data.shape
         self.size_of_population = r
@@ -790,7 +790,7 @@ class SmokingModel(Model):
 
     def do_per_tick(self):
         self.current_time_step += 1
-        self.tick_counter += 1
+        self.months_counter += 1
         if self.running_mode == 'debug':
             p = self.smoking_prevalence()
             self.smoking_prevalence_l.append(p)
@@ -798,7 +798,7 @@ class SmokingModel(Model):
             self.year_of_current_time_step += 1
             self.year_number += 1
         elif self.current_time_step > 13:
-            if self.tick_counter == 12: #each tick is 1 month
+            if self.months_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
         self.format_month_and_year()
@@ -832,8 +832,8 @@ class SmokingModel(Model):
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
-        if self.tick_counter == 12:
-            self.tick_counter = 0
+        if self.months_counter == 12:
+            self.months_counter = 0
         if self.running_mode == 'debug':
             self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) +': smoking prevalence=' + str(p) + '%.\n')
             for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
