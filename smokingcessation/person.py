@@ -84,7 +84,7 @@ class Person(MicroAgent):
         self.p_ecig_use.set_value(ecig_use)
         self.eCig_diff_subgroup=None
         self.preQuitAddictionStrength=None
-        #pPercentile #[1,100] percentile of quantity of cigarettes smoked per day
+        #pPercentile #range: [1,100]. percentile of quantity of cigarettes smoked per day
         if ecig_use == 1 and ecig_type == 1:
             self.ecig_type=eCigType.Disp
         elif ecig_use == 1 and ecig_type == 0:

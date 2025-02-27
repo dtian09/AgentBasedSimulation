@@ -731,19 +731,14 @@ class SmokingModel(Model):
            +str(g.N_newquitters_endyear_ages3_IMD5)+','+str(g.N_ongoingquitters_endyear_ages3_IMD5)+','+str(g.N_dead_endyear_ages3_IMD5)+'\n'      
         return c
 
-    def calculate_calibration_targets_and_ecig_diffusion_subgroups_and_do_action_mechanisms(self):
+    def count_population_subgroups_and_ecig_diffusion_subgroups(self):
         for agent in self.context.agents(agent_type=self.type,shuffle=True):
             agent.count_agent_for_whole_population_counts()
             agent.count_agent_for_initiation_subgroups_by_ages_sex()
             agent.count_agent_for_initiation_subgroups_by_ages_imd()
             agent.count_agent_for_quit_subgroups_by_ages_sex()
             agent.count_agent_for_quit_subgroups_by_ages_imd()
-            agent.count_agent_for_ecig_diffusion_subgroups()
-            agent.do_action()
-    
-    def do_situation_mechanisms(self):
-        for agent in self.context.agents(agent_type=self.type):
-            agent.do_situation()                                   
+            agent.count_agent_for_ecig_diffusion_subgroups()                                
 
     def do_transformational_mechanisms(self):    
         if self.year_of_current_time_step < 2021:#run non-disposable models
@@ -774,7 +769,15 @@ class SmokingModel(Model):
                    diffusion_model.do_macro_macro()
         if self.year_of_current_time_step >= 2011 and self.year_of_current_time_step <= 2019:
             self.geographicSmokingPrevalence.do_macro_macro()                                              
-                  
+
+    def do_situation_mechanisms(self):
+        for agent in self.context.agents(agent_type=self.type):
+            agent.do_situation()   
+
+    def do_action_mechanisms(self):
+        for agent in self.context.agents(agent_type=self.type):
+            agent.do_action()            
+  
     def smoking_prevalence(self):
         smokers = 0
         for agent in self.context.agents(agent_type=self.type):
@@ -971,7 +974,6 @@ class SmokingModel(Model):
                self.init_new_16_yrs_agents()
         self.format_month_and_year()
         print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
-        self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
         if self.year_of_current_time_step < 2021:#before 2021, run non-disposable diffusion models only 
@@ -983,8 +985,9 @@ class SmokingModel(Model):
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Exsmoker1941_1960] = self.non_disp_diffusion_models[eCigDiffSubGroup.Exsmoker1941_1960]
             self.diffusion_models_of_this_tick[eCigDiffSubGroup.Smokerless1940] = self.non_disp_diffusion_models[eCigDiffSubGroup.Smokerless1940]
             self.current_time_step_of_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
-        self.init_population_counts()
-        self.calculate_calibration_targets_and_ecig_diffusion_subgroups_and_do_action_mechanisms()
+        self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
+        self.init_population_counts()#reset population counts to 0
+        self.count_population_subgroups_and_ecig_diffusion_subgroups()
         self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
         if self.current_time_step == self.end_year_tick:
             self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
@@ -993,8 +996,9 @@ class SmokingModel(Model):
             self.file_quit_imd.write(self.get_subgroups_of_ages_imd_for_quit())
             g.initialize_global_variables_of_subgroups()        
         self.do_transformational_mechanisms()#compute Et of diffusion models
-        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographci regional smoking prevalence of this month for years 2011 and 2019 only.
+        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
         self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
+        self.do_action_mechanisms()
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
