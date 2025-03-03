@@ -521,8 +521,8 @@ class Person(MicroAgent):
                     elif self.get_id() in g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5:
                             g.N_dead_endyear_ages3_IMD5 += 1
 
-    def count_agent_for_ecig_diffusion_subgroups(self):
-        #count this agent for the following e-cigarette diffusion subgroups
+    def set_ecig_diffusion_subgroup_of_agent(self):
+        #set the e-cigarette diffusion subgroup of this agent to the following e-cigarette diffusion subgroups
         #p_cohort: <1940 (0), 1941-1960 (1), 1961-1980 (2), 1981-1990 (3), 1991+ (4)
         #then, add this agent to the deltaEt_agent list of each diffusion model as appropriate
         cstate = self.get_current_state()
