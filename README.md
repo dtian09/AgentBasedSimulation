@@ -1,12 +1,12 @@
 
 # ABM Version 0.8
-
-ABM version 0.8 runs:
+The ABM initializes new 16 years old agents from January of 2012 and reads in regional smoking prevalence between 2011 and 2019 from an separate data file.
+The ABM runs the following behaviour models and e-cigarette diffusion models:
 - 1) the COM-B regular smoking theory or STPM initiation probabilities for initiating regular smoking;
 - 2) COM-B quit attempt theory or STPM quitting probabilities for making a quit attempt;
 - 3) COM-B quit success theory or STPM quitting probabilities for quitting successfully;
 - 4) STPM relapse probabilities for relapse and
-- 5) e-cigarette diffusion models of the subgroups: 
+- 5) e-cigarette diffusion models of the population subgroups: 
   - ex-smoker < 1940
   - ex-smoker1941-1960
   - ex-smoker1961-1980
@@ -77,10 +77,8 @@ pip install numpy pandas
 ## Run the ABM software
 1. Download the following [data files](https://drive.google.com/drive/u/1/folders/1HVtjLumfBiwaYsj0k9p_YA8DKIror6Jx) under the 'data' folder:
 
-- testdata_STS2010_Jan_enriched_with_STPM_data_3subgroups_replicated10times.csv
-- testdata_STS2010_Jan_enriched_with_STPM_data_subgroup_replicated10times.csv
-- testdata_STPM2011_encriched_with_STS_data.csv
-- testdata_STS2010_Jan_enriched_with_STPM_data.csv
+- data_synth13_02_2025.csv
+- regional_smoking_trends_data.csv
 - initiation_prob1month_STPM.csv
 - relapse_prob1month_STPM.csv
 - quit_prob1month_STPM.csv
