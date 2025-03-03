@@ -21,15 +21,16 @@ class STPMTheory(Theory):
     def do_action(self, agent: MicroAgent):
         pass
 
-class DemographicsSTPMTheory(STPMTheory):
-    def __init__(self, name, smoking_model: SmokingModel):
-        super().__init__(name, smoking_model)
+#class DemographicsSTPMTheory(STPMTheory):
+#    def __init__(self, name, smoking_model: SmokingModel):
+#        super().__init__(name, smoking_model)
         
     #def do_situation(self, agent: MicroAgent):
     #    if self.smoking_model.months_counter == 12:
             #check for death conditioned on current age, smoking status and sex before running the smoking behavior models
             #apply death or increment age
             #the smokers group in stpm death model includes quitters as well as smokers 
+            
 
 class RelapseSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):

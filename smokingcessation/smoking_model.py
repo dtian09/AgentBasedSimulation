@@ -993,17 +993,6 @@ class SmokingModel(Model):
             self.current_time_step_of_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
         self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.set_ecig_diffusion_subgroups_of_agents(shuffle_population=True)
-        ####count population subgroups before doing mechanisms
-        #self.init_population_counts()#reset population counts to 0
-        #self.count_population_subgroups()
-        #self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
-        #if self.current_time_step == self.end_year_tick:
-        #    self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
-        #    self.file_initiation_imd.write(self.get_subgroups_of_ages_imd_for_initiation())
-        #    self.file_quit_age_sex.write(self.get_subgroups_of_ages_sex_for_quit())
-        #    self.file_quit_imd.write(self.get_subgroups_of_ages_imd_for_quit())
-        #    g.initialize_global_variables_of_subgroups()        
-        ####
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
         self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
