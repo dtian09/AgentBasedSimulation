@@ -3,7 +3,7 @@ ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" 
 quitting_behaviour: "STPM" #"COMB" 
 data_file: "data/data_synth13_02_2025.csv"
-regional_prevalence: "data/Regional smoking trends data for Robin.csv" #monthly regional smoking prevalence
+regional_prevalence: "data/regional_smoking_trends_data.csv" #monthly regional smoking prevalence
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
