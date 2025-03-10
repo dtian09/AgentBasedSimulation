@@ -202,7 +202,7 @@ class Person(MicroAgent):
         return self.smoking_model.current_time_step
 
     def increment_age(self):
-        self.p_age.set_value(self.p_age.value + 1)
+        self.p_age.set_value(self.p_age.get_value() + 1)
 
     def get_current_theory_of_agent(self):
         return self.get_mediator().get_current_theory_of_agent(self)

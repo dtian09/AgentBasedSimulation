@@ -9,7 +9,7 @@ from mbssm.model import Model
 import config.global_variables as g
 import os
 import random
-import ipdb
+#import ipdb #debugger
 
 class SmokingModel(Model):
 
@@ -33,7 +33,9 @@ class SmokingModel(Model):
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
+        self.death_prob_file = f'{ROOT_DIR}/' + self.props["death_prob_file"]
         self.year_of_current_time_step = self.props["year_of_baseline"]
+        self.death_prob = None
         self.year_number = 0
         self.current_time_step = 0
         self.months_counter = 0 #count the number of months of the current year
@@ -42,13 +44,11 @@ class SmokingModel(Model):
         self.end_year_tick = 12 #tick of December of the current year
         self.stop_at: int = self.props["stop.at"]  # final time step (tick) of simulation
         self.tickInterval=self.props["tickInterval"] #time duration of a tick e.g. 4.3 weeks (1 month)
-        #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
-        self.lbda=self.props["lambda"] 
-        #prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
-        self.alpha=self.props["alpha"]
+        self.lbda=self.props["lambda"] #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
+        self.alpha=self.props["alpha"] #prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
         self.beta=self.props["beta"]    
         self.runner: SharedScheduleRunner = init_schedule_runner(comm)
-        # hashmap (dictionary) to store betas (coefficients) of the COMB formula of regular smoking theory
+        #hashmaps (dictionaries) to store betas (coefficients) of the COMB formula of regular smoking theory, quit attempt theory and quit success theory
         self.uptake_betas = {}
         self.attempt_betas = {}  # hashmap to store betas of the COMB formula of quit attempt theory
         self.success_betas = {}  # hashmap to store betas of the COMB formula of quit success theory
@@ -62,7 +62,7 @@ class SmokingModel(Model):
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
         self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions = self.props['difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions']
         self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions = self.props['difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions']        
-        #ipdb.set_trace()#debug
+        #ipdb.set_trace() #debug: observe values of any suspected variables
         if self.running_mode == 'debug':
             self.smoking_prevalence_l = list()
         self.regular_smoking_behaviour = self.props['regular_smoking_behaviour'] #COMB or STPM
@@ -114,41 +114,25 @@ class SmokingModel(Model):
                             eCigDiffSubGroup.Neversmoked_over1991:[]}
 
     def format_month_and_year(self):
-        #convert the current month and current year of the ABM to the format: Nov-06, Dec-10 etc.
+        '''
+        convert the current month and current year of the ABM to the format: Nov-06, Dec-10 etc. used by regional smoking prevalence file
+        '''
         month=self.months_counter
         year=self.year_of_current_time_step
         from datetime import datetime
-        #print('month: ',month)#debug
         self.formatted_month = datetime(year, month, 1).strftime("%b-%y")
     
     def readInRegionalPrevalence(self):
-        #read in the regional smoking prevalences between 2011 and 2019 into dataframe
+        '''
+        read in the regional smoking prevalences between 2011 and 2019 into a dataframe
+        '''
         df=pd.read_csv(f'{ROOT_DIR}/' + self.regionalSmokingPrevalenceFile, encoding='ISO-8859-1')
         pattern = r"^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-1[1-9]$"#match months: Jan-11,Feb-11,...,Dec-19
         self.regionalSmokingPrevalence = df[df["month"].str.match(pattern, na=False)]
         self.regionalSmokingPrevalence = self.regionalSmokingPrevalence[['month','region','prevalence']]
-        #encode region as integers:
-        #1 = North East
-        #2 = North West
-        #3 = Yorkshire and The Humber
-        #4 = East Midlands
-        #5 = West Midlands
-        #6 = East of England
-        #7 = London
-        #8 = South East
-        #9 = South West
-        region_mapping = {
-            "North East": 1,
-            "North West": 2,
-            "Yorkshire and the Humber": 3,
-            "East Midlands": 4,
-            "West Midlands": 5,
-            "East of England": 6,
-            "London": 7,
-            "South East": 8,
-            "South West": 9
-        }
-        self.regionalSmokingPrevalence["region"] = self.regionalSmokingPrevalence["region"].map(region_mapping)
+     
+    def readInDeathProbabilities(self):
+        self.death_prob = pd.read_csv(f'{ROOT_DIR}/' + self.death_prob_file, encoding='ISO-8859-1')    
 
     def init_geographic_regional_prevalence(self):
         from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
@@ -355,7 +339,7 @@ class SmokingModel(Model):
         """store the betas (coefficients) of COMB formulae for regular smoking, quit attempt and quit success
         theories into hashmaps
         input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
-        output: uptakeBetas, attemptBetas, successBetas hashmaps with key=level 2 or level 1 attribute, value=beta
+        output: uptakeBetas, attemptBetas, successBetas hashmaps with keys={level 2 attribute, level 1 attribute}, each value=beta
         """
         import re
         for key, value in self.props.items():
@@ -385,9 +369,9 @@ class SmokingModel(Model):
 
     def store_level2_attributes_of_comb_formulae_into_maps(self):
         """
-        input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
-        output: level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfSuccessFormula
-        hashmaps key=C, O or M and value=list of associated level 2 attributes of key
+        input: self.pros, a hashmap with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
+        output: hashmaps level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfSuccessFormula
+                with keys={C, O, M} and each value=a list of associated level 2 attributes of key
         """
         import re
         for key in self.props.keys():
@@ -448,10 +432,10 @@ class SmokingModel(Model):
                                             ' formula')
                                     sys.exit(level2attribute + sstr)
     def init_agents(self):
-        #initialize the baseline agent population at tick 0
+        '''initialize the baseline agent population at tick 0'''
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
         from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
-        from smokingcessation.stpm_theory import RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
+        from smokingcessation.stpm_theory import DemographicsSTPMTheory, RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
 
         baseline_agents=self.data[self.data['year']==self.year_of_current_time_step]#the current year: year of baseline population 
@@ -564,6 +548,7 @@ class SmokingModel(Model):
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
                 qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
+            demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
             self.context.add(Person(
                     self,
                     i,
@@ -596,7 +581,7 @@ class SmokingModel(Model):
                     quit_success_theory=qsuccess_theory,
                     regular_smoking_behaviour=self.regular_smoking_behaviour,
                     quitting_behaviour=self.quitting_behaviour))
-            mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory])
+            mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory, demographics_theory])
             agent = self.context.agent((i, self.type, self.rank))
             agent.set_mediator(mediator)
             self.population_counts[subgroup]+=1
@@ -730,20 +715,17 @@ class SmokingModel(Model):
            +str(len(g.N_smokers_ongoingquitters_newquitters_startyear_ages3_IMD5))+','+str(g.N_smokers_endyear_ages3_IMD5)+','\
            +str(g.N_newquitters_endyear_ages3_IMD5)+','+str(g.N_ongoingquitters_endyear_ages3_IMD5)+','+str(g.N_dead_endyear_ages3_IMD5)+'\n'      
         return c
-
-    def count_population_subgroups(self,shuffle_population=False):
-        for agent in self.context.agents(agent_type=self.type,shuffle=shuffle_population):
-            agent.count_agent_for_whole_population_counts()
-            agent.count_agent_for_initiation_subgroups_by_ages_sex()
-            agent.count_agent_for_initiation_subgroups_by_ages_imd()
-            agent.count_agent_for_quit_subgroups_by_ages_sex()
-            agent.count_agent_for_quit_subgroups_by_ages_imd()
-    
+ 
     def set_ecig_diffusion_subgroups_of_agents(self,shuffle_population=False):
         for agent in self.context.agents(agent_type=self.type,shuffle=shuffle_population):    
             agent.set_ecig_diffusion_subgroup_of_agent()                                
 
-    def do_transformational_mechanisms(self):    
+    def do_transformational_mechanisms(self):
+        '''
+        Before 2021, for each subgroup, the e-cigarette prevalence = prevalence of non-disposable ecig
+        From 2021, for those subgroups using both non-disposable ecig and disposable ecig, ecig prevalence = prevalece of non-disposable ecig + prevalence of disposable ecig 
+                   for those subgroups using either non-disposable ecig or disposable ecig, ecig prevalence = prevalence of non-disposable ecig or disposable ecigarette as appropriate
+        '''
         if self.year_of_current_time_step < 2021:#run non-disposable models
            self.ecig_Et[eCigDiffSubGroup.Neversmoked_over1991].append(0) #0 diffusion because never smoked 1991+ group did not use e-cigarette before 2021    
            for diffusion_models in self.diffusion_models_of_this_tick.values():#diffusion_models_of_this_tick.values() returns a list of lists of a non-disposable diffusion model
@@ -751,7 +733,7 @@ class SmokingModel(Model):
                    diffusion_model.do_transformation()
                    if self.running_mode == 'debug':                
                        self.ecig_Et[diffusion_model.subgroup].append(diffusion_model.Et)
-        else:#from 2021 for the subgroups using both non-disp ecig and disp ecig, run the non-disposable and disposable diffusion models
+        else:
            for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items(): #diffusion_models a list of lists of two diffusion models (non-disposable diffusion model and disposable diffusion model) or one diffusion model (non-disposable diffusion model or disposable diffusion model)
                    total_prevalence=0
                    for diffusion_model in diffusion_models:
@@ -760,13 +742,17 @@ class SmokingModel(Model):
                    if self.running_mode == 'debug':
                         self.ecig_Et[subgroup].append(total_prevalence)                                                           
 
-    def do_macro_macro_mechanisms(self): 
-        #calculate deltaEt of each e-cigarette diffusion 
+    def do_macro_macro_mechanisms(self):
+        '''
+        Before 2021, for each subgroup, calculate deltaEt (new adopters) of non-disposable ecig model
+        From 2021, for those subgroups using both non-disposable ecig and disposable ecig, calculate deltaEt (new adopters) of non-disposable ecig model and calculate deltaEt (new adopters) of disposable ecig model 
+                   for those subgroups using either non-disposable ecig or disposable ecig, calculate deltaEt (new adopters) of non-disposable ecig model or deltaEt (new adopters) of disposable ecig model as appropriate
+        '''
         if self.year_of_current_time_step < 2021:
            for diffusion_models in self.diffusion_models_of_this_tick.values():
                for diffusion_model in diffusion_models:    
                    diffusion_model.do_macro_macro()#calculate delatEt of diffusion model  
-        else:#from 2021 for the subgroups using both non-disp ecig and disp ecig, run the non-disposable and disposable diffusion models
+        else:
            for diffusion_models in self.diffusion_models_of_this_tick.values():
                for diffusion_model in diffusion_models:    
                    diffusion_model.do_macro_macro()
@@ -777,9 +763,14 @@ class SmokingModel(Model):
         for agent in self.context.agents(agent_type=self.type):
             agent.do_situation()   
 
-    def do_action_mechanisms(self):
-        for agent in self.context.agents(agent_type=self.type):
-            agent.do_action()            
+    def do_action_mechanisms_and_count_population_subgroups(self,shuffle_population=False):  
+        for agent in self.context.agents(agent_type=self.type,shuffle=shuffle_population):
+            agent.do_action()
+            agent.count_agent_for_whole_population_counts()
+            agent.count_agent_for_initiation_subgroups_by_ages_sex()
+            agent.count_agent_for_initiation_subgroups_by_ages_imd()
+            agent.count_agent_for_quit_subgroups_by_ages_sex()
+            agent.count_agent_for_quit_subgroups_by_ages_imd()       
   
     def smoking_prevalence(self):
         smokers = 0
@@ -798,10 +789,11 @@ class SmokingModel(Model):
                 elif diffusion_model.deltaEt < 0 and agent.p_ecig_use.get_value()==1 and diffusion_model.ecig_type == agent.ecig_type:
                     diffusion_model.allocateDiffusion(agent)
 
-    def init_new_16_yrs_agents(self):#initialize new 16 years old agents in every January from 2012
+    def init_new_16_yrs_agents(self):
+        '''initialize new 16 years old agents in every January from 2012'''
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
         from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
-        from smokingcessation.stpm_theory import RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
+        from smokingcessation.stpm_theory import DemographicsSTPMTheory, RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
     
         new_agents=self.data[self.data['year']==self.year_of_current_time_step]#from 2012
@@ -921,7 +913,7 @@ class SmokingModel(Model):
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
                 qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
-            
+            demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
             id=self.size_of_population+i #this agent's id = size of current population + i where i=0,1,2...,new agents-1 and size of baseline population = the largest agent id of the current population + 1
             self.context.add(Person(
                     self,
@@ -955,7 +947,7 @@ class SmokingModel(Model):
                     quit_success_theory=qsuccess_theory,
                     regular_smoking_behaviour=self.regular_smoking_behaviour,
                     quitting_behaviour=self.quitting_behaviour))
-            mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory])
+            mediator = SmokingTheoryMediator([demographics_theory, rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory])
             agent = self.context.agent((id, self.type, self.rank))
             agent.set_mediator(mediator)
             self.population_counts[subgroup]+=1
@@ -969,16 +961,18 @@ class SmokingModel(Model):
             self.year_number += 1
             #initialize new 16 years old agents in January of 2012
             self.init_new_16_yrs_agents()
-            #ipdb.set_trace()#debug
-            print('size of current population: ',self.size_of_population)#debug
+            #ipdb.set_trace()#debugging break point to observe the values of any suspected variables
+            if self.running_mode == 'debug':
+                 print('size of current population: ',self.size_of_population)#debug
         elif self.current_time_step > 13:
             if self.months_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
                #initialize new 16 years old agents in January of 2013,...,final year
                self.init_new_16_yrs_agents()
-               #ipdb.set_trace()#debug
-               print('size of current population: ',self.size_of_population)#debug
+               #ipdb.set_trace()#debugging break point to observe the values of any suspected variables
+               if self.running_mode == 'debug':
+                  print('size of current population: ',self.size_of_population)#debug
         self.format_month_and_year()
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
@@ -995,11 +989,16 @@ class SmokingModel(Model):
         self.set_ecig_diffusion_subgroups_of_agents(shuffle_population=True)
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
+        if self.running_mode == 'debug': 
+            before_kill_agents = self.get_size_of_population()            
         self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
-        self.do_action_mechanisms()
-        ###count population subgroups after doing the mechanisms (some agents were killed during situational mechanism)
+        if self.running_mode == 'debug': 
+            after_kill_agents = self.get_size_of_population()
+            sstr='killed '+str(before_kill_agents - after_kill_agents)+' agents from the current population.'
+            print(sstr)
+        ###count population subgroups after doing all the mechanisms (some agents have been killed during situational mechanism)
         self.init_population_counts()#reset population counts to 0
-        self.count_population_subgroups()
+        self.do_action_mechanisms_and_count_population_subgroups() 
         self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
         if self.current_time_step == self.end_year_tick:
             self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file

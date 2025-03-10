@@ -20,17 +20,50 @@ class STPMTheory(Theory):
     @abstractmethod
     def do_action(self, agent: MicroAgent):
         pass
-
-#class DemographicsSTPMTheory(STPMTheory):
-#    def __init__(self, name, smoking_model: SmokingModel):
-#        super().__init__(name, smoking_model)
+class DemographicsSTPMTheory(STPMTheory):
+    def __init__(self, name, smoking_model: SmokingModel):
+        super().__init__(name, smoking_model)
         
-    #def do_situation(self, agent: MicroAgent):
-    #    if self.smoking_model.months_counter == 12:
-            #check for death conditioned on current age, smoking status and sex before running the smoking behavior models
-            #apply death or increment age
-            #the smokers group in stpm death model includes quitters as well as smokers 
-            
+    def do_situation(self, agent: MicroAgent):
+        if self.smoking_model.months_counter == 12:
+            #if age > 89, kill the agent
+            #else check for death conditioned on current age, smoking status and sex before running the smoking behavior models
+            #     apply death or increment age
+            #note: the smokers group in stpm death model includes quitters as well as smokers 
+            if agent.p_age.get_value() > 89: 
+                self.smoking_model.context.remove(agent)
+            else:
+                if agent.get_current_state() in {AgentState.SMOKER, AgentState.NEWQUITTER, 
+                                                         AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER3,
+                                                         AgentState.ONGOINGQUITTER4, AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER6,
+                                                         AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER8, AgentState.ONGOINGQUITTER9,
+                                                         AgentState.ONGOINGQUITTER10, AgentState.ONGOINGQUITTER11}:
+                     state='current'
+                elif agent.get_current_state() == AgentState.EXSMOKER:
+                      state='former'
+                elif agent.get_current_state() == AgentState.NEVERSMOKE:
+                      state='never'
+                else:
+                    import sys
+                    sstr='no such state:'+agent.get_current_state()
+                    sys.exit(sstr)
+                matched_row = self.death_prob[self.death_prob["year"]==self.smoking_model.year_of_current_time_step &
+                                self.death_prob["age"]==agent.p_age.get_value() &
+                                self.death_prob["sex"]==agent.p_sex.get_value() &
+                                self.death_prob["smk.state"]==state
+                                ]
+                matched_row = pd.DataFrame(matched_row)
+                if len(matched_row) > 0:
+                    self.prob_behaviour = float(matched_row.at[0, "qx"])
+                else:#death probability file has no death probability for this agent 
+                    self.prob_behaviour = 0
+                self.threshold = random.uniform(0, 1)
+                if self.prob_behaviour >= self.threshold:
+                    self.smoking_model.context.remove(agent)
+                else:
+                    agent.p_age.increment_age()
+                
+                        
 
 class RelapseSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
