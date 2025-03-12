@@ -7,7 +7,7 @@ from config.definitions import Theories
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 from smokingcessation.smoking_model import SmokingModel
-
+#import ipdb #debugger
 class STPMTheory(Theory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name)
@@ -47,23 +47,28 @@ class DemographicsSTPMTheory(STPMTheory):
                     import sys
                     sstr='no such state:'+agent.get_current_state()
                     sys.exit(sstr)
-                matched_row = self.death_prob[self.death_prob["year"]==self.smoking_model.year_of_current_time_step &
-                                self.death_prob["age"]==agent.p_age.get_value() &
-                                self.death_prob["sex"]==agent.p_sex.get_value() &
-                                self.death_prob["smk.state"]==state
+                matched_row = self.smoking_model.death_prob[
+                                (self.smoking_model.death_prob["year"] == self.smoking_model.year_of_current_time_step) &
+                                (self.smoking_model.death_prob["age"] == agent.p_age.get_value()) &
+                                (self.smoking_model.death_prob["sex"] == agent.p_gender.get_value()) &
+                                (self.smoking_model.death_prob["imd_quintile"] == agent.p_imd_quintile.get_value()) &
+                                (self.smoking_model.death_prob["smk.state"] == state)
                                 ]
                 matched_row = pd.DataFrame(matched_row)
+                #ipdb.set_trace()#debug break point
                 if len(matched_row) > 0:
-                    self.prob_behaviour = float(matched_row.at[0, "qx"])
+                    col_index = matched_row.columns.get_loc("qx")
+                    self.prob_behaviour = float(matched_row.iat[0, col_index])
                 else:#death probability file has no death probability for this agent 
                     self.prob_behaviour = 0
                 self.threshold = random.uniform(0, 1)
                 if self.prob_behaviour >= self.threshold:
-                    self.smoking_model.context.remove(agent)
+                    self.smoking_model.agents_to_kill.add(agent.uid)
                 else:
-                    agent.p_age.increment_age()
-                
-                        
+                    agent.increment_age()
+
+    def do_action(self, agent: MicroAgent):        
+        pass    
 
 class RelapseSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):

@@ -111,6 +111,7 @@ class RegSmokeTheory(COMBTheory):
         #pPrescriptionNRT
         #pVareniclineUse
         #bCigConsumption
+        #oRecieptGPAdvice
         #oPrevalenceOfSmokingInGeographicLocality
         prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
         at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))

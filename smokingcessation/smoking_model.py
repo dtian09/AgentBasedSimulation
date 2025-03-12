@@ -9,7 +9,8 @@ from mbssm.model import Model
 import config.global_variables as g
 import os
 import random
-#import ipdb #debugger
+import gc
+import ipdb #debugger
 
 class SmokingModel(Model):
 
@@ -33,9 +34,10 @@ class SmokingModel(Model):
         self.data = pd.read_csv(f'{ROOT_DIR}/' + self.data_file, encoding='ISO-8859-1')
         self.data = self.replace_missing_value_with_zero(self.data)
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
+        self.relapse_prob = pd.read_csv(self.relapse_prob_file)
         self.death_prob_file = f'{ROOT_DIR}/' + self.props["death_prob_file"]
+        self.death_prob = pd.read_csv(self.death_prob_file, encoding='ISO-8859-1')  
         self.year_of_current_time_step = self.props["year_of_baseline"]
-        self.death_prob = None
         self.year_number = 0
         self.current_time_step = 0
         self.months_counter = 0 #count the number of months of the current year
@@ -58,25 +60,24 @@ class SmokingModel(Model):
         self.level2_attributes_of_success_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of quit success theory
         self.store_level2_attributes_of_comb_formulae_into_maps()
         self.level2_attributes_names = list(self.data.filter(regex='^[com]').columns)#get the level 2 attribute names from the data file
-        self.relapse_prob = pd.read_csv(self.relapse_prob_file, header=0)  # read in STPM relapse probabilities
         self.running_mode = self.props['ABM_mode']  # debug or normal mode
         self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions = self.props['difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions']
         self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions = self.props['difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions']        
-        #ipdb.set_trace() #debug: observe values of any suspected variables
+        self.agents_to_kill=set() #unique ids of the agents to be killed after iteration through the population during situational mechanism
         if self.running_mode == 'debug':
             self.smoking_prevalence_l = list()
         self.regular_smoking_behaviour = self.props['regular_smoking_behaviour'] #COMB or STPM
         self.quitting_behaviour = self.props['quitting_behaviour'] #COMB or STPM
         if self.regular_smoking_behaviour=='STPM':
             self.initiation_prob_file = f'{ROOT_DIR}/' + self.props["initiation_prob_file"]
-            self.initiation_prob = pd.read_csv(self.initiation_prob_file,header=0) 
+            self.initiation_prob = pd.read_csv(self.initiation_prob_file) 
         elif self.regular_smoking_behaviour=='COMB':
             pass
         else:
             sys.exit('invalid regular smoking behaviour: '+self.regular_smoking_behaviour)
         if self.quitting_behaviour=='STPM':
             self.quit_prob_file = f'{ROOT_DIR}/' + self.props["quit_prob_file"]
-            self.quit_prob = pd.read_csv(self.quit_prob_file,header=0)   
+            self.quit_prob = pd.read_csv(self.quit_prob_file)   
         elif self.quitting_behaviour=='COMB':
             pass
         else:
@@ -133,6 +134,7 @@ class SmokingModel(Model):
      
     def readInDeathProbabilities(self):
         self.death_prob = pd.read_csv(f'{ROOT_DIR}/' + self.death_prob_file, encoding='ISO-8859-1')    
+        print('death prob: ',self.death_prob)
 
     def init_geographic_regional_prevalence(self):
         from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
@@ -952,6 +954,13 @@ class SmokingModel(Model):
             agent.set_mediator(mediator)
             self.population_counts[subgroup]+=1
         self.size_of_population = self.get_size_of_population()
+    
+    def kill_agents(self):
+        for uid in self.agents_to_kill:
+            agent=self.context.agent(uid)
+            self.context.remove(agent)
+            del agent 
+            gc.collect()
 
     def do_per_tick(self):
         self.current_time_step += 1
@@ -961,7 +970,6 @@ class SmokingModel(Model):
             self.year_number += 1
             #initialize new 16 years old agents in January of 2012
             self.init_new_16_yrs_agents()
-            #ipdb.set_trace()#debugging break point to observe the values of any suspected variables
             if self.running_mode == 'debug':
                  print('size of current population: ',self.size_of_population)#debug
         elif self.current_time_step > 13:
@@ -970,7 +978,6 @@ class SmokingModel(Model):
                self.year_number += 1
                #initialize new 16 years old agents in January of 2013,...,final year
                self.init_new_16_yrs_agents()
-               #ipdb.set_trace()#debugging break point to observe the values of any suspected variables
                if self.running_mode == 'debug':
                   print('size of current population: ',self.size_of_population)#debug
         self.format_month_and_year()
@@ -989,13 +996,18 @@ class SmokingModel(Model):
         self.set_ecig_diffusion_subgroups_of_agents(shuffle_population=True)
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
-        if self.running_mode == 'debug': 
+        self.agents_to_kill=set()
+        if self.running_mode == 'debug' and self.months_counter == 12: 
             before_kill_agents = self.get_size_of_population()            
+        if self.current_time_step == 23:
+           ipdb.set_trace()#debugging break point
         self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
-        if self.running_mode == 'debug': 
+        self.kill_agents()#delete the agents of agents_to_kill from the population
+        if self.running_mode == 'debug' and self.months_counter == 12:
             after_kill_agents = self.get_size_of_population()
             sstr='killed '+str(before_kill_agents - after_kill_agents)+' agents from the current population.'
             print(sstr)
+            self.logfile.write(sstr+'\n')
         ###count population subgroups after doing all the mechanisms (some agents have been killed during situational mechanism)
         self.init_population_counts()#reset population counts to 0
         self.do_action_mechanisms_and_count_population_subgroups() 
@@ -1022,7 +1034,7 @@ class SmokingModel(Model):
                 for diff_model in diffusion_models:
                     self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+'\n')
                     self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
-            #self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
+            self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
 
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
