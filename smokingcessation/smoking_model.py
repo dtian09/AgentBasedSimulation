@@ -624,7 +624,7 @@ class SmokingModel(Model):
             print('size of baseline population:', self.size_of_population)
             p = self.smoking_prevalence()
             print('===statistics of smoking prevalence===')
-            print('Time step 0: year: '+str(self.year_of_current_time_step)+', smoking prevalence=' + str(p) + '%.')
+            print('tick 0, year: '+str(self.year_of_current_time_step)+', smoking prevalence=' + str(p) + '%.')
             self.smoking_prevalence_l.append(p)
             self.logfile.write('tick: 0, year: ' + str(self.year_of_current_time_step) + '\n')
   
@@ -916,7 +916,7 @@ class SmokingModel(Model):
                 qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
-            id=self.size_of_population+i #this agent's id = size of current population + i where i=0,1,2...,new agents-1 and size of baseline population = the largest agent id of the current population + 1
+            id= self.size_of_population*random.randint(2,6) + random.randint(3, 1000) * random.randint(2, 1000) #create a random id which is unique to this agent
             self.context.add(Person(
                     self,
                     id,
@@ -954,6 +954,7 @@ class SmokingModel(Model):
             agent.set_mediator(mediator)
             self.population_counts[subgroup]+=1
         self.size_of_population = self.get_size_of_population()
+        return r #return no. of new agents initialized
     
     def kill_agents(self):
         for uid in self.agents_to_kill:
@@ -969,17 +970,19 @@ class SmokingModel(Model):
             self.year_of_current_time_step += 1
             self.year_number += 1
             #initialize new 16 years old agents in January of 2012
-            self.init_new_16_yrs_agents()
+            new_agents=self.init_new_16_yrs_agents()
             if self.running_mode == 'debug':
-                 print('size of current population: ',self.size_of_population)#debug
+                 self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population())+'\n')
+                 print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population()))
         elif self.current_time_step > 13:
             if self.months_counter == 12: #each tick is 1 month
                self.year_of_current_time_step += 1
                self.year_number += 1
                #initialize new 16 years old agents in January of 2013,...,final year
-               self.init_new_16_yrs_agents()
+               new_agents=self.init_new_16_yrs_agents()
                if self.running_mode == 'debug':
-                  print('size of current population: ',self.size_of_population)#debug
+                  self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population())+'\n')
+                  print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population()))
         self.format_month_and_year()
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
@@ -997,17 +1000,8 @@ class SmokingModel(Model):
         self.do_transformational_mechanisms()#compute Et of diffusion models
         self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
         self.agents_to_kill=set()
-        if self.running_mode == 'debug' and self.months_counter == 12: 
-            before_kill_agents = self.get_size_of_population()            
-        if self.current_time_step == 23:
-           ipdb.set_trace()#debugging break point
         self.do_situation_mechanisms()#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
         self.kill_agents()#delete the agents of agents_to_kill from the population
-        if self.running_mode == 'debug' and self.months_counter == 12:
-            after_kill_agents = self.get_size_of_population()
-            sstr='killed '+str(before_kill_agents - after_kill_agents)+' agents from the current population.'
-            print(sstr)
-            self.logfile.write(sstr+'\n')
         ###count population subgroups after doing all the mechanisms (some agents have been killed during situational mechanism)
         self.init_population_counts()#reset population counts to 0
         self.do_action_mechanisms_and_count_population_subgroups() 
@@ -1020,22 +1014,28 @@ class SmokingModel(Model):
             g.initialize_global_variables_of_subgroups()     
         ###   
         self.size_of_population = self.get_size_of_population()
+        if self.running_mode == 'debug':
+            p = self.smoking_prevalence()
+            self.smoking_prevalence_l.append(p)
+            self.logfile.write('tick '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) +': smoking prevalence=' + str(p) + '%.\n')
+            print('tick '+str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
+            for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
+                for diff_model in diffusion_models:
+                    self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+'\n')
+                    self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
+            #self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
+            if self.months_counter == 12:
+                sstr='killed '+str(len(self.agents_to_kill))+' agents'
+                self.logfile.write(sstr+'\n')
+                print(sstr)
+            self.logfile.write('size of population: '+str(self.size_of_population)+'\n')
+            print('size of population: '+str(self.size_of_population))
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
         if self.months_counter == 12:
             self.months_counter = 0
-        if self.running_mode == 'debug':
-            p = self.smoking_prevalence()
-            self.smoking_prevalence_l.append(p)
-            self.logfile.write('tick: '+str(self.current_time_step)+', year: ' + str(self.year_of_current_time_step) +': smoking prevalence=' + str(p) + '%.\n')
-            print('Time step ' + str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
-            for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
-                for diff_model in diffusion_models:
-                    self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+'\n')
-                    self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
-            self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
-
+        
     def init_schedule(self):
         self.runner.schedule_repeating_event(1, 1, self.do_per_tick)
         self.runner.schedule_stop(self.stop_at)

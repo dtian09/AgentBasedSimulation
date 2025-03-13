@@ -31,7 +31,7 @@ class DemographicsSTPMTheory(STPMTheory):
             #     apply death or increment age
             #note: the smokers group in stpm death model includes quitters as well as smokers 
             if agent.p_age.get_value() > 89: 
-                self.smoking_model.context.remove(agent)
+                self.smoking_model.agents_to_kill.add(agent.uid)
             else:
                 if agent.get_current_state() in {AgentState.SMOKER, AgentState.NEWQUITTER, 
                                                          AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER2, AgentState.ONGOINGQUITTER3,
