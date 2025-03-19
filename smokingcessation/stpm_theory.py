@@ -136,9 +136,9 @@ class RelapseSTPMTheory(STPMTheory):
             agent.b_years_since_quit = 0
             if agent.smoking_model.quitting_behaviour=='COMB':
                 agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
-                agent.mediator.theory_map[Theories.QUITSUCCESS].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
+                agent.mediator.theory_map[Theories.QUITMAINTENANCE].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
                 agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
-                agent.mediator.theory_map[Theories.QUITSUCCESS].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
+                agent.mediator.theory_map[Theories.QUITMAINTENANCE].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
         else:
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()
@@ -233,7 +233,7 @@ class QuitSTPMTheory(STPMTheory):
                 # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
                 agent.delete_oldest_behaviour()
                 # append the agent's new behaviour to its behaviour buffer
-                agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
+                agent.add_behaviour(AgentBehaviour.QUITMAINTENANCE)
                 agent.b_months_since_quit += 1
                 if agent.b_months_since_quit < 12:
                     if agent.b_months_since_quit==1:

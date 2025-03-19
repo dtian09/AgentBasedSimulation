@@ -7,7 +7,14 @@ regional_prevalence: "data/regional_smoking_trends_data.csv" #monthly regional s
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
-death_prob_file: "data/death_probs_abm_integer.csv"
+death_prob_file: "data/death_probs_abm_integers.csv"
+attempt_exogenous_dynamics_file: "data/table_attempts_dynamic_extended_integers.csv"
+maintenance_exogenous_dynamics_file: "data/table_maintenance_dynamic_extended_integers.csv"
+sigma_propensity_GP_advice_attempt: 1 #sigma of N(0, sigma) for propensity of GP_advice Quit Attempt
+sigma_propensity_NRT_attempt: 1 #sigma of N(0, sigma) for propensity of NRT Quit Attempt
+sigma_propensity_NRT_maintenance: 1
+sigma_propensity_behaviour_support_maintenance: 1
+sigma_propensity_varenicline_maintenance: 1
 year_of_baseline: 2011 #year of the baseline popultion at t=0
 stop.at: 97 #year 2018. This is the stop time of ABM when tick 1 = Jan 2011
 #stop.at: 13 #January 2012 (for testing regional smoking prevalence)

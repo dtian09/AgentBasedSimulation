@@ -4,6 +4,7 @@ import numpy as np
 import math
 import random
 import sys
+import pandas as pd
 
 from config.definitions import AgentState, AgentBehaviour, eCigDiffSubGroup
 from mbssm.theory import Theory
@@ -186,12 +187,17 @@ class QuitAttemptTheory(COMBTheory):
         super().__init__(name, smoking_model, indx_of_agent)
 
     def do_situation(self, agent: MicroAgent):
+        '''
+        Argument: agent (the agent object of this QuitAttemptTheory object)
+        
+        Change this agent to an e-cigarette user
+        Update the dynamic personal characteristics and the dynamic Level 2 attributes of the agent's Quit Attempt Theory
+        '''
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user        
         #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
         #pPrescriptionNRT
         #pVareniclineUse
         #bCigConsumption
-        #oReceiptOfGPAdvice
         #mUseofNRT = pOverCounterNRT or pPrescriptionNRT
         agent=self.smoking_model.context.agent((self.indx_of_agent, self.smoking_model.type, self.smoking_model.rank))
         if agent.pOverCounterNRT.get_value()==1 or agent.pPrescriptionNRT.get_value()==1:
@@ -203,6 +209,45 @@ class QuitAttemptTheory(COMBTheory):
         prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
         at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
         self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+        #oReceiptOfGPAdvice        
+        matched_row = self.smoking_model.attempt_exogenous_dynamics_data[
+                                (self.smoking_model.attempt_exogenous_dynamics_data["year"] == self.smoking_model.year_of_current_time_step) &
+                                (self.smoking_model.attempt_exogenous_dynamics_data["age"] == agent.p_age.get_value()) &
+                                (self.smoking_model.attempt_exogenous_dynamics_data["sex"] == agent.p_gender.get_value()) &
+                                (self.smoking_model.attempt_exogenous_dynamics_data["social grade"] == agent.p_sep.get_value())
+                                ]
+        matched_row = pd.DataFrame(matched_row)
+        #ipdb.set_trace()#debug break point
+        if len(matched_row) > 0:
+             col_index = matched_row.columns.get_loc("oReceiptGPAdviceLodOdds")
+             logodds = float(matched_row.iat[0, col_index])
+             col_index2 = matched_row.columns.get_loc("pNRTLogOdds")
+             logodds2 = float(matched_row.iat[0, col_index2])
+        else: 
+             logodds = 0
+             logodds2 = 0
+             print(f'Logodds in QuitAttemptTheory are set to 0, no matching logodds for year={self.smoking_model.attempt_exogenous_dynamics_data["year"]},\
+                   age={self.smoking_model.attempt_exogenous_dynamics_data["age"]},\
+                   sex={self.smoking_model.attempt_exogenous_dynamics_data["sex"]},\
+                  social grade={self.smoking_model.attempt_exogenous_dynamics_data["social grade"]}')   
+        #sample a value (1 or 0) for oReceiptOfGPAdvice using its logodds and a threshold drawn from uniform distribution [0,1] 
+        logodds += agent.propensity_receive_GP_advice_attempt
+        prob = math.e ** logodds / (1 + math.e ** logodds)
+        threshold = random.uniform(0, 1)
+        if prob >= threshold:
+           at_obj = Level2AttributeInt(name='oReceiptOfGPAdvice', value=1)
+           self.level2_attributes['oReceiptOfGPAdvice'] = at_obj 
+        else:
+           at_obj = Level2AttributeInt(name='oReceiptOfGPAdvice', value=0)
+           self.level2_attributes['oReceiptOfGPAdvice'] = at_obj  
+        #sample a value (1 or 0) for pPrescriptionNRT using its logodds and a threshold drawn from uniform distribution [0,1] 
+        logodds2 += agent.propensity_NRT_attempt
+        prob = math.e ** logodds2 / (1 + math.e ** logodds2)
+        threshold = random.uniform(0, 1)
+        if prob >= threshold:
+           agent.p_prescription_nrt.set_value(1)
+        else:
+           agent.p_prescription_nrt.set_value(0)  
 
     def do_learning(self):
         pass
@@ -267,7 +312,7 @@ class QuitAttemptTheory(COMBTheory):
             agent.set_state_of_next_time_step(state=AgentState.SMOKER)
         agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
 
-class QuitSuccessTheory(COMBTheory):
+class QuitMaintenanceTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
@@ -275,7 +320,6 @@ class QuitSuccessTheory(COMBTheory):
     def do_situation(self, agent: MicroAgent):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
         #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent        
-        #pPrescriptionNRT
         #pVareniclineUse        
         #bCigConsumption
         #cUseOfBehaviourSupport
@@ -284,6 +328,61 @@ class QuitSuccessTheory(COMBTheory):
         prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
         at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
         self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+        if agent.get_current_state()==AgentState.NEWQUITTER:
+            #pPrescriptionNRT
+            matched_row = self.smoking_model.maintenance_exogenous_dynamics_data[
+                                (self.smoking_model.maintenance_exogenous_dynamics_data["year"] == self.smoking_model.year_of_current_time_step) &
+                                (self.smoking_model.maintenance_exogenous_dynamics_data["age"] == agent.p_age.get_value()) &
+                                (self.smoking_model.maintenance_exogenous_dynamics_data["sex"] == agent.p_gender.get_value()) &
+                                (self.smoking_model.maintenance_exogenous_dynamics_data["social grade"] == agent.p_sep.get_value())
+                                ]
+            matched_row = pd.DataFrame(matched_row)
+            #ipdb.set_trace()#debug break point
+            if len(matched_row) > 0:
+                col_index = matched_row.columns.get_loc("pPrescriptionNRTLogOdds")
+                logodds = float(matched_row.iat[0, col_index])
+                col_index2 = matched_row.columns.get_loc("cUseOfBehaviourSupportLogOdds")
+                logodds2 = float(matched_row.iat[0, col_index2])
+                col_index3 = matched_row.columns.get_loc("pVareniclineUseLogOdds")
+                logodds3 = float(matched_row.iat[0, col_index3])             
+            else: 
+                logodds = 0
+                logodds2 = 0
+                logodds3 = 0
+                print(f'Logodds in QuitMaintenanceTheory are set to 0, no matching logodds for year={self.smoking_model.attempt_exogenous_dynamics_data["year"]},\
+                    age={self.smoking_model.attempt_exogenous_dynamics_data["age"]},\
+                    sex={self.smoking_model.attempt_exogenous_dynamics_data["sex"]},\
+                    social grade={self.smoking_model.attempt_exogenous_dynamics_data["social grade"]}')   
+            #update p_prescription_nrt
+            logodds += agent.propensity_NRT_maintenance   
+            prob = math.e ** logodds / (1 + math.e ** logodds)
+            threshold = random.uniform(0, 1)
+            if prob >= threshold:
+                agent.p_prescription_nrt.set_value(1)
+            else:
+                agent.p_prescription_nrt.set_value(0)
+            #update cUseOfBehaviourSupport
+            logodds2 += agent.propensity_behaviour_support_maintenance
+            prob = math.e ** logodds2 / (1 + math.e ** logodds2)
+            threshold = random.uniform(0, 1)     
+            if prob >= threshold:
+                at_obj = Level2AttributeInt(name='', value=1)
+                self.level2_attributes['cUseOfBehaviourSupport'] = at_obj 
+            else:
+                at_obj = Level2AttributeInt(name='cUseOfBehaviourSupport', value=0)
+                self.level2_attributes['cUseOfBehaviourSupport'] = at_obj  
+            #update p_varenicline_use
+            logodds3 += agent.propensity_varenicline_maintenance
+            prob = math.e ** logodds3 / (1 + math.e ** logodds3)
+            threshold = random.uniform(0, 1)
+            if prob >= threshold:
+                agent.p_varenicline_use.set_value(1)
+            else:
+                agent.p_varenicline_use.set_value(0)
+            
+        
+
+
 
     def do_learning(self):
         pass
@@ -349,13 +448,13 @@ class QuitSuccessTheory(COMBTheory):
             # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()
             # append the agent's new behaviour to its behaviour buffer
-            agent.add_behaviour(AgentBehaviour.QUITSUCCESS)
+            agent.add_behaviour(AgentBehaviour.QUITMAINTENANCE)
             agent.b_months_since_quit += 1
             #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = 4 (weeks)
             self.level2_attributes['cCigAddictStrength'].set_value(np.round(self.level2_attributes['cCigAddictStrength'].get_value() * np.exp(self.smoking_model.lbda*self.smoking_model.tickInterval)))
             #sample from prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = 4 (weeks)
             threshold=random.uniform(0,1)
-            successCount=agent.behaviour_buffer.count(AgentBehaviour.QUITSUCCESS)
+            successCount=agent.behaviour_buffer.count(AgentBehaviour.QUITMAINTENANCE)
             probOfSmokerSelfIdentity=1/(1+self.smoking_model.alpha*(successCount*self.smoking_model.tickInterval)**self.smoking_model.beta)
             if probOfSmokerSelfIdentity >= threshold:
                 self.level2_attributes['mSmokerIdentity'].set_value(2) #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 

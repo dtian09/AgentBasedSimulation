@@ -28,12 +28,12 @@ class SmokingTheoryMediator(TheoryMediator):
             elif cstate == AgentState.SMOKER:
                 self.theory_map[Theories.QUITATTEMPT].do_situation(agent)        
             elif cstate == AgentState.NEWQUITTER:
-                self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
+                self.theory_map[Theories.QUITMAINTENANCE].do_situation(agent)
             elif cstate in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
                             AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
                             AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
                             AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
-                self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
+                self.theory_map[Theories.QUITMAINTENANCE].do_situation(agent)
             elif cstate == AgentState.EXSMOKER:
                 self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
             else:
@@ -73,29 +73,29 @@ class SmokingTheoryMediator(TheoryMediator):
         elif cstate == AgentState.SMOKER:
             self.theory_map[Theories.QUITATTEMPT].do_action(agent)
         elif cstate == AgentState.NEWQUITTER:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER1:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER2:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER3:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER4:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER5:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER6:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER7:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER8:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER9:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER10:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.ONGOINGQUITTER11:
-            self.theory_map[Theories.QUITSUCCESS].do_action(agent)
+            self.theory_map[Theories.QUITMAINTENANCE].do_action(agent)
         elif cstate == AgentState.EXSMOKER:
             self.theory_map[Theories.RELAPSESSTPM].do_action(agent)
         else:

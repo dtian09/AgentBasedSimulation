@@ -45,7 +45,7 @@ class Theories(Enum):
     """
     REGSMOKE = 1
     QUITATTEMPT = 2
-    QUITSUCCESS = 3
+    QUITMAINTENANCE = 3
     RELAPSESSTPM = 4
     DemographicsSTPM = 5
 
@@ -86,7 +86,7 @@ class AgentBehaviour(Enum):
     NOUPTAKE = 2
     QUITATTEMPT = 3
     NOQUITEATTEMPT = 4
-    QUITSUCCESS = 5
+    QUITMAINTENANCE = 5
     QUITFAILURE = 6
     RELAPSE = 7
     NORELAPSE = 8

@@ -1,23 +1,32 @@
 
-# ABM Version 0.8
-The ABM initializes new 16 years old agents from January of 2012 and reads in regional smoking prevalence between 2011 and 2019 from an separate data file.
-The ABM runs the following behaviour models and e-cigarette diffusion models:
-- 1) the COM-B regular smoking theory or STPM initiation probabilities for initiating regular smoking;
-- 2) COM-B quit attempt theory or STPM quitting probabilities for making a quit attempt;
-- 3) COM-B quit success theory or STPM quitting probabilities for quitting successfully;
-- 4) STPM relapse probabilities for relapse and
-- 5) e-cigarette diffusion models of the population subgroups: 
-  - ex-smoker < 1940
-  - ex-smoker1941-1960
-  - ex-smoker1961-1980
-  - ex-smoker1981-1990
-  - ex-smoker1991+
-  - smoker < 1940 
-  - smoker1941-1960
-  - smoker1961-1980
-  - smoker1981-1990
-  - smoker1991+
-  - neversmoked1991+
+# ABM Version 0.9
+The ABM v0.9:
+- initializes new 16 years old agents on each January from 2012 (tick 13).
+- reads in regional smoking prevalence between 2011 and 2019 from a regional smoking prevalence data file
+- runs a mortality model on each December from 2011 (tick 12).
+- implements the exogenous dynamics:
+   - oReceiveGPAdvice (COM-B quit attempt theory)
+   - pPrescriptionNRT (COM-B quit attempt theory)
+   - pPrescriptionNRT (COM-B quit success theory)
+   - cUseOfBehavioralSupport (COM-B quit success theory)  
+   - pVareniclineUse (COM-B quit success theory)  
+- runs the following smoking behavior models:
+   - 1) COM-B regular smoking theory or STPM initiation probabilities
+   - 2) COM-B quit attempt theory or STPM quitting probabilities
+   - 3) COM-B quit success theory or STPM quitting probabilities
+   - 4) STPM relapse probabilities
+- runs e-cigarette diffusion models of the following population subgroups: 
+  - 1) ex-smoker < 1940
+  - 2) ex-smoker1941-1960
+  - 3) ex-smoker1961-1980
+  - 4) ex-smoker1981-1990
+  - 5) ex-smoker1991+
+  - 6) smoker < 1940 
+  - 7) smoker1941-1960
+  - 8) smoker1961-1980
+  - 9) smoker1981-1990
+  - 10) smoker1991+
+  - 11) neversmoked1991+
 
 The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on January 2021. The subgroups which used both non-disposable and disposable e-cigarette from January 2021 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2021. 
 
@@ -74,7 +83,7 @@ env CC=mpicxx pip install repast4py
 ```
 pip install numpy pandas
 ```
-## Run the ABM software
+### 3. Download input data files
 1. Download the following [data files](https://drive.google.com/drive/u/1/folders/1HVtjLumfBiwaYsj0k9p_YA8DKIror6Jx) under the 'data' folder:
 
 - data_synth13_02_2025.csv
@@ -82,33 +91,46 @@ pip install numpy pandas
 - initiation_prob1month_STPM.csv
 - relapse_prob1month_STPM.csv
 - quit_prob1month_STPM.csv
+- death_probs_abm_integer.csv
 
 2. Download the [monthly_diffusion_parameters.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) and [monthly_bass_observed_predicted.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) under the 'monthly diffusion models' folder.
 
-3. Activate the virtual environment my_env as described above.
+## Run the ABM
 
-4. Move into the repository directory.
+1. Activate the virtual environment my_env as described above if it is not activated.
+
+2. Move into the repository directory:
 
 ```
 cd smokingABM
 ```
+### Set the Parameters of the ABM using Model.yaml 
+Set the weights (betas) of the Level 2 attributes of the COM-B regular smoking model (uptake), quit attempt model and quit maintenance (success) model:
 
-4. Specify the behaviour model to use for initiating regular smoking, making a quit attempt and quitting successfully.
+- uptake.cAlcoholConsumption.beta: 0.46
+- uptake.oSocialHousing.beta: 0.57
+- attempt.mIntentionToQuit.beta: 0.52
+...
 
-For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit success theory for quitting successfully and run the ABM in debug mode, set the following parameters in model.yaml: 
+Set the smoking behavior model for initiating regular smoking, making a quit attempt and quitting successfully.
+
+For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit success theory for quitting successfully and run the ABM in 'debug' mode (output logfile.txt containing detailed information about the simulation) or 'normal' mode (no logfile.txt), set the following parameters: 
 
 - regular_smoking_behaviour: "STPM"
 - quitting_behaviour: "COMB"
 - ABM_mode: "debug"
 
-5. Specify the parameters settings of the ABM in the props/model.yaml file. In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980 (Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)):
+In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980 (Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)):
 
 - disp_diffusion_exsmoker_1961_1980.p: 0.022498286
 - disp_diffusion_exsmoker_1961_1980.q: 0.212213813
 - disp_diffusion_exsmoker_1961_1980.m: 0.066939661
 - disp_diffusion_exsmoker_1961_1980.d: 0
 
-6. Use the following command to run the ABM model.
+Set any other parameters of the ABM.
+### The Running Command
+
+Use the following command to run the ABM model.
 
 ```
 python run_abm.py props/model.yaml
@@ -128,10 +150,6 @@ Additionally, when running in the 'debug mode', the following files are output:
 - logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
 - Exsmoker1981_1990.csv etc. (the e-cigarette prevalence predicted by the diffusion models)
-
-## Verification of the E-cigarette Diffusion Models of the ABM
-
-Run 'monthly diffusion models/plot_bass_comparison_dt.R' to compare on the same plots the predictions of the diffusion models of the ABM against those of the diffusion models in R and the observed data (this comparison is performed between January 2010 and Januray 2034). 
 
 ## Generate 2-D Plots of E-cigarette Prevalence (Output of Diffusion Models)
 

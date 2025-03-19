@@ -1,10 +1,17 @@
 '''
-This script creates the following STPM probabilities files as input to the ABM:
+This script creates one of the following STPM probabilities files as input to the ABM:
 
-initiation_prob1month_STPM.csv,
+initiation_prob1month_STPM.csv
+ or
 relapse_prob1month_STPM.csv
+ or
 quit_prob1month_STPM.csv
+ or
 death_probs_abm_integer.csv
+ or
+table_attempts_dynamic_extended_integers.csv
+ or
+table_maintenance_dynamic_extended_integers.csv
 
 Input: smoking_state_transition_probabilities_England2.xlsx
        death_probs_abm.csv
@@ -13,10 +20,27 @@ Output: initiation_prob1month_STPM.csv,
         quit_prob1month_STPM.csv
         death_probs_abm_integer.csv
 Operations:
-        Calculate the monthly initiation probability, relapse probability and quit probability from STPM annual initiation probabilities, relapse probabilities, quit probabilities and death probabilities
-        Replace 'Male' with 1, 'Female' with 2, '1_least_deprived' with 1 and '5_most_deprived' with 5 
+        Calculate the monthly initiation probability, 
+        relapse probability and quit probability from STPM annual initiation probabilities, 
+        relapse probabilities, quit probabilities and death probabilities
+        Replace 'Male' with 1, 'Female' with 2, '1_least_deprived' with 1 and '5_most_deprived' with 5 (for all probabilities)  
+How to use:
 
-usage: python initiation_relapse_quit_death_prob.py
+At the end of the script, call the relevant function (by commentting out the other function calls using '#'):
+
+calculate_monthly_initiation_probability()
+ or
+calculate_monthly_relapse_probability()
+ or
+calculate_monthly_quit_probability()
+ or
+replace_values_of_death_prob_file()
+ or
+replace_values_of_exogenous_dynamics_file(replace_values_of_exogenous_dynamics_file(attempt_exogenous_dynamics_file,attempt_exogenous_dynamics_file2)
+ or
+replace_values_of_exogenous_dynamics_file(replace_values_of_exogenous_dynamics_file(maintenance_exogenous_dynamics_file,maintenance_exogenous_dynamics_file2)
+
+running command: python initiation_relapse_quit_death_prob.py
 '''
 import pandas as pd
 
@@ -25,6 +49,10 @@ finalyear=2050 #final year of simulation
 outdir='./data/'
 stpm_prob_file='./smoking_state_transition_probabilities_England2.xlsx'
 death_prob_file='./death_probs_abm.csv'
+attempt_exogenous_dynamics_file='U:/smoking cessation/dynamic exogenous variables/table_attempts_dynamic_extended.csv'
+attempt_exogenous_dynamics_file2='table_attempts_dynamic_extended_integers.csv'
+maintenance_exogenous_dynamics_file='U:/smoking cessation/dynamic exogenous variables/table_maintenance_dynamic_extended.csv'
+maintenance_exogenous_dynamics_file2='table_maintenance_dynamic_extended_integers.csv'
 
 def calculate_monthly_initiation_probability():
     df=pd.read_excel(stpm_prob_file,sheet_name='Initiation')
@@ -69,4 +97,16 @@ def replace_values_of_death_prob_file():
     df['imd_quintile'] = df['imd_quintile'].replace({'1_least_deprived': 1,'5_most_deprived': 5})
     df.to_csv(outdir+'death_probs_abm_integer.csv',index=False)
 
-replace_values_of_death_prob_file()
+def replace_values_of_exogenous_dynamics_file(exogenous_dynamics_file,outfile):
+    df=pd.read_csv(exogenous_dynamics_file)
+    df=df[(df['year'] >= startyear) & (df['year'] <= finalyear)]
+    df['sex'] = df['sex'].replace({'Male': 1, 'Female': 2})
+    df['social grade'] = df['social grade'].replace({'ABC1': 0,'C2DE': 1})
+    df.to_csv(outdir+outfile,index=False)
+
+#calculate_monthly_initiation_probability()
+#calculate_monthly_relapse_probability()
+#calculate_monthly_quit_probability()
+#replace_values_of_death_prob_file()
+#replace_values_of_exogenous_dynamics_file(attempt_exogenous_dynamics_file,attempt_exogenous_dynamics_file2)
+replace_values_of_exogenous_dynamics_file(maintenance_exogenous_dynamics_file,maintenance_exogenous_dynamics_file2)

@@ -36,8 +36,17 @@ class SmokingModel(Model):
         self.relapse_prob_file = f'{ROOT_DIR}/' + self.props["relapse_prob_file"]
         self.relapse_prob = pd.read_csv(self.relapse_prob_file)
         self.death_prob_file = f'{ROOT_DIR}/' + self.props["death_prob_file"]
-        self.death_prob = pd.read_csv(self.death_prob_file, encoding='ISO-8859-1')  
-        self.year_of_current_time_step = self.props["year_of_baseline"]
+        self.death_prob = pd.read_csv(self.death_prob_file, encoding='ISO-8859-1')
+        self.attempt_exogenous_dynamics_file = f'{ROOT_DIR}/' + self.props["attempt_exogenous_dynamics_file"] 
+        self.attempt_exogenous_dynamics_data = pd.read_csv(self.attempt_exogenous_dynamics_file, encoding='ISO-8859-1') 
+        self.maintenance_exogenous_dynamics_file = f'{ROOT_DIR}/' + self.props["maintenance_exogenous_dynamics_file"] 
+        self.maintenance_exogenous_dynamics_data = pd.read_csv(self.maintenance_exogenous_dynamics_file, encoding='ISO-8859-1') 
+        self.sigma_propensity_GP_advice_attempt = self.props["sigma_propensity_GP_advice_attempt"]
+        self.sigma_propensity_NRT_attempt = self.props["sigma_propensity_NRT_attempt"]
+        self.sigma_propensity_NRT_maintenance = self.props["sigma_propensity_NRT_maintenance"]
+        self.sigma_propensity_behaviour_support_maintenance = self.props["sigma_propensity_behaviour_support_maintenance"]
+        self.sigma_propensity_varenicline_maintenance = self.props["sigma_propensity_varenicline_maintenance"]
+        self.year_of_current_time_step = self.props["year_of_baseline"] 
         self.year_number = 0
         self.current_time_step = 0
         self.months_counter = 0 #count the number of months of the current year
@@ -436,7 +445,7 @@ class SmokingModel(Model):
     def init_agents(self):
         '''initialize the baseline agent population at tick 0'''
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
-        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
+        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitMaintenanceTheory
         from smokingcessation.stpm_theory import DemographicsSTPMTheory, RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
 
@@ -545,10 +554,10 @@ class SmokingModel(Model):
                 rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
             if self.quitting_behaviour=='COMB':
                 qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
-                qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
+                qsuccess_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
             else:#STPM
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
-                qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
+                qsuccess_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
             self.context.add(Person(
@@ -578,6 +587,11 @@ class SmokingModel(Model):
                     number_of_recent_quit_attempts=baseline_agents.at[i, 'bNumberOfRecentQuitAttempts'],
                     months_since_quit=baseline_agents.at[i, 'bMonthsSinceQuit'],
                     states=states,
+                    propensity_receive_GP_advice_attempt=np.random.normal(0,self.sigma_propensity_GP_advice_attempt),
+                    propensity_NRT_attempt=np.random.normal(0,self.sigma_propensity_NRT_attempt),
+                    propensity_NRT_maintenance = np.random.normal(0,self.sigma_propensity_NRT_maintenance),
+                    propensity_behaviour_support_maintenance = np.random.normal(0,self.sigma_propensity_behaviour_support_maintenance),
+                    propensity_varenicline_maintenance = np.random.normal(0,self.sigma_propensity_varenicline_maintenance),
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
                     quit_success_theory=qsuccess_theory,
@@ -794,7 +808,7 @@ class SmokingModel(Model):
     def init_new_16_yrs_agents(self):
         '''initialize new 16 years old agents in every January from 2012'''
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
-        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitSuccessTheory
+        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitMaintenanceTheory
         from smokingcessation.stpm_theory import DemographicsSTPMTheory, RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
     
@@ -910,10 +924,10 @@ class SmokingModel(Model):
                 rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
             if self.quitting_behaviour=='COMB':
                 qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
-                qsuccess_theory = QuitSuccessTheory(Theories.QUITSUCCESS, self, i)
+                qsuccess_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
             else:#STPM
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
-                qsuccess_theory = QuitSTPMTheory(Theories.QUITSUCCESS, self)
+                qsuccess_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
             id= self.size_of_population*random.randint(2,6) + random.randint(3, 1000) * random.randint(2, 1000) #create a random id which is unique to this agent
@@ -943,6 +957,11 @@ class SmokingModel(Model):
                     years_since_quit=new_agents.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
                     number_of_recent_quit_attempts=new_agents.at[i, 'bNumberOfRecentQuitAttempts'],
                     months_since_quit=new_agents.at[i, 'bMonthsSinceQuit'],
+                    propensity_receive_GP_advice_attempt=np.random.normal(0,self.sigma_propensity_GP_advice_attempt),
+                    propensity_NRT_attempt=np.random.normal(0,self.sigma_propensity_NRT_attempt),
+                    propensity_NRT_maintenance = np.random.normal(0,self.sigma_propensity_NRT_maintenance), 
+                    propensity_behaviour_support_maintenance = np.random.normal(0,self.sigma_propensity_behaviour_support_maintenance),
+                    propensity_varenicline_maintenance = np.random.normal(0,self.sigma_propensity_varenicline_maintenance),                    
                     states=states,
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
@@ -966,23 +985,14 @@ class SmokingModel(Model):
     def do_per_tick(self):
         self.current_time_step += 1
         self.months_counter += 1
-        if self.current_time_step == 13:
-            self.year_of_current_time_step += 1
-            self.year_number += 1
-            #initialize new 16 years old agents in January of 2012
-            new_agents=self.init_new_16_yrs_agents()
-            if self.running_mode == 'debug':
-                 self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population())+'\n')
-                 print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population()))
-        elif self.current_time_step > 13:
-            if self.months_counter == 12: #each tick is 1 month
+        if self.current_time_step >= 13:
+            if self.months_counter == 1: #January from 2012 (tick 13)
                self.year_of_current_time_step += 1
                self.year_number += 1
-               #initialize new 16 years old agents in January of 2013,...,final year
-               new_agents=self.init_new_16_yrs_agents()
-               if self.running_mode == 'debug':
-                  self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population())+'\n')
-                  print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population()))
+               new_agents=self.init_new_16_yrs_agents() #initialize new 16 years old agents in January of 2012,...,final year
+            if self.running_mode == 'debug':
+                self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population())+'\n')
+                print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of current population: '+str(self.get_size_of_population()))
         self.format_month_and_year()
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}

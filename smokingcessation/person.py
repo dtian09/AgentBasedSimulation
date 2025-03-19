@@ -34,6 +34,11 @@ class Person(MicroAgent):
                  number_of_recent_quit_attempts = None,
                  months_since_quit=None,
                  years_since_quit=None,
+                 propensity_receive_GP_advice_attempt=None,
+                 propensity_NRT_attempt=None,
+                 propensity_NRT_maintenance = None,
+                 propensity_behaviour_support_maintenance = None,
+                 propensity_varenicline_maintenance = None,
                  reg_smoke_theory=None,
                  quit_attempt_theory=None,
                  quit_success_theory=None,
@@ -85,6 +90,11 @@ class Person(MicroAgent):
         self.eCig_diff_subgroup=None
         self.preQuitAddictionStrength=None
         #pPercentile #range: [1,100]. percentile of quantity of cigarettes smoked per day
+        self.propensity_receive_GP_advice_attempt = propensity_receive_GP_advice_attempt
+        self.propensity_NRT_attempt = propensity_NRT_attempt
+        self.propensity_NRT_maintenance = propensity_NRT_maintenance 
+        self.propensity_behaviour_support_maintenance = propensity_behaviour_support_maintenance
+        self.propensity_varenicline_maintenance = propensity_varenicline_maintenance
         if ecig_use == 1 and ecig_type == 1:
             self.ecig_type=eCigType.Disp
         elif ecig_use == 1 and ecig_type == 0:

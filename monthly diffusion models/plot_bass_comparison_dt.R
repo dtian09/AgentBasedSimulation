@@ -1,3 +1,4 @@
+#plot the predictions of diffusion models (Bass models) of ABM and those of the R diffusion models on the same plots for verification.
 library(ggplot2) #for plotting
 library(scales) #for date format
 library(dplyr) # for data manipulation
