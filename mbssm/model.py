@@ -1,9 +1,12 @@
+'''
+definition of Model abstract class
+'''
+
 from __future__ import annotations
 from typing import Dict, List
 from abc import ABC, abstractmethod
 import repast4py
 from mbssm.macro_entity import MacroEntity
-
 
 class Model(ABC):
 

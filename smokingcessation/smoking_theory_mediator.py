@@ -18,10 +18,12 @@ class SmokingTheoryMediator(TheoryMediator):
                 raise ValueError(f'{theory.name} must be an instance of the class Theories.')
             self.theory_map[theory.name] = theory
     
-    def mediate_situation(self, agent: Person):
-        uid=agent.uid
-        self.theory_map[Theories.DemographicsSTPM].do_situation(agent)#this agent may be killed
-        if uid not in self.theory_map[Theories.DemographicsSTPM].smoking_model.agents_to_kill:#this agent is not to be killed
+    def mediate_situation(self, agent: Person, do_smoking_behaviour_mechanisms=True):
+        '''
+        if do_smoking_behaviour_mechanisms = True, do situational mechanism of the behaviour model
+        if do_smoking_behaviour_mechanisms = False, do situational mechanism of DemographicsSTPMTheory i.e. if December, kill some agents and increase the ages of the surving ones etc.
+        '''
+        if do_smoking_behaviour_mechanisms==True:
             cstate = agent.get_current_state()
             if cstate == AgentState.NEVERSMOKE:
                 self.theory_map[Theories.REGSMOKE].do_situation(agent)
@@ -38,7 +40,9 @@ class SmokingTheoryMediator(TheoryMediator):
                 self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
             else:
                 raise ValueError(f'{cstate} is not an acceptable agent state')
-
+        else: 
+            self.theory_map[Theories.DemographicsSTPM].do_situation(agent)#this agent may be killed
+            
     def mediate_action(self, agent: Person):
         """
         A smoker transitions to an ex-smoker after making a quit attempt then, maintaining quit (abstinence) for 11 months.
@@ -58,13 +62,13 @@ class SmokingTheoryMediator(TheoryMediator):
                 if p >= threshold {A stays as an ongoing quitter1 at t+1; k=k+1} else { A transitions to a smoker at t+1}
             for an ongoing quitter1,
                  run the quit success theory to calculate the probability of maintaining abstinence;
-                if p >= threshold { A transitions to an ongoing quitter2 at t+1; k=0;} else {A transitions to a smoker at t+1}
+                if p >= threshold { A transitions to an ongoing quitter2 at t+1; k=0;} else { A transitions to a smoker at t+1}
             ...
             for an ongoing quitter11,
                  run the quit success theory to calculate the probability of maintaining abstinence;
                  if p >= threshold { A transitions to an ex-smoker at t+1; k=0;} else {A transitions to a smoker at t+1}
             for an ex-smoker A, run relapse theory of STPM theory to calculate the probability of relapse;
-                if p>= threshold {A transitions to a smoker at t+1} else { A stays as ex-smoker at t+1}
+                if p >= threshold {A transitions to a smoker at t+1} else { A stays as ex-smoker at t+1}
             where threshold is a pseudo-random number drawn from uniform(0,1)
         """
         cstate = agent.get_current_state()

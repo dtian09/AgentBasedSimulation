@@ -1,7 +1,9 @@
+'''
+definition of MacroEntity abstract class
+'''
 from __future__ import annotations
 from typing import List
 from abc import abstractmethod, ABC
-
 
 class MacroEntity:
     def __init__(self):

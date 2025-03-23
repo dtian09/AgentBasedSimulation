@@ -1,3 +1,7 @@
+'''
+definition of STPMTheory abstract class and and its subclasses: DemographicsSTPMTheory, RelapseSTPMTheory, Initiation and QuitSTPMTheory
+STPMTheory represents the STPM model.
+'''
 import pandas as pd
 import random
 from abc import abstractmethod
@@ -7,7 +11,7 @@ from config.definitions import Theories
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 from smokingcessation.smoking_model import SmokingModel
-#import ipdb #debugger
+
 class STPMTheory(Theory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name)
@@ -20,6 +24,7 @@ class STPMTheory(Theory):
     @abstractmethod
     def do_action(self, agent: MicroAgent):
         pass
+
 class DemographicsSTPMTheory(STPMTheory):
     def __init__(self, name, smoking_model: SmokingModel):
         super().__init__(name, smoking_model)
@@ -55,7 +60,6 @@ class DemographicsSTPMTheory(STPMTheory):
                                 (self.smoking_model.death_prob["smk.state"] == state)
                                 ]
                 matched_row = pd.DataFrame(matched_row)
-                #ipdb.set_trace()#debug break point
                 if len(matched_row) > 0:
                     col_index = matched_row.columns.get_loc("qx")
                     self.prob_behaviour = float(matched_row.iat[0, col_index])
@@ -66,6 +70,46 @@ class DemographicsSTPMTheory(STPMTheory):
                     self.smoking_model.agents_to_kill.add(agent.uid)
                 else:
                     agent.increment_age()
+            #update bCigConsumption of this agent based on sex, age, year, SEP, percentile number if it is not killed
+            if agent.uid not in self.smoking_model.agents_to_kill:
+                if self.smoking_model.year_of_current_time_step < 2025:
+                    matched_cigconsumption = self.smoking_model.cig_consumption_percentiles_data[
+                                (self.smoking_model.cig_consumption_percentiles_data["year"] == self.smoking_model.year_of_current_time_step) &
+                                (self.smoking_model.cig_consumption_percentiles_data["age"] == agent.p_age.get_value()) &
+                                (self.smoking_model.cig_consumption_percentiles_data["sex"] == agent.p_gender.get_value()) &
+                                (self.smoking_model.cig_consumption_percentiles_data["pSEP"] == agent.p_sep.get_value()) &
+                                (self.smoking_model.cig_consumption_percentiles_data["perc_num"] == agent.p_percentile.get_value())
+                                ]
+                else:#from 2025 onwards, use bCigConsumption of 2024 and apply a multiplier to it.
+                    matched_cigconsumption = self.smoking_model.cig_consumption_percentiles_data[
+                                (self.smoking_model.cig_consumption_percentiles_data["year"] == 2024) &
+                                (self.smoking_model.cig_consumption_percentiles_data["age"] == agent.p_age.get_value()) &
+                                (self.smoking_model.cig_consumption_percentiles_data["sex"] == agent.p_gender.get_value()) &
+                                (self.smoking_model.cig_consumption_percentiles_data["pSEP"] == agent.p_sep.get_value()) &
+                                (self.smoking_model.cig_consumption_percentiles_data["perc_num"] == agent.p_percentile.get_value())
+                                ]
+                    matched_cigconsumptiontrend = self.smoking_model.attempt_exogenous_dynamics_data[
+                                (self.smoking_model.attempt_exogenous_dynamics_data["year"] == self.smoking_model.year_of_current_time_step) &
+                                (self.smoking_model.attempt_exogenous_dynamics_data["age"] == agent.p_age.get_value()) &
+                                (self.smoking_model.attempt_exogenous_dynamics_data["sex"] == agent.p_gender.get_value()) &
+                                (self.smoking_model.attempt_exogenous_dynamics_data["social grade"] == agent.p_sep.get_value())
+                                ]
+                    matched_cigconsumptiontrend = pd.DataFrame(matched_cigconsumptiontrend)
+                matched_cigconsumption = pd.DataFrame(matched_cigconsumption)
+                #ipdb.set_trace()#debug break point
+                if len(matched_cigconsumption) > 0:
+                    if self.smoking_model.year_of_current_time_step < 2025:
+                        col_index = matched_cigconsumption.columns.get_loc("bCigConsumption")
+                        agent.b_cig_consumption = float(matched_cigconsumption.iat[0, col_index])
+                    else:
+                        col_index = matched_cigconsumption.columns.get_loc("bCigConsumption")
+                        if len(matched_cigconsumptiontrend) > 0:
+                            col_index2 = matched_cigconsumptiontrend.columns.get_loc("bCigConsumptionTrend") #the multiplier
+                            agent.b_cig_consumption = float(matched_cigconsumption.iat[0, col_index])*float(matched_cigconsumptiontrend.iat[0, col_index2])
+                        else:#no matched bCigConsumptionTrend (multiplier)
+                            agent.b_cig_consumption = float(matched_cigconsumption.iat[0, col_index])
+                else:#no matched bCigConsumption and don't update agent's bCigConsumption
+                    pass
 
     def do_action(self, agent: MicroAgent):        
         pass    

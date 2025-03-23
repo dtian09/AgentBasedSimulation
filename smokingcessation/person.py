@@ -1,3 +1,7 @@
+'''
+definition of the Person class  which represents an agent in the ABM. The Person class is a subclass of the MicroAgent class. 
+'''
+
 import random
 from typing import List
 from config.definitions import *
@@ -5,7 +9,7 @@ from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
 import config.global_variables as g
-#import ipdb
+
 class Person(MicroAgent):
     def __init__(self,
                  smoking_model: SmokingModel,
@@ -34,6 +38,7 @@ class Person(MicroAgent):
                  number_of_recent_quit_attempts = None,
                  months_since_quit=None,
                  years_since_quit=None,
+                 perc_num=None, #range: [1,100]. percentile of quantity of cigarettes smoked per day
                  propensity_receive_GP_advice_attempt=None,
                  propensity_NRT_attempt=None,
                  propensity_NRT_maintenance = None,
@@ -53,7 +58,6 @@ class Person(MicroAgent):
         self.b_number_of_recent_quit_attempts = number_of_recent_quit_attempts
         self.b_years_since_quit = years_since_quit        
         self.months_counter_ex_smoker = 0  # count number of consecutive months when the self stays as an ex-smoker
-        #ipdb.set_trace()#debug
         self.init_behaviour_buffer() #initialize the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
         self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
@@ -88,8 +92,9 @@ class Person(MicroAgent):
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
         self.eCig_diff_subgroup=None
-        self.preQuitAddictionStrength=None
-        #pPercentile #range: [1,100]. percentile of quantity of cigarettes smoked per day
+        self.prequit_addiction_strength=None
+        self.p_percentile = PersonalAttribute(name='pPercentile') 
+        self.p_percentile.set_value(perc_num) 
         self.propensity_receive_GP_advice_attempt = propensity_receive_GP_advice_attempt
         self.propensity_NRT_attempt = propensity_NRT_attempt
         self.propensity_NRT_maintenance = propensity_NRT_maintenance 
@@ -124,7 +129,7 @@ class Person(MicroAgent):
             self.p_expenditure.add_level2_attribute(reg_smoke_theory.level2_attributes['oExpenditurePerStick'])
             self.p_expenditure.set_value(expenditure)
         if quitting_behaviour=='COMB':#if quit attempt COM-B model and quit success COM-B model are used by this ABM, add their Level 2 attributes associated with the personal attributes to the personal attributes' lists
-            self.preQuitAddictionStrength=quit_attempt_theory.level2_attributes['cCigAddictStrength'].get_value()
+            self.prequit_addiction_strength=quit_attempt_theory.level2_attributes['cCigAddictStrength'].get_value()
             self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
             self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
             self.p_age.set_value(age)
@@ -153,9 +158,13 @@ class Person(MicroAgent):
          else:
              self.p_difficulty_of_access.set_value(self.smoking_model.age_of_sale - self.p_age.get_value())
 
-    #def update_dynamic_variables(self): update dynamic personal attributes and other attributes e.g. bCigConsumption
-        #call update_difficulty_of_access()
-        #update bCigConsumption
+    def do_situation(self,do_smoking_behaviour_mechanisms=True):
+        '''
+        if do_smoking_behaviour_mechanisms = True, do situational mechanism of the behaviour model
+        if do_smoking_behaviour_mechanisms = False, do situational mechanism of DemographicsSTPMTheory i.e. if December, kill some agents and increase the ages of the surving ones etc.
+        '''
+        if self.mediator is not None:
+            self.mediator.mediate_situation(self,do_smoking_behaviour_mechanisms=do_smoking_behaviour_mechanisms)
 
     def init_behaviour_buffer(self):
         """
@@ -570,6 +579,4 @@ class Person(MicroAgent):
                 self.smoking_model.ecig_diff_subgroups[eCigDiffSubGroup.Neversmoked_over1991].add(self.get_id())
                 self.eCig_diff_subgroup = eCigDiffSubGroup.Neversmoked_over1991
         else:
-               self.eCig_diff_subgroup = None #this agent not in any ecig subgroup                
-                           
-        
+               self.eCig_diff_subgroup = None #this agent not in any ecig subgroup             

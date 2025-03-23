@@ -85,26 +85,24 @@ class PersonalAttribute:
 
 
 if __name__ == '__main__':
+    '''
+    the code below tests Level2AttributeInt and PersonalAttribute classes
 
+    running command: python attribute.py
+    '''
     o = Level2AttributeInt(name='o_age')
     o2 = Level2AttributeInt(name='c_age')
     o3 = Level2AttributeInt(name='m_age')
-    mydict = {'o_age': o, 'c_age': o2, 'm_age': o3}
     p = PersonalAttribute(name='p_age')
     p.add_level2_attribute(o)
     p.add_level2_attribute(o2)
     p.add_level2_attribute(o3)
-    print('list')
+    print('values of Level 2 attributes before setting value of p')
     for i in range(3):
-        print(p.l2att[i].get_value())
-    print('dict')
-    for key in ['o_age', 'c_age', 'm_age']:
-        print(mydict[key].get_value())
+        print(p.list[i].get_value())
     p.set_value(65)
     print('##########')
-    print('list')
+    print('values of Level 2 attributes after setting value of p')
     for i in range(3):
-        print(p.l2att[i].get_value())
-    print('dict')
-    for key in ['o_age', 'c_age', 'm_age']:
-        print(mydict[key].get_value())
+        print(p.list[i].get_value())
+    

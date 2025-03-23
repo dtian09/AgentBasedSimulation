@@ -1,3 +1,6 @@
+'''
+define the names of e-cigarette types, subgroups, theories, agent states and behaviours as integers (constants)
+'''
 import os
 from enum import Enum, IntEnum
 
@@ -49,12 +52,13 @@ class Theories(Enum):
     RELAPSESSTPM = 4
     DemographicsSTPM = 5
 
-#class Regulators(Enum):
-#    """
-#    Enum class that lists the available regulators of macro entities
-#    """
-#    eCigDiffReg = 1
-#    SocialNetworkReg = 2 
+class Regulators(Enum):
+    """
+    Enum class that lists the available regulators of macro entities
+    """
+    eCigDiffReg = 1
+    geoSmokPrevReg = 2
+    SocialNetworkReg = 3
 
 class AgentState(Enum):
     """

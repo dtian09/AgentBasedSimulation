@@ -1,10 +1,14 @@
+'''
+definition of eCigDiffusionRegulator class that is a subclass of Regulator abstract class.
+'''
+
 from mbssm.macro_entity import Regulator, MacroEntity
 from smokingcessation.smoking_model import SmokingModel
-from config.definitions import eCigType
+from config.definitions import eCigType, Regulators
 
 class eCigDiffusionRegulator(Regulator):
     def __init__(self, smoking_model : SmokingModel):
-        super().__init__('eCigDiffusionRegulator')
+        super().__init__(Regulators.eCigDiffReg)#name of the e-cigarette regulator
         self.smoking_model=smoking_model
     
     def do_transformation(self, macro_entity: MacroEntity):
