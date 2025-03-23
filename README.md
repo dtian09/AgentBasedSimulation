@@ -1,21 +1,12 @@
 
 # ABM Version 0.9
 The ABM v0.9:
-- initializes new 16 years old agents on each January from 2012 (tick 13).
-- reads in regional smoking prevalence between 2011 and 2019 from a regional smoking prevalence data file
-- runs a mortality model on each December from 2011 (tick 12).
-- implements the exogenous dynamics:
-   - oReceiveGPAdvice (COM-B quit attempt theory)
-   - pPrescriptionNRT (COM-B quit attempt theory)
-   - pPrescriptionNRT (COM-B quit maintenance theory)
-   - cUseOfBehavioralSupport (COM-B quit maintenance theory)  
-   - pVareniclineUse (COM-B quit maintenance theory)  
 - runs the following smoking behavior models (chosen by the user):
    - 1) COM-B regular smoking theory or STPM initiation probabilities
    - 2) COM-B quit attempt theory or STPM quitting probabilities
    - 3) COM-B quit maintenance theory or STPM quitting probabilities
    - 4) STPM relapse probabilities
-- runs e-cigarette diffusion models of the following population subgroups: 
+- runs e-cigarette diffusion models (non-disposable and disposable e-cigarette models) of the following population subgroups: 
   - 1) ex-smoker < 1940
   - 2) ex-smoker1941-1960
   - 3) ex-smoker1961-1980
@@ -27,6 +18,15 @@ The ABM v0.9:
   - 9) smoker1981-1990
   - 10) smoker1991+
   - 11) neversmoked1991+
+- initializes new 16 years old agents on each January from 2012 (tick 13).
+- reads in regional smoking prevalence between 2011 and 2019 from a regional smoking prevalence data file
+- runs a mortality model on each December from 2011 (tick 12).
+- implements the exogenous dynamics:
+   - oReceiveGPAdvice (COM-B quit attempt theory)
+   - pPrescriptionNRT (COM-B quit attempt theory)
+   - pPrescriptionNRT (COM-B quit maintenance theory)
+   - cUseOfBehavioralSupport (COM-B quit maintenance theory)  
+   - pVareniclineUse (COM-B quit maintenance theory)  
 
 The non-disposable e-cigarette diffusion models start on January 2010. The disposable e-cigarette diffusion models start on January 2021. The subgroups which used both non-disposable and disposable e-cigarette from January 2021 are ex-smoker1961-1980, ex-smoker1981-1990, ex-smoker1991+, smoker1941-1960, smoker1961-1980, smoker1981-1990 and smoker1991+. The subgroups which only used non-disposable e-cigarette from January 2010 are ex-smoker <1940, ex-smoker1941-1960 and smoker <1940. The neversmoked1991+ only used disposable e-cigarette from January 2021. 
 
@@ -86,12 +86,15 @@ pip install numpy pandas
 ### 3. Download input data files
 1. Download the following [data files](https://drive.google.com/drive/u/1/folders/1HVtjLumfBiwaYsj0k9p_YA8DKIror6Jx) under the 'data' folder:
 
-- data_synth13_02_2025.csv
-- regional_smoking_trends_data.csv
+- data_synth20_03_2025_v2.csv
 - initiation_prob1month_STPM.csv
-- relapse_prob1month_STPM.csv
 - quit_prob1month_STPM.csv
-- death_probs_abm_integer.csv
+- relapse_prob1month_STPM.csv
+- regional_smoking_trends_data.csv
+- death_probs_abm_integers.csv
+- sts_cig_consumption_percentiles20_03_25.csv
+- table_attempts_dynamic_extended_integers.csv
+- table_maintenance_dynamic_extended_integers.csv
 
 2. Download the [monthly_diffusion_parameters.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) and [monthly_bass_observed_predicted.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) under the 'monthly diffusion models' folder.
 
