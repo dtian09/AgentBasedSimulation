@@ -7,13 +7,13 @@ The ABM v0.9:
 - implements the exogenous dynamics:
    - oReceiveGPAdvice (COM-B quit attempt theory)
    - pPrescriptionNRT (COM-B quit attempt theory)
-   - pPrescriptionNRT (COM-B quit success theory)
-   - cUseOfBehavioralSupport (COM-B quit success theory)  
-   - pVareniclineUse (COM-B quit success theory)  
-- runs the following smoking behavior models:
+   - pPrescriptionNRT (COM-B quit maintenance theory)
+   - cUseOfBehavioralSupport (COM-B quit maintenance theory)  
+   - pVareniclineUse (COM-B quit maintenance theory)  
+- runs the following smoking behavior models (chosen by the user):
    - 1) COM-B regular smoking theory or STPM initiation probabilities
    - 2) COM-B quit attempt theory or STPM quitting probabilities
-   - 3) COM-B quit success theory or STPM quitting probabilities
+   - 3) COM-B quit maintenance theory or STPM quitting probabilities
    - 4) STPM relapse probabilities
 - runs e-cigarette diffusion models of the following population subgroups: 
   - 1) ex-smoker < 1940
@@ -114,7 +114,7 @@ Set the weights (betas) of the Level 2 attributes of the COM-B regular smoking m
 
 Set the smoking behavior model for initiating regular smoking, making a quit attempt and quitting successfully.
 
-For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit success theory for quitting successfully and run the ABM in 'debug' mode (output logfile.txt containing detailed information about the simulation) or 'normal' mode (no logfile.txt), set the following parameters: 
+For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit maintenance theory for quitting successfully and run the ABM in 'debug' mode (output logfile.txt containing detailed information about the simulation) or 'normal' mode (no logfile.txt), set the following parameters: 
 
 - regular_smoking_behaviour: "STPM"
 - quitting_behaviour: "COMB"
@@ -147,13 +147,13 @@ ABM outputs calibration targets in the following files under the 'output' folder
 
 Additionally, when running in the 'debug mode', the following files are output:
 
-- logfile.txt (debugging information including the agents' statistics at each time step when the ABM is in debug mode)
+- logfile.txt (detailed information of the simulation including the agents' statistics)
 - prevalence_of_smoking.csv (the smoking prevalence at each time step)
 - Exsmoker1981_1990.csv etc. (the e-cigarette prevalence predicted by the diffusion models)
 
 ## Generate 2-D Plots of E-cigarette Prevalence (Output of Diffusion Models)
 
-To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_1990.csv etc. run the command:
+To generate plots (ecig_prevalence_Smoker_over1991.jpeg etc.) from Exsmoker1981_1990.csv etc. (outputs of 'debug mode') run the command:
 ```
 python plot_annual_ecig_diffusions.py
 ```
