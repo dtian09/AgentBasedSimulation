@@ -20,7 +20,7 @@ import config.global_variables as g
 import os
 import random
 import gc
-#import ipdb #python debugger, https://www.geeksforgeeks.org/using-ipdb-to-debug-python-code/
+#import ipdb #python debugger https://wangchuan.github.io/coding/2017/07/12/ipdb-cheat-sheet.html#command-cheatsheet
 
 class SmokingModel(Model):
     
@@ -81,17 +81,17 @@ class SmokingModel(Model):
         if self.running_mode == 'debug':
             print('tickInterval: ',self.tickInterval)
         self.lbda=self.props["lambda"] #cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = tick interval (weeks)
-        self.alpha=self.props["alpha"] #probability of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = tick interval (weeks)
+        self.alpha=self.props["alpha"] #probability of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit maintenancees and t = tick interval (weeks)
         self.beta=self.props["beta"]    
         self.runner: SharedScheduleRunner = init_schedule_runner(comm)
-        #hashmaps (dictionaries) to store betas (coefficients) of the COMB formula of regular smoking theory, quit attempt theory and quit success theory
+        #hashmaps (dictionaries) to store betas (coefficients) of the COMB formula of regular smoking theory, quit attempt theory and quit maintenance theory
         self.uptake_betas = {}
         self.attempt_betas = {}  # hashmap to store betas of the COMB formula of quit attempt theory
-        self.success_betas = {}  # hashmap to store betas of the COMB formula of quit success theory
+        self.maintenance_betas = {}  # hashmap to store betas of the COMB formula of quit maintenance theory
         self.store_betas_of_comb_formulae_into_maps()        
         self.level2_attributes_of_uptake_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of regular smoking theory
         self.level2_attributes_of_attempt_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of quit attempt theory
-        self.level2_attributes_of_success_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of quit success theory
+        self.level2_attributes_of_maintenance_formula = {'C': [], 'O': [], 'M': []}#hashmap to store the level 2 attributes of the COMB formula of quit maintenance theory
         self.store_level2_attributes_of_comb_formulae_into_maps()
         self.regular_smoking_behaviour = self.props['regular_smoking_behaviour'] #COMB or STPM
         self.quitting_behaviour = self.props['quitting_behaviour'] #COMB or STPM
@@ -124,7 +124,7 @@ class SmokingModel(Model):
                 raise ValueError(f'invalid regular_smoking_behaviour: {self.regular_smoking_behaviour}\nvalid behaviour model: COMB or STPM')
             if self.quitting_behaviour=='COMB':
                 print('COM-B quit attempt model, COM-B quit maintenance model, ')
-                self.logfile.write('the quit attempt COM-B model, quit success COM-B model ')
+                self.logfile.write('the quit attempt COM-B model, quit maintenance COM-B model ')
             elif self.quitting_behaviour=='STPM':
                 print('STPM quitting transition probabilities ')
                 self.logfile.write('the STPM quitting transition probabilities ')
@@ -368,10 +368,10 @@ class SmokingModel(Model):
         return df.fillna(0)
 
     def store_betas_of_comb_formulae_into_maps(self):
-        """store the betas (coefficients) of COMB formulae for regular smoking, quit attempt and quit success
+        """store the betas (coefficients) of COMB formulae for regular smoking, quit attempt and quit maintenance
         theories into hashmaps
         input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
-        output: uptakeBetas, attemptBetas, successBetas hashmaps with keys={level 2 attribute, level 1 attribute}, each value=beta
+        output: uptakeBetas, attemptBetas, maintenanceBetas hashmaps with keys={level 2 attribute, level 1 attribute}, each value=beta
         """
         import re
         for key, value in self.props.items():
@@ -391,18 +391,18 @@ class SmokingModel(Model):
                         if m is not None:
                             self.attempt_betas['bias'] = value
                         else:
-                            m = re.match('^success\.(\w+)\.beta$', key)
+                            m = re.match('^maintenance\.(\w+)\.beta$', key)
                             if m is not None:
-                                self.success_betas[m.group(1)] = value
+                                self.maintenance_betas[m.group(1)] = value
                             else:
-                                m = re.match('^success\.bias$', key)
+                                m = re.match('^maintenance\.bias$', key)
                                 if m is not None:
-                                    self.success_betas['bias'] = value
+                                    self.maintenance_betas['bias'] = value
 
     def store_level2_attributes_of_comb_formulae_into_maps(self):
         """
         input: self.pros, a hashmap with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
-        output: hashmaps level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfSuccessFormula
+        output: hashmaps level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfMaintenanceFormula
                 with keys={C, O, M} and each value=a list of associated level 2 attributes of key
         """
         import re
@@ -445,22 +445,22 @@ class SmokingModel(Model):
                                         'attempt formula')
                                 raise ValueError(level2attribute + sstr)
                 else:
-                    m = re.match('^success\.([com]{1}\w+)\.beta$', key)
-                    if m is not None:  # match success.cAlcoholConsumption.beta, success.oAlcoholConsumption.beta or success.mAlcoholConsumption.beta
+                    m = re.match('^maintenance\.([com]{1}\w+)\.beta$', key)
+                    if m is not None:  # match maintenance.cAlcoholConsumption.beta, maintenance.oAlcoholConsumption.beta or maintenance.mAlcoholConsumption.beta
                         level2attribute = m.group(1)
                         m = re.match('^c\w+', level2attribute)
                         if m is not None:  # match cAlcoholConsumption
-                            self.level2_attributes_of_success_formula['C'].append(level2attribute)
+                            self.level2_attributes_of_maintenance_formula['C'].append(level2attribute)
                         else:
                             m = re.match('^o\w+', level2attribute)
                             if m is not None:  # match oAlcoholConsumption
-                                self.level2_attributes_of_success_formula['O'].append(level2attribute)
+                                self.level2_attributes_of_maintenance_formula['O'].append(level2attribute)
                             else:
                                 m = re.match('^m\w+', level2attribute)
                                 if m is not None:  # match oAlcoholConsumption
-                                    self.level2_attributes_of_success_formula['M'].append(level2attribute)
+                                    self.level2_attributes_of_maintenance_formula['M'].append(level2attribute)
                                 else:
-                                    sstr = (' does not match patterns of level2attributes of C, O and M in quit success'
+                                    sstr = (' does not match patterns of level2attributes of C, O and M in quit maintenance'
                                             ' formula')
                                     raise ValueError(level2attribute + sstr)
     def init_agents(self):
@@ -575,10 +575,10 @@ class SmokingModel(Model):
                 rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
             if self.quitting_behaviour=='COMB':
                 qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
-                qsuccess_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
+                qmaintenance_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
             else:#STPM
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
-                qsuccess_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
+                qmaintenance_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
             self.context.add(Person(
@@ -616,10 +616,10 @@ class SmokingModel(Model):
                     propensity_varenicline_maintenance = np.random.normal(0,self.sigma_propensity_varenicline_maintenance),
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
-                    quit_success_theory=qsuccess_theory,
+                    quit_maintenance_theory=qmaintenance_theory,
                     regular_smoking_behaviour=self.regular_smoking_behaviour,
                     quitting_behaviour=self.quitting_behaviour))
-            mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory, demographics_theory])
+            mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qmaintenance_theory, relapse_stpm_theory, demographics_theory])
             agent = self.context.agent((i, self.type, self.rank))
             agent.set_mediator(mediator)
             self.population_counts[subgroup]+=1
@@ -638,7 +638,6 @@ class SmokingModel(Model):
         self.months_counter = 0
         self.current_time_step = 0
         self.init_agents()
-        #ipdb.set_trace()#debug break point
         self.size_of_population = self.get_size_of_population()
         #calculate the calibration targets of whole population counts and write into a csv file
         self.file_whole_population_counts=open(f'{ROOT_DIR}/output/whole_population_counts.csv','w')
@@ -787,6 +786,7 @@ class SmokingModel(Model):
         Before 2021, for each subgroup, calculate deltaEt (new adopters) of non-disposable ecig model
         From 2021, for those subgroups using both non-disposable ecig and disposable ecig, calculate deltaEt (new adopters) of non-disposable ecig model and calculate deltaEt (new adopters) of disposable ecig model 
                    for those subgroups using either non-disposable ecig or disposable ecig, calculate deltaEt (new adopters) of non-disposable ecig model or deltaEt (new adopters) of disposable ecig model as appropriate
+        Between 2011 and 2019, read in the geographic regional smoking prevalence of this month.
         '''
         if self.year_of_current_time_step < 2021:
            for diffusion_models in self.diffusion_models_of_this_tick.values():
@@ -965,10 +965,10 @@ class SmokingModel(Model):
                 rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
             if self.quitting_behaviour=='COMB':
                 qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
-                qsuccess_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
+                qmaintenance_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
             else:#STPM
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
-                qsuccess_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
+                qmaintenance_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
             id= self.size_of_population*random.randint(2,6) + random.randint(3, 1000) * random.randint(2, 1000) #generate an unique id for this agent
@@ -1007,10 +1007,10 @@ class SmokingModel(Model):
                     states=states,
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
-                    quit_success_theory=qsuccess_theory,
+                    quit_maintenance_theory=qmaintenance_theory,
                     regular_smoking_behaviour=self.regular_smoking_behaviour,
                     quitting_behaviour=self.quitting_behaviour))
-            mediator = SmokingTheoryMediator([demographics_theory, rsmoke_theory, qattempt_theory, qsuccess_theory, relapse_stpm_theory])
+            mediator = SmokingTheoryMediator([demographics_theory, rsmoke_theory, qattempt_theory, qmaintenance_theory, relapse_stpm_theory])
             agent = self.context.agent((id, self.type, self.rank))
             agent.set_mediator(mediator)
             self.population_counts[subgroup]+=1
@@ -1029,7 +1029,7 @@ class SmokingModel(Model):
 
     def do_per_tick(self):
         '''
-        do_per_tick is called at each tick from tick 1 to execute the mechanisms of the ABM.
+        do_per_tick is executed at each tick from tick 1 to execute the mechanisms of the ABM.
         '''
         self.current_time_step += 1
         self.months_counter += 1
@@ -1039,8 +1039,8 @@ class SmokingModel(Model):
                self.year_number += 1
                new_agents=self.init_new_16_yrs_agents() #initialize new 16 years old agents in January of 2012,...,final year
                if self.running_mode == 'debug':
-                    print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of population: '+str(self.get_size_of_population()))
-                    self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents added, size of population: '+str(self.get_size_of_population())+'\n')
+                    print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents are initialized, size of population: '+str(self.get_size_of_population()))
+                    self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents initialized, size of population: '+str(self.get_size_of_population())+'\n')
         self.format_month_and_year()
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
@@ -1078,8 +1078,8 @@ class SmokingModel(Model):
             print('tick '+str(self.current_time_step) + ', year: '+str(self.year_of_current_time_step)+': smoking prevalence=' + str(p) + '%.')      
             for subgroup,diffusion_models in self.diffusion_models_of_this_tick.items():
                 for diff_model in diffusion_models:
-                    self.logfile.write('diffusion model: subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+' e-cig_type='+str(diff_model.ecig_type)+', Et='+str(diff_model.Et)+'\n')
-                    self.logfile.write(F"ecig_Et: '{self.ecig_Et[subgroup]}'\n")
+                    self.logfile.write('e-cigarette diffusion model: e-cig_type='+str(diff_model.ecig_type)+', subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+', Et='+str(diff_model.Et)+'\n')
+                self.logfile.write(F"e-cigarette prevalence of this subgroup of each tick: '{self.ecig_Et[subgroup]}'\n")
             #self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
             if self.months_counter == 12:
                 sstr='killed '+str(len(self.agents_to_kill))+' agents'

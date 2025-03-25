@@ -1,11 +1,11 @@
 '''
-definition of MacroEntity abstract class
+definition of MacroEntity class, RegulatorMediator and Regulator abstract classes
 '''
 from __future__ import annotations
 from typing import List
 from abc import abstractmethod, ABC
 
-class MacroEntity:
+class MacroEntity():
     def __init__(self):
         self.macro_mediator = None
 
@@ -20,7 +20,6 @@ class MacroEntity:
         if self.macro_mediator is not None:
             self.macro_mediator.mediate_macro_macro(self)
 
-
 class RegulatorMediator(ABC):
     def __init__(self, regulator_list: List[Regulator]):
         self.regulator_list: List[Regulator] = regulator_list
@@ -32,7 +31,6 @@ class RegulatorMediator(ABC):
     @abstractmethod
     def mediate_macro_macro(self):
         pass
-
 
 class Regulator(ABC):
     def __init__(self, name):

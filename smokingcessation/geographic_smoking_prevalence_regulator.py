@@ -1,3 +1,6 @@
+'''
+definition of GeographicSmokingPrevalenceRegulator class which is a subclass of Regulator abstract class.
+'''
 from mbssm.macro_entity import Regulator, MacroEntity
 from smokingcessation.smoking_model import SmokingModel
 from config.definitions import eCigType, Regulators

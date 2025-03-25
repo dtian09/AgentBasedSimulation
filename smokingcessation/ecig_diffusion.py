@@ -1,3 +1,6 @@
+'''
+definition of eCigDiffusion class which is a subclass of the MacroEntity class.
+'''
 from mbssm.macro_entity import MacroEntity
 from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.person import Person

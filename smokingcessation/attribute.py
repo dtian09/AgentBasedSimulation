@@ -1,6 +1,9 @@
+'''
+definition of Level1Attribute, Level2Attribute, Level2AttributeInt, Level2AttributeFloat and PersonalAttribute classes
+and testing the values of the Level2AttributeInt objects o, o2 and o3 associated with the PersonalAttribute object p.
+'''
 from abc import abstractmethod, ABC
 from typing import List
-
 
 class Level2Attribute(ABC):
 
@@ -17,7 +20,6 @@ class Level2Attribute(ABC):
     def get_value(self):
         return self.value
 
-
 class Level2AttributeInt(Level2Attribute):
 
     def __init__(self, ontology_id: str = None, name: str = None, value: int = None):
@@ -30,7 +32,6 @@ class Level2AttributeInt(Level2Attribute):
     def get_value(self):
         return self._value
 
-
 class Level2AttributeFloat(Level2Attribute):
 
     def __init__(self, ontology_id: str = None, name: str = None, value: float = None):
@@ -42,7 +43,6 @@ class Level2AttributeFloat(Level2Attribute):
     
     def get_value(self):
         return self._value
-
 
 class Level1Attribute:
 
@@ -61,7 +61,6 @@ class Level1Attribute:
     
     def get_value(self):
         return self.value
-
 
 class PersonalAttribute:
 
@@ -83,10 +82,9 @@ class PersonalAttribute:
     def get_value(self):
         return self.value
 
-
 if __name__ == '__main__':
     '''
-    the code below tests Level2AttributeInt and PersonalAttribute classes
+    the code below tests the values of the Level2AttributeInt objects o, o2 and o3 associated with the PersonalAttribute object p.
 
     running command: python attribute.py
     '''
@@ -97,12 +95,12 @@ if __name__ == '__main__':
     p.add_level2_attribute(o)
     p.add_level2_attribute(o2)
     p.add_level2_attribute(o3)
-    print('values of Level 2 attributes before setting value of p')
+    print('The values of Level2AttributeInt objects o, o2 and o3 before setting the value of p:')
     for i in range(3):
         print(p.list[i].get_value())
     p.set_value(65)
     print('##########')
-    print('values of Level 2 attributes after setting value of p')
+    print('The values of Level2AttributeInt objects 0, o2 and o3 after setting the value of p:')
     for i in range(3):
         print(p.list[i].get_value())
     

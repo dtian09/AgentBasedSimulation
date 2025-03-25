@@ -179,8 +179,8 @@ class RelapseSTPMTheory(STPMTheory):
             agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.b_years_since_quit = 0
             if agent.smoking_model.quitting_behaviour=='COMB':
-                agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
-                agent.mediator.theory_map[Theories.QUITMAINTENANCE].level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
+                agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['cCigAddictStrength'].set_value(agent.prequit_addiction_strength)
+                agent.mediator.theory_map[Theories.QUITMAINTENANCE].level2_attributes['cCigAddictStrength'].set_value(agent.prequit_addiction_strength)
                 agent.mediator.theory_map[Theories.QUITATTEMPT].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
                 agent.mediator.theory_map[Theories.QUITMAINTENANCE].level2_attributes['mNonSmokerSelfIdentity'].set_value(0)
         else:

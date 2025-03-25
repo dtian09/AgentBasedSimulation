@@ -46,7 +46,7 @@ class Person(MicroAgent):
                  propensity_varenicline_maintenance = None,
                  reg_smoke_theory=None,
                  quit_attempt_theory=None,
-                 quit_success_theory=None,
+                 quit_maintenance_theory=None,
                  regular_smoking_behaviour=None,#regular smoking COMB model or STPM intiation transition probabilities
                  quitting_behaviour=None #quit attempt COMB model or STPM quitting transition probabilities
                  ):
@@ -109,8 +109,8 @@ class Person(MicroAgent):
         if regular_smoking_behaviour=='COMB':#if the regular smoking COMB model is used by the ABM, add its Level 2 attributes associated with the personal attributes to their lists
             self.p_age.add_level2_attribute(reg_smoke_theory.level2_attributes['oAge'])
             self.p_age.set_value(age)
-            self.p_difficulty_of_access = PersonalAttribute(name='pDifficultyOfAccess')       
-            self.p_difficulty_of_access.add_level2_attribute(reg_smoke_theory.level2_attributes['oDifficultyOfAccess'])
+            self.p_difficulty_of_access = PersonalAttribute(name='pDifficultyofAccess')       
+            self.p_difficulty_of_access.add_level2_attribute(reg_smoke_theory.level2_attributes['oDifficultyofAccess'])
             self.update_difficulty_of_access()
             self.p_gender.add_level2_attribute(reg_smoke_theory.level2_attributes['mGender'])
             self.p_gender.set_value(gender)
@@ -126,29 +126,29 @@ class Person(MicroAgent):
             self.p_alcohol_consumption.set_value(alcohol)
             self.p_ecig_use.add_level2_attribute(reg_smoke_theory.level2_attributes['cEcigaretteUse'])
             self.p_ecig_use.set_value(ecig_use)
-            self.p_expenditure.add_level2_attribute(reg_smoke_theory.level2_attributes['oExpenditurePerStick'])
+            self.p_expenditure.add_level2_attribute(reg_smoke_theory.level2_attributes['oPerceivedCostPerStick'])
             self.p_expenditure.set_value(expenditure)
-        if quitting_behaviour=='COMB':#if quit attempt COM-B model and quit success COM-B model are used by this ABM, add their Level 2 attributes associated with the personal attributes to the personal attributes' lists
+        if quitting_behaviour=='COMB':#if quit attempt COM-B model and quit maintenance COM-B model are used by this ABM, add their Level 2 attributes associated with the personal attributes to the personal attributes' lists
             self.prequit_addiction_strength=quit_attempt_theory.level2_attributes['cCigAddictStrength'].get_value()
-            self.p_age.add_level2_attribute(quit_success_theory.level2_attributes['cAge'])
+            self.p_age.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAge'])
             self.p_age.add_level2_attribute(quit_attempt_theory.level2_attributes['mAge'])
             self.p_age.set_value(age)
-            self.p_educational_level.add_level2_attribute(quit_success_theory.level2_attributes['oEducationalLevel'])
+            self.p_educational_level.add_level2_attribute(quit_maintenance_theory.level2_attributes['oEducationalLevel'])
             self.p_educational_level.set_value(educational_level)
-            self.p_sep.add_level2_attribute(quit_success_theory.level2_attributes['oSEP'])
+            self.p_sep.add_level2_attribute(quit_maintenance_theory.level2_attributes['oSEP'])
             self.p_sep.set_value(sep)
             self.p_social_housing.add_level2_attribute(quit_attempt_theory.level2_attributes['oSocialHousing'])
-            self.p_social_housing.add_level2_attribute(quit_success_theory.level2_attributes['oSocialHousing'])
+            self.p_social_housing.add_level2_attribute(quit_maintenance_theory.level2_attributes['oSocialHousing'])
             self.p_social_housing.set_value(social_housing)
-            self.p_mental_health_conditions.add_level2_attribute(quit_success_theory.level2_attributes['cMentalHealthConditions'])
+            self.p_mental_health_conditions.add_level2_attribute(quit_maintenance_theory.level2_attributes['cMentalHealthConditions'])
             self.p_mental_health_conditions.set_value(mental_health_conds)
-            self.p_alcohol_consumption.add_level2_attribute(quit_success_theory.level2_attributes['cAlcoholConsumption'])
+            self.p_alcohol_consumption.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAlcoholConsumption'])
             self.p_alcohol_consumption.set_value(alcohol)
-            self.p_ecig_use.add_level2_attribute(quit_success_theory.level2_attributes['cEcigaretteUse'])
+            self.p_ecig_use.add_level2_attribute(quit_maintenance_theory.level2_attributes['cEcigaretteUse'])
             self.p_ecig_use.set_value(ecig_use)
-            self.p_prescription_nrt.add_level2_attribute(quit_success_theory.level2_attributes['cPrescriptionNRT'])
+            self.p_prescription_nrt.add_level2_attribute(quit_maintenance_theory.level2_attributes['cPrescriptionNRT'])
             self.p_prescription_nrt.set_value(prescription_nrt)
-            self.p_varenicline_use.add_level2_attribute(quit_success_theory.level2_attributes['cVareniclineUse'])
+            self.p_varenicline_use.add_level2_attribute(quit_maintenance_theory.level2_attributes['cVareniclineUse'])
             self.p_varenicline_use.set_value(varenicline_use)
             
     def update_difficulty_of_access(self):
