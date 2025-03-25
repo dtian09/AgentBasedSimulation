@@ -107,22 +107,26 @@ pip install numpy pandas
 cd smokingABM
 ```
 ### Set the Parameters of the ABM using Model.yaml 
-Set the weights (betas) of the Level 2 attributes of the COM-B regular smoking model (uptake), quit attempt model and quit maintenance (success) model:
+In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). 
 
-- uptake.cAlcoholConsumption.beta: 0.46
-- uptake.oSocialHousing.beta: 0.57
-- attempt.mIntentionToQuit.beta: 0.52
-- etc.
-
-Set the smoking behavior model for initiating regular smoking, making a quit attempt and quitting successfully.
-
-For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit maintenance theory for quitting successfully and run the ABM in 'debug' mode (output logfile.txt containing detailed information about the simulation) or 'normal' mode (no logfile.txt), set the following parameters: 
+Set the smoking behavior models for initiating regular smoking, making a quit attempt and quitting successfully. For example, to use the STPM initiation probabilities for initiating regular smoking, COM-B quit attempt theory for making a quit attempt, COM-B quit maintenance theory for quitting successfully and run the ABM in 'debug' mode (output logfile.txt containing detailed information about the simulation) or 'normal' mode (no logfile.txt), set the following parameters: 
 
 - regular_smoking_behaviour: "STPM"
 - quitting_behaviour: "COMB"
 - ABM_mode: "debug"
 
-In model.yaml, each line specifies a parameter (left hand side of ":") and its value (right hand side of ":"). The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980 (Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)):
+Set the betas (weights) of the Level 2 attributes and Level 1 attributes of the COM-B regular smoking model (uptake), quit attempt model and quit maintenance model. For example,
+
+- uptake.cAlcoholConsumption.beta: 0.46
+- uptake.oSocialHousing.beta: 0.57
+- attempt.mIntentionToQuit.beta: 0.52
+- uptake.C.beta: 0.3
+- uptake.O.beta: 0.1
+- uptake.M.beta: 0.6
+- uptake.bias: 0.1
+- etc.
+  
+The following are example parameters settings of the disposable e-cigarette diffusion model for the subgroup ex-smoker 1961-1980 (Reference: [diffusion_parameters.csv](https://drive.google.com/file/d/1oZKEOfHmTnquZi_8lStQP7RuIGoLA_2Z/view)):
 
 - disp_diffusion_exsmoker_1961_1980.p: 0.022498286
 - disp_diffusion_exsmoker_1961_1980.q: 0.212213813
