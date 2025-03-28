@@ -164,26 +164,6 @@ deactivate
 ```
 ## Tools
 'tools' directory includes the following tools for plotting the e-cigarette prevalence (output of diffusion models in debug mode), displaying betas of Level 2 Attributes and Level 1 Attributes in Model.yaml Format and transforming input data files of the ABM:
-- plot_annual_ecig_diffusions.py: This tool generates 2-D plots of e-cigarette prevalence (output of diffusion models). The inputs are Exsmoker1981_1990.csv etc. (outputs of 'debug mode'). The plots ecig_prevalence_Smoker_over1991.jpeg etc. are saved under a folder 'output/plots'.  cd to 'tools' directory and run the command:
-```
-python plot_annual_ecig_diffusions.py
-```
-- plot_bass_comparison_dt.R: this R tool plots the predictions of diffusion models (Bass models) of ABM and those of the R diffusion models on the same plots for verification of the diffusion models of the ABM. Download the input data file: [monthly_bass_observed_predicted.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) (the predictions of the diffusions models in R) and set the correct path to this data file in the R code. This R tool can be run in [RStudio](https://posit.co/download/rstudio-desktop/).
-- display_l2attr_l1attr_beta_bias_for_model_yaml.py: This tool displays the betas of the Level 2 attributes of the data dictionary and Level 1 attributes (C, O and M) in the following format used by model.yaml:
-
-  - uptake.oAge.beta: 0.1
-  - attempt.oAge.beta: 0.1
-  - success.oAge.beta: 0.1
-  - uptake.C.beta: 0.1
-  - uptake.O.beta: 0.1
-  - uptake.M.beta: 0.1
-  - uptake.bias: 0.1
-  - etc.
-  
-The output displayed can then be copied into the model.yaml and the betas and biases can be set to the actual values. Run the command:
-```
-python display_l2attr_l1attr_beta_bias_for_model_yaml.py
-```
 - process_input_data_files.py: This tool performs the following data processing operations:
    - calculate the monthly initiation probability, monthly relapse probability and monthly quit probability from STPM annual probabilities.
    - replace 'Male' with 1 and 'Female' with 2 for sex variable
@@ -199,22 +179,42 @@ python display_l2attr_l1attr_beta_bias_for_model_yaml.py
    - input: table_attempts_dynamic_extended.csv, output: table_attempts_dynamic_extended_integers.csv or
    - input: table_maintenance_dynamic_extended.csv, output: table_maintenance_dynamic_extended_integers.csv
    
-How to use:
+  How to use:
 
-At the end of the code, call the relevant function and comment out the other function calls using '#').
-e.g. the following lines call calculate_monthly_initiation_probability to output initiation_prob1month_STPM.csv
+  At the end of the code, call the relevant function and comment out the other function calls using '#').
+  e.g. the following lines call calculate_monthly_initiation_probability to output initiation_prob1month_STPM.csv
 
-calculate_monthly_initiation_probability()
-#calculate_monthly_relapse_probability()
-#calculate_monthly_quit_probability()
-#replace_values_of_death_prob_file()
-#replace_values_of_exogenous_dynamics_file(replace_values_of_exogenous_dynamics_file(attempt_exogenous_dynamics_file,attempt_exogenous_dynamics_file2)
-#replace_values_of_exogenous_dynamics_file(replace_values_of_exogenous_dynamics_file(maintenance_exogenous_dynamics_file,maintenance_exogenous_dynamics_file2)
+  calculate_monthly_initiation_probability()
+  #calculate_monthly_relapse_probability()
+  #calculate_monthly_quit_probability()
+  #replace_values_of_death_prob_file()
+  #replace_values_of_exogenous_dynamics_file(replace_values_of_exogenous_dynamics_file(attempt_exogenous_dynamics_file,attempt_exogenous_dynamics_file2)
+  #replace_values_of_exogenous_dynamics_file(replace_values_of_exogenous_dynamics_file(maintenance_exogenous_dynamics_file,maintenance_exogenous_dynamics_file2)
 
-Run the command: 
-```
-python process_input_data_files.py
-```
+  Run the command: 
+  ```
+  python process_input_data_files.py
+  ```
+- display_l2attr_l1attr_beta_bias_for_model_yaml.py: This tool displays the betas of the Level 2 attributes of the data dictionary and Level 1 attributes (C, O and M) in the following format used by model.yaml:
+
+  - uptake.oAge.beta: 0.1
+  - attempt.oAge.beta: 0.1
+  - success.oAge.beta: 0.1
+  - uptake.C.beta: 0.1
+  - uptake.O.beta: 0.1
+  - uptake.M.beta: 0.1
+  - uptake.bias: 0.1
+  - etc.
+  
+  The output displayed can then be copied into the model.yaml and the betas and biases can be set to the actual values. Run the command:
+  ```
+  python display_l2attr_l1attr_beta_bias_for_model_yaml.py
+  ```
+- plot_annual_ecig_diffusions.py: This tool generates 2-D plots of e-cigarette prevalence (output of diffusion models). The inputs are Exsmoker1981_1990.csv etc. (outputs of 'debug mode'). The plots ecig_prevalence_Smoker_over1991.jpeg etc. are saved under a folder 'output/plots'.  cd to 'tools' directory and run the command:
+  ```
+  python plot_annual_ecig_diffusions.py
+  ```
+- plot_bass_comparison_dt.R: this R tool plots the predictions of diffusion models (Bass models) of ABM and those of the R diffusion models on the same plots for verification of the diffusion models of the ABM. Download the input data file: [monthly_bass_observed_predicted.csv](https://drive.google.com/drive/u/1/folders/1BL8bcnzSBpwPEKwiWj5TXH5-MRyNwOx2) (the predictions of the diffusions models in R) and set the correct path to this data file in the R code. This R tool can be run in [RStudio](https://posit.co/download/rstudio-desktop/).
 
 ## Licenses
 

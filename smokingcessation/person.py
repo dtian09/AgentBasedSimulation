@@ -44,6 +44,7 @@ class Person(MicroAgent):
                  propensity_NRT_maintenance = None,
                  propensity_behaviour_support_maintenance = None,
                  propensity_varenicline_maintenance = None,
+                 propensity_cytisine_maintenance = None,
                  reg_smoke_theory=None,
                  quit_attempt_theory=None,
                  quit_maintenance_theory=None,
@@ -100,6 +101,7 @@ class Person(MicroAgent):
         self.propensity_NRT_maintenance = propensity_NRT_maintenance 
         self.propensity_behaviour_support_maintenance = propensity_behaviour_support_maintenance
         self.propensity_varenicline_maintenance = propensity_varenicline_maintenance
+        self.propensity_cytisine_maintenance = propensity_cytisine_maintenance
         if ecig_use == 1 and ecig_type == 1:
             self.ecig_type=eCigType.Disp
         elif ecig_use == 1 and ecig_type == 0:

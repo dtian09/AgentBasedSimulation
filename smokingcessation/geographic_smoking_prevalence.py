@@ -5,7 +5,7 @@ from mbssm.macro_entity import MacroEntity
 from smokingcessation.smoking_model import SmokingModel
 import pandas as pd
 import sys
-import ipdb #python debugger
+#import ipdb #python debugger
 
 class GeographicSmokingPrevalence(MacroEntity):
     def __init__(self, smoking_model : SmokingModel):

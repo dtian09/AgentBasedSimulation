@@ -69,6 +69,7 @@ class SmokingModel(Model):
         self.sigma_propensity_NRT_maintenance = self.props["sigma_propensity_NRT_maintenance"]
         self.sigma_propensity_behaviour_support_maintenance = self.props["sigma_propensity_behaviour_support_maintenance"]
         self.sigma_propensity_varenicline_maintenance = self.props["sigma_propensity_varenicline_maintenance"]
+        self.sigma_propensity_cytisine_maintenance = self.props["sigma_propensity_cytisine_maintenance"]
         self.year_of_current_time_step = self.props["year_of_baseline"] 
         self.year_number = 0
         self.current_time_step = 0
@@ -370,7 +371,7 @@ class SmokingModel(Model):
     def store_betas_of_comb_formulae_into_maps(self):
         """store the betas (coefficients) of COMB formulae for regular smoking, quit attempt and quit maintenance
         theories into hashmaps
-        input: self.pros, a map with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
+        input: self.props, a hashmap representing model.yaml (key=a parameter e.g. uptake.cAlcoholConsumption.beta, value=value of the parameter e.g. 0.46)
         output: uptakeBetas, attemptBetas, maintenanceBetas hashmaps with keys={level 2 attribute, level 1 attribute}, each value=beta
         """
         import re
@@ -401,7 +402,7 @@ class SmokingModel(Model):
 
     def store_level2_attributes_of_comb_formulae_into_maps(self):
         """
-        input: self.pros, a hashmap with key=uptake.cAlcoholConsumption.beta, value=0.46 or key=uptake.bias value=1
+        input: self.props, a hashmap representing model.yaml (key=a parameter e.g. uptake.cAlcoholConsumption.beta, value=value of the parameter e.g. 0.46)
         output: hashmaps level2AttributesOfUptakeFormula, level2AttributesOfAttemptFormula, level2AttributesOfMaintenanceFormula
                 with keys={C, O, M} and each value=a list of associated level 2 attributes of key
         """
@@ -614,6 +615,7 @@ class SmokingModel(Model):
                     propensity_NRT_maintenance = np.random.normal(0,self.sigma_propensity_NRT_maintenance),
                     propensity_behaviour_support_maintenance = np.random.normal(0,self.sigma_propensity_behaviour_support_maintenance),
                     propensity_varenicline_maintenance = np.random.normal(0,self.sigma_propensity_varenicline_maintenance),
+                    propensity_cytisine_maintenance = np.random.normal(0,self.sigma_propensity_cytisine_maintenance),                    
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,
                     quit_maintenance_theory=qmaintenance_theory,
@@ -1004,6 +1006,7 @@ class SmokingModel(Model):
                     propensity_NRT_maintenance = np.random.normal(0,self.sigma_propensity_NRT_maintenance), 
                     propensity_behaviour_support_maintenance = np.random.normal(0,self.sigma_propensity_behaviour_support_maintenance),
                     propensity_varenicline_maintenance = np.random.normal(0,self.sigma_propensity_varenicline_maintenance),                    
+                    propensity_cytisine_maintenance = np.random.normal(0,self.sigma_propensity_cytisine_maintenance),                    
                     states=states,
                     reg_smoke_theory=rsmoke_theory,
                     quit_attempt_theory=qattempt_theory,

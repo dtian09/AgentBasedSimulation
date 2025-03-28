@@ -345,30 +345,33 @@ class QuitMaintenanceTheory(COMBTheory):
             #ipdb.set_trace()#debug break point
             if len(matched_row) > 0:
                 col_index = matched_row.columns.get_loc("pPrescriptionNRTLogOdds")
-                logodds = float(matched_row.iat[0, col_index])
+                logodds_nrt = float(matched_row.iat[0, col_index])
                 col_index2 = matched_row.columns.get_loc("cUseOfBehaviourSupportLogOdds")
-                logodds2 = float(matched_row.iat[0, col_index2])
+                logodds_behaviour_support = float(matched_row.iat[0, col_index2])
                 col_index3 = matched_row.columns.get_loc("pVareniclineUseLogOdds")
-                logodds3 = float(matched_row.iat[0, col_index3])             
-            else: 
-                logodds = 0
-                logodds2 = 0
-                logodds3 = 0
+                logodds_varenicline = float(matched_row.iat[0, col_index3])
+                col_index4 = matched_row.columns.get_loc("pCytisineUseLogOdds")
+                logodds_cytisine = float(matched_row.iat[0, col_index4])         
+            else:#no matched row, 0 logodds 
+                logodds_nrt = 0
+                logodds_behaviour_support = 0
+                logodds_varenicline = 0
+                logodds_cytisine = 0
                 print(f'Logodds in QuitMaintenanceTheory are set to 0, as there is no matching logodds for year={self.smoking_model.attempt_exogenous_dynamics_data["year"]},\
                     age={self.smoking_model.attempt_exogenous_dynamics_data["age"]},\
                     sex={self.smoking_model.attempt_exogenous_dynamics_data["sex"]},\
                     social grade={self.smoking_model.attempt_exogenous_dynamics_data["social grade"]}')   
             #update p_prescription_nrt
-            logodds += agent.propensity_NRT_maintenance   
-            prob = math.e ** logodds / (1 + math.e ** logodds)
+            logodds_nrt += agent.propensity_NRT_maintenance   
+            prob = math.e ** logodds_nrt / (1 + math.e ** logodds_nrt)
             threshold = random.uniform(0, 1)
             if prob >= threshold:
                 agent.p_prescription_nrt.set_value(1)
             else:
                 agent.p_prescription_nrt.set_value(0)
             #update cUseOfBehaviourSupport
-            logodds2 += agent.propensity_behaviour_support_maintenance
-            prob = math.e ** logodds2 / (1 + math.e ** logodds2)
+            logodds_behaviour_support += agent.propensity_behaviour_support_maintenance
+            prob = math.e ** logodds_behaviour_support / (1 + math.e ** logodds_behaviour_support)
             threshold = random.uniform(0, 1)     
             if prob >= threshold:
                 at_obj = Level2AttributeInt(name='cUseOfBehaviourSupport', value=1)
@@ -377,13 +380,23 @@ class QuitMaintenanceTheory(COMBTheory):
                 at_obj = Level2AttributeInt(name='cUseOfBehaviourSupport', value=0)
                 self.level2_attributes['cUseOfBehaviourSupport'] = at_obj  
             #update p_varenicline_use
-            logodds3 += agent.propensity_varenicline_maintenance
-            prob = math.e ** logodds3 / (1 + math.e ** logodds3)
+            logodds_varenicline += agent.propensity_varenicline_maintenance
+            prob = math.e ** logodds_varenicline / (1 + math.e ** logodds_varenicline)
             threshold = random.uniform(0, 1)
             if prob >= threshold:
                 agent.p_varenicline_use.set_value(1)
             else:
                 agent.p_varenicline_use.set_value(0)
+            #update cCytisineUse
+            logodds_cytisine += agent.propensity_cytisine_maintenance
+            prob = math.e ** logodds_cytisine / (1 + math.e ** logodds_cytisine)
+            threshold = random.uniform(0, 1)
+            if prob >= threshold:
+                at_obj = Level2AttributeInt(name='cCytisineUse', value=1)
+                self.level2_attributes['cCytisineUse'] = at_obj 
+            else:
+                at_obj = Level2AttributeInt(name='cCytisineUse', value=0)
+                self.level2_attributes['cCytisineUse'] = at_obj  
         if self.smoking_model.months_counter == 1:
                self.level2_attributes['cCigConsumptionPrequit'].set_value(agent.b_cig_consumption)
         
