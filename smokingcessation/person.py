@@ -52,6 +52,7 @@ class Person(MicroAgent):
                  quitting_behaviour=None #quit attempt COMB model or STPM quitting transition probabilities
                  ):
         super().__init__(id=id, type=type, rank=rank)
+        self.is_active = True  # Initialise agent as active
         self.smoking_model = smoking_model        
         self.b_states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
         self.b_months_since_quit = months_since_quit #number of months of maintaining the quit behhaviour; only tracked for the ongoing quitter state.
@@ -59,7 +60,7 @@ class Person(MicroAgent):
         self.b_number_of_recent_quit_attempts = number_of_recent_quit_attempts
         self.b_years_since_quit = years_since_quit        
         self.months_counter_ex_smoker = 0  # count number of consecutive months when the self stays as an ex-smoker
-        self.init_behaviour_buffer() #initialize the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
+        self.init_behaviour_buffer() #initialise the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
         self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
         self.p_gender = PersonalAttribute(name='pGender')
@@ -172,7 +173,7 @@ class Person(MicroAgent):
         """
         The behaviour buffer stores this agent's 'quit attempt behaviours' (1) and 'not quit attempt behaviours' (0) over the last 12 months
         (12 ticks with each tick represents 1 month).
-        The behaviour buffer is initialized at t=0 as follows:
+        The behaviour buffer is initialised at t=0 as follows:
         X: number of quit attempts in past 12 months
         1. Generate a random permutation of indices 0,...,11
         2. Take first X indices of the permutation

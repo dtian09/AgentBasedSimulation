@@ -3,9 +3,12 @@ seed: 1 #the random seed of the ABM
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" or "STPM" 
 quitting_behaviour: "COMB" #"COMB" or "STPM"
-data_file: "data/data_synth20_03_2025_v2.csv" #the baseline synthetic population
+# data_file: "data/data_synth20_03_2025_v2.csv" #the baseline synthetic population
+data_file: "data/data_synth_network_testing.csv" #the baseline synthetic population
 year_of_baseline: 2011 #year of the baseline sysnthetic popultion
 regional_prevalence: "data/regional_smoking_trends_data.csv" #monthly regional smoking prevalence data file
+# network_file: "data/calibrated_network/edgeList_46.csv" #social network edge list file
+network_file: "data/calibrated_network/edgeList_46_network_testing.csv" #social network edge list file
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file

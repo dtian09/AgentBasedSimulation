@@ -58,14 +58,14 @@ class COMBTheory(Theory):
                 sstr = ' is not int64 or float64 and not stored into the level2_attributes hashmap.'
                 sys.exit(str(self.smoking_model.data.at[indx_of_agent, level2_attribute_name]) + sstr)            
         if self.level2_attributes.get('mSmokerIdentity')!=None: 
-            if self.level2_attributes['mSmokerIdentity'].get_value()==2: #mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’. 
+            if self.level2_attributes['mSmokerIdentity'].get_value()==2: #mSmokerIdentity: '1=I think of myself as a non-smoker', '2=I still think of myself as a smoker', -1='don't know', 4='not stated'. 
                 at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=0)
                 self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
             elif self.level2_attributes['mSmokerIdentity'].get_value()==1:
                 at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=1)
                 self.level2_attributes['mNonSmokerSelfIdentity']=at_obj
             else:
-                at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value()) #-1=’don’t know’ or 4=’not stated’.
+                at_obj = Level2AttributeInt(name='mNonSmokerSelfIdentity', value=self.level2_attributes['mSmokerIdentity'].get_value()) #-1='don't know' or 4='not stated'.
                 self.level2_attributes['mNonSmokerSelfIdentity']=at_obj 
 
     @abstractmethod
@@ -193,6 +193,9 @@ class QuitAttemptTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
+        # Network-related attributes
+        self.network = None  # Will be set by SmokingModel.update_theories_with_network()
+        self.oNumberOfSmokersInSocialNetwork = 0
 
     def do_situation(self, agent: MicroAgent):
         '''
@@ -207,6 +210,24 @@ class QuitAttemptTheory(COMBTheory):
             prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.p_region.get_value())
             at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
             self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+            
+        # Network influence logic - update smoking alters count
+        if self.network is not None:
+            # Count smoking neighbours using generator expression with sum
+            self.oNumberOfSmokersInSocialNetwork = self.network.count_smoking_neighbours(agent)
+            
+            # Create or update network influence level 2 attribute as part of Opportunity (O)
+            # Named to match parameter in model.yaml
+            network_influence_attr = Level2AttributeInt(
+                name='oNumberOfSmokersInSocialNetwork',
+                value=self.oNumberOfSmokersInSocialNetwork
+            )
+            self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
+            
+            if self.smoking_model.running_mode == 'debug':
+                # Use the network's logging method instead of theory-specific logging
+                self.network.log_network_stats(agent)
+            
         #update oReceiptOfGPAdvice        
         matched_row = self.smoking_model.attempt_exogenous_dynamics_data[
                                 (self.smoking_model.attempt_exogenous_dynamics_data["year"] == self.smoking_model.year_of_current_time_step) &
@@ -326,6 +347,9 @@ class QuitMaintenanceTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
+        # Network-related attributes
+        self.network = None  # Will be set by SmokingModel.update_theories_with_network()
+        self.oNumberOfSmokersInSocialNetwork = 0
 
     def do_situation(self, agent: MicroAgent):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
@@ -334,6 +358,24 @@ class QuitMaintenanceTheory(COMBTheory):
             prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.p_region.get_value())
             at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
             self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+            
+        # Network influence logic - update smoking alters count
+        if self.network is not None:
+            # Count smoking neighbours using generator expression with sum
+            self.oNumberOfSmokersInSocialNetwork = self.network.count_smoking_neighbours(agent)
+            
+            # Create or update network influence level 2 attribute as part of Opportunity (O)
+            # Named to match parameter in model.yaml
+            network_influence_attr = Level2AttributeInt(
+                name='oNumberOfSmokersInSocialNetwork',
+                value=self.oNumberOfSmokersInSocialNetwork
+            )
+            self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
+            
+            if self.smoking_model.running_mode == 'debug':
+                # Use the network's logging method instead of theory-specific logging
+                self.network.log_network_stats(agent)
+            
         if agent.get_current_state()==AgentState.NEWQUITTER:
             matched_row = self.smoking_model.maintenance_exogenous_dynamics_data[
                                 (self.smoking_model.maintenance_exogenous_dynamics_data["year"] == self.smoking_model.year_of_current_time_step) &
@@ -478,7 +520,7 @@ class QuitMaintenanceTheory(COMBTheory):
             quit_maintenance_count=agent.behaviour_buffer.count(AgentBehaviour.QUITMAINTENANCE)
             probOfSmokerSelfIdentity=1/(1+self.smoking_model.alpha*(quit_maintenance_count*self.smoking_model.tickInterval)**self.smoking_model.beta)
             if probOfSmokerSelfIdentity >= threshold:
-                self.level2_attributes['mSmokerIdentity']=Level2AttributeInt(name='mSmokerIdentity', value=2)#mSmokerIdentity: ‘1=I think of myself as a non-smoker’, ‘2=I still think of myself as a smoker’, -1=’don’t know’, 4=’not stated’.
+                self.level2_attributes['mSmokerIdentity']=Level2AttributeInt(name='mSmokerIdentity', value=2)#mSmokerIdentity: '1=I think of myself as a non-smoker', '2=I still think of myself as a smoker', -1='don't know', 4='not stated'.
                 self.level2_attributes['mNonSmokerSelfIdentity']=Level2AttributeInt(name='mNonSmokerSelfIdentity', value=0)
             else:
                 self.level2_attributes['mSmokerIdentity']=Level2AttributeInt(name='mSmokerIdentity', value=1)
