@@ -106,6 +106,11 @@ class RegSmokeTheory(COMBTheory):
 
     def __init__(self, name, smoking_model: SmokingModel, indx_of_agent: int):
         super().__init__(name, smoking_model, indx_of_agent)
+        # Network-related attributes
+        self.network = None  # Will be set by SmokingModel.update_theories_with_network()
+        self.oNumberOfSmokersInSocialNetwork = 0
+        # Fixed set of agent IDs to track
+        self.fixed_agent_ids = self.smoking_model.fixed_agent_ids
 
     def do_situation(self, agent: MicroAgent):        
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
@@ -116,6 +121,23 @@ class RegSmokeTheory(COMBTheory):
             prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.p_region.get_value())
             at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
             self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+            
+        # Network influence logic - update smoking alters count
+        if self.network is not None:
+            # Count smoking neighbours using generator expression with sum
+            self.oNumberOfSmokersInSocialNetwork = self.network.count_smoking_neighbours(agent)
+            
+            # Create or update network influence level 2 attribute as part of Opportunity (O)
+            # Named to match parameter in model.yaml
+            # network_influence_attr = Level2AttributeInt(
+            #     name='oNumberOfSmokersInSocialNetwork',
+            #     value=self.oNumberOfSmokersInSocialNetwork
+            # )
+            # self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
+            
+            # Only log network stats for our fixed set of agent IDs
+            if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
+                self.network.log_network_stats(agent)
 
     def do_learning(self):
         pass
@@ -196,6 +218,8 @@ class QuitAttemptTheory(COMBTheory):
         # Network-related attributes
         self.network = None  # Will be set by SmokingModel.update_theories_with_network()
         self.oNumberOfSmokersInSocialNetwork = 0
+        # Fixed set of agent IDs to track
+        self.fixed_agent_ids = self.smoking_model.fixed_agent_ids
 
     def do_situation(self, agent: MicroAgent):
         '''
@@ -224,8 +248,8 @@ class QuitAttemptTheory(COMBTheory):
             )
             self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
             
-            if self.smoking_model.running_mode == 'debug':
-                # Use the network's logging method instead of theory-specific logging
+            # Only log network stats for our fixed set of agent IDs
+            if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
                 self.network.log_network_stats(agent)
             
         #update oReceiptOfGPAdvice        
@@ -350,6 +374,8 @@ class QuitMaintenanceTheory(COMBTheory):
         # Network-related attributes
         self.network = None  # Will be set by SmokingModel.update_theories_with_network()
         self.oNumberOfSmokersInSocialNetwork = 0
+        # Fixed set of agent IDs to track
+        self.fixed_agent_ids = self.smoking_model.fixed_agent_ids
 
     def do_situation(self, agent: MicroAgent):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
@@ -372,8 +398,8 @@ class QuitMaintenanceTheory(COMBTheory):
             )
             self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
             
-            if self.smoking_model.running_mode == 'debug':
-                # Use the network's logging method instead of theory-specific logging
+            # Only log network stats for our fixed set of agent IDs
+            if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
                 self.network.log_network_stats(agent)
             
         if agent.get_current_state()==AgentState.NEWQUITTER:

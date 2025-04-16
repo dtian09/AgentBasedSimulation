@@ -9,6 +9,7 @@ from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
 import config.global_variables as g
+import pandas as pd
 
 class Person(MicroAgent):
     def __init__(self,
@@ -49,10 +50,12 @@ class Person(MicroAgent):
                  quit_attempt_theory=None,
                  quit_maintenance_theory=None,
                  regular_smoking_behaviour=None,#regular smoking COMB model or STPM intiation transition probabilities
-                 quitting_behaviour=None #quit attempt COMB model or STPM quitting transition probabilities
+                 quitting_behaviour=None, #quit attempt COMB model or STPM quitting transition probabilities
+                 entry_year: int = None  # Add entry_year parameter
                  ):
         super().__init__(id=id, type=type, rank=rank)
-        self.is_active = True  # Initialise agent as active
+        self.is_active = False  # Initialise agents and default to inactive
+        self.entry_year = entry_year  # Store entry year
         self.smoking_model = smoking_model        
         self.b_states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
         self.b_months_since_quit = months_since_quit #number of months of maintaining the quit behhaviour; only tracked for the ongoing quitter state.
@@ -218,7 +221,21 @@ class Person(MicroAgent):
             return self.b_states[0]
         
     def get_current_state(self):  # get the self's state at the current time step
-        return self.b_states[self.smoking_model.current_time_step]
+        current_time_step = self.smoking_model.current_time_step
+        
+        # If current_time_step is beyond our state history, this is an error
+        if current_time_step >= len(self.b_states):
+            raise IndexError(f"Trying to access state at time step {current_time_step} but agent only has states up to {len(self.b_states)-1}")
+        
+        # Get the current state
+        current_state = self.b_states[current_time_step]
+        
+        # If the state is NA, this indicates we're trying to access a state before the agent's entry year
+        # This shouldn't happen in normal operation
+        if current_state is pd.NA:
+            raise ValueError(f"Accessing NA state at time step {current_time_step} for agent {self.get_id()}. This suggests trying to access state before agent's entry year.")
+            
+        return current_state
 
     def get_current_time_step(self):
         return self.smoking_model.current_time_step

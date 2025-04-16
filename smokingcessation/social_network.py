@@ -173,6 +173,7 @@ class SocialNetwork:
     def log_network_stats(self, agent):
         """
         Log network statistics for an agent without theory context.
+        Only writes to the logfile, not to console, to reduce output.
         
         Args:
             agent: The agent whose network statistics to log
@@ -188,8 +189,7 @@ class SocialNetwork:
                       f"active smoking alters={smoking_neighbours}, "
                       f"state={agent.get_current_state()}")
         
-        # Always print and log this information
-        print(log_message)
+        # Only log this information to the logfile, not to console
         self.smoking_model.logfile.write(f"{log_message}\n")
 
     def log_info(self, message):
