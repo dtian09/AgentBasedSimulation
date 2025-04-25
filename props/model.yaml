@@ -1,5 +1,5 @@
 #parameter settings of the ABM and the input data files
-fixed_agent_ids: [200, 500, 800, 1500, 2000, 2500, 3000, 10001, 11000, 10007]
+fixed_agent_ids: [200, 500, 800, 1500, 5086, 2042, 3000, 10001, 11000, 10007]
 seed: 1 #the random seed of the ABM
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" or "STPM" 
@@ -24,8 +24,8 @@ sigma_propensity_behaviour_support_maintenance: 1 #sigma of N(0, sigma) for prop
 sigma_propensity_varenicline_maintenance: 1 #sigma of N(0, sigma) for propensity of varenicline use in Quit Maintenance
 sigma_propensity_cytisine_maintenance: 1 #sigma of N(0, sigma) for propensity of cytisine use in Quit Maintenance
 ###stop.at sets the final tick (time step) of the simulation where tick 1=January of year_of_baseline e.g. 2011,..., tick 13=January of 2012 etc.
-#stop.at: 72 #December 2016
-stop.at: 288 #December 2034
+stop.at: 72 #December 2016
+#stop.at: 288 #December 2034
 #set the starting time step of the monthly e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
 difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions: -12 #non-disposable diffusions start at January 2010 (i.e. -12) and year of baseline population = 2011. 
 difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions: 120 #disposable diffusions start at January 2021 and year of baseline population = 2011. 12 x (2021-2011) = 120
@@ -41,7 +41,7 @@ beta: 0.500
 attempt.oSocialHousing.beta: 0.066735105
 attempt.oPrevalenceOfSmokingInGeographicLocality.beta: 2.078483766
 attempt.oRecieptGPAdvice.beta: 0.075724434
-attempt.social_network.beta: 0.051438188
+attempt.oNumberOfSmokersInSocialNetwork.beta: 0.051438188
 attempt.mIntentionToQuit.beta: 0.193121478
 ##attempt.mExpenditure.beta: 0.001549384 # mExpenditure is missing in the synthetic population (had pExpenditure)
 attempt.mEnjoymentOfSmoking.beta: -0.247523588

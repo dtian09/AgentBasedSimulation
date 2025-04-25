@@ -136,8 +136,8 @@ class RegSmokeTheory(COMBTheory):
             # self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
             
             # Only log network stats for our fixed set of agent IDs
-            if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
-                self.network.log_network_stats(agent)
+            # if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
+            #    self.network.log_network_stats(agent)
 
     def do_learning(self):
         pass
@@ -249,8 +249,8 @@ class QuitAttemptTheory(COMBTheory):
             self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
             
             # Only log network stats for our fixed set of agent IDs
-            if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
-                self.network.log_network_stats(agent)
+            # if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
+            #    self.network.log_network_stats(agent)
             
         #update oReceiptOfGPAdvice        
         matched_row = self.smoking_model.attempt_exogenous_dynamics_data[
@@ -399,8 +399,8 @@ class QuitMaintenanceTheory(COMBTheory):
             self.level2_attributes['oNumberOfSmokersInSocialNetwork'] = network_influence_attr
             
             # Only log network stats for our fixed set of agent IDs
-            if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
-                self.network.log_network_stats(agent)
+            # if self.smoking_model.running_mode == 'debug' and agent.get_id() in self.fixed_agent_ids:
+            #    self.network.log_network_stats(agent)
             
         if agent.get_current_state()==AgentState.NEWQUITTER:
             matched_row = self.smoking_model.maintenance_exogenous_dynamics_data[

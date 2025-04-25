@@ -870,15 +870,11 @@ class SmokingModel(Model):
                                                                      count_population_subgroups=False):
         '''
         if do_smoking_behaviour_mechanisms = True, do situational mechanism of the behaviour model
-        if do_smoking_behaviour_mechanisms = False, do situational mechanism of DemographicsSTPMTheory i.e. if December, kill some agents and increase the ages of the surving ones etc.
+        if do_smoking_behaviour_mechanisms = False, do situational mechanism of DemographicsSTPMTheory i.e. if December, at the end of the year, add agents to the agents_to_kill set, deactivate them, and increase the ages of the surviving ones etc.
         '''
-        if do_smoking_behaviour_mechanisms==False:
-            self.agents_to_kill=set()
-        if count_population_subgroups==True:#do situational mechanisms of agents and count population subgroups
+        if count_population_subgroups:  # count population subgroups only
             for agent in self.context.agents(agent_type=self.type):
                 if agent.is_active:  # Only process active agents
-                    agent.do_situation(do_smoking_behaviour_mechanisms=do_smoking_behaviour_mechanisms)
-                    agent.count_agent_for_whole_population_counts()
                     agent.count_agent_for_initiation_subgroups_by_ages_sex()
                     agent.count_agent_for_initiation_subgroups_by_ages_imd()
                     agent.count_agent_for_quit_subgroups_by_ages_sex()
@@ -887,17 +883,7 @@ class SmokingModel(Model):
             for agent in self.context.agents(agent_type=self.type):
                 if agent.is_active:  # Only process active agents
                     agent.do_situation(do_smoking_behaviour_mechanisms=do_smoking_behaviour_mechanisms)
-        if do_smoking_behaviour_mechanisms==False:
-            # Call kill_agents and capture the count of deactivated agents
-            deactivated_count = self.kill_agents()
-            
-            # Only print summary if agents were deactivated and not already done by kill_agents
-            if deactivated_count > 0 and self.running_mode != 'debug':
-                print(f"\n=== POPULATION DYNAMICS: DEACTIVATION SUMMARY ===")
-                print(f"Total agents deactivated: {deactivated_count}")
-                print(f"Current population size: {self.get_size_of_population()}")
-                
-            return deactivated_count
+        # No longer calling kill_agents here
         return 0
 
     def do_action_mechanisms(self,shuffle_population=False):  
@@ -928,10 +914,14 @@ class SmokingModel(Model):
     def init_new_16_yrs_agents(self):
         '''
         Activate agents with entry_year matching the current simulation year.
-        This replaces the previous behavior of creating new agents.
+        This is done at the beginning of January each year (after the year increment).
+        Returns the number of activated agents.
         '''
+        # Start detailed logging for agent activation
         if self.running_mode == 'debug':
-            self.logfile.write(f"\n=== ACTIVATING AGENTS FOR YEAR {self.year_of_current_time_step} ===\n")
+            self.logfile.write(f"\n=== POPULATION DYNAMICS: ACTIVATION PROCESS ===\n")
+            self.logfile.write(f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ===\n")
+            self.logfile.write(f"Looking for agents with entry_year={self.year_of_current_time_step} to activate\n")
             
         activated_count = 0
         activated_by_subgroup = {}
@@ -942,7 +932,7 @@ class SmokingModel(Model):
             activated_by_subgroup[subgroup] = 0
             activated_ids_by_subgroup[subgroup] = []
         
-        # Find all inactive agents with matching entry_year
+        # Find all inactive agents with matching entry_year for the current year
         for agent in self.context.agents(agent_type=self.type):
             if not agent.is_active and agent.entry_year == self.year_of_current_time_step:
                 # Re-initialize the agent's state history with NA values for past time steps
@@ -951,17 +941,16 @@ class SmokingModel(Model):
                 
                 # Clear existing state history and fill with NA values for past time steps
                 agent.b_states = []
-                for t in range(self.current_time_step):
+                t = 0
+                while t < self.current_time_step:  # Fill with NA for all previous ticks
                     agent.b_states.append(pd.NA)
+                    t += 1
                 
                 # Add the initial state for the current time step
                 agent.b_states.append(initial_state)
                 
                 # Get agent ID
                 agent_id = agent.get_id()
-                
-                if self.running_mode == 'debug':
-                    self.logfile.write(f"Initializing agent {agent_id} with initial state {initial_state}\n")
                 
                 # Activate the agent
                 agent.is_active = True
@@ -1009,9 +998,21 @@ class SmokingModel(Model):
                     activated_by_subgroup[subgroup] += 1
                     activated_ids_by_subgroup[subgroup].append(agent_id)
         
+        # Provide comprehensive logging of activation results
         if self.running_mode == 'debug':
-            self.logfile.write(f"\n=== POPULATION DYNAMICS: ACTIVATION SUMMARY ===\n")
-            self.logfile.write(f"Total agents activated for year {self.year_of_current_time_step}: {activated_count}\n\n")
+            summary_header = f"=== POPULATION DYNAMICS: ACTIVATION SUMMARY ==="
+            summary_timing = f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ==="
+            summary_count = f"Total agents activated: {activated_count}"
+            
+            # Log to file
+            self.logfile.write(f"\n{summary_header}\n")
+            self.logfile.write(f"{summary_timing}\n")
+            self.logfile.write(f"{summary_count}\n\n")
+            
+            # Also print to terminal for visibility
+            print(f"{summary_header}")
+            print(f"{summary_timing}")
+            print(f"{summary_count}")
             
             # Log activated agents by subgroup with IDs
             for subgroup, count in activated_by_subgroup.items():
@@ -1036,6 +1037,10 @@ class SmokingModel(Model):
         Returns:
             int: Number of agents deactivated
         '''
+        # Check if there are any agents to kill, return early if none
+        if len(self.agents_to_kill) == 0:
+            return 0
+            
         killed_count = 0
         killed_ids = []
         
@@ -1046,6 +1051,11 @@ class SmokingModel(Model):
             #self.context.remove(agent)
             #del agent
         # Instead, mark the agent as inactive
+
+        if self.running_mode == 'debug':
+            self.logfile.write(f"\n=== POPULATION DYNAMICS: DEACTIVATION PROCESS ===\n")
+            self.logfile.write(f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ===\n")
+            self.logfile.write(f"Looking for agents to deactivate\n")
 
         # First pass - collect basic information
         for uid in self.agents_to_kill:
@@ -1080,22 +1090,22 @@ class SmokingModel(Model):
                 
                 # Mark as inactive instead of removing
                 agent.is_active = False
-                
-                # Log individual deactivation for debugging if needed
-                if self.running_mode == 'debug':
-                    self.logfile.write(f"Agent {uid} marked as inactive (deactivated)\n")
         
-        # Detailed logging of killed agents
+        # Log the deactivation data directly instead of storing it for do_per_tick
         if self.running_mode == 'debug' and killed_count > 0:
+            # Log detailed information about deactivated agents
             summary_header = f"=== POPULATION DYNAMICS: DEACTIVATION SUMMARY ==="
+            summary_timing = f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ==="
             summary_count = f"Total agents deactivated: {killed_count}"
             
             # Log to file
             self.logfile.write(f"\n{summary_header}\n")
+            self.logfile.write(f"{summary_timing}\n")
             self.logfile.write(f"{summary_count}\n\n")
             
             # Also print to terminal for visibility
             print(f"{summary_header}")
+            print(f"{summary_timing}")
             print(f"{summary_count}")
             
             if killed_count <= 10:
@@ -1128,21 +1138,43 @@ class SmokingModel(Model):
         '''
         do_per_tick is executed at each tick from tick 1 to execute the mechanisms of the ABM.
         '''
+        # Store the previous time step before incrementing
+        previous_time_step = self.current_time_step
+        
+        # Increment time step first
         self.current_time_step += 1
         self.months_counter += 1
-        if self.current_time_step >= 13:
-            if self.months_counter == 1: #January from 2012 (tick 13)
-               self.year_of_current_time_step += 1
-               self.year_number += 1
-               activated_agents = self.init_new_16_yrs_agents() #Activate agents for the current year
-               if self.running_mode == 'debug':
-                    print(f"\n=== POPULATION DYNAMICS: ACTIVATION SUMMARY ===")
-                    print(f"Total agents activated for year {self.year_of_current_time_step}: {activated_agents}")
-                    print(f"Current population size: {self.get_size_of_population()}")
-                    
-                    # Still log to file for reference
-                    self.logfile.write('tick '+str(self.current_time_step)+', '+str(activated_agents)+' agents activated for year '+str(self.year_of_current_time_step)+', size of population: '+str(self.get_size_of_population())+'\n')
+   
+        # Year change happens at the beginning of the year (January)
+        if self.months_counter == 1 and self.current_time_step >= 13:
+            self.year_of_current_time_step += 1
+            self.year_number += 1
+            
+            # Activate new 16-year-old agents at the beginning of January each year
+            activated_agents = self.init_new_16_yrs_agents()
+            
+            if self.running_mode == 'debug':
+                print('Beginning of tick '+str(self.current_time_step)+', '+str(activated_agents)+' new 16 years old agents are activated, size of population: '+str(self.get_size_of_population()))
+                self.logfile.write('Beginning of tick '+str(self.current_time_step)+', '+str(activated_agents)+' new 16 years old agents activated, size of population: '+str(self.get_size_of_population())+'\n')
+        
+        # Update month and year format
         self.format_month_and_year()
+        
+        # IMPORTANT: Ensure all active agents have a state for the current time step
+        # This must happen BEFORE any agent.get_current_state() is called
+        if self.running_mode == 'debug':
+            self.logfile.write(f"\n=== PREPARING AGENTS FOR TIME STEP {self.current_time_step}, YEAR {self.year_of_current_time_step}, MONTH {self.months_counter} ===\n")
+            
+        # Ensure all active agents have their state array extended to cover the current time step
+        agents_updated = 0
+        for agent in self.context.agents(agent_type=self.type):
+            if agent.is_active and len(agent.b_states) <= previous_time_step:
+                # Get the agent's last known state
+                last_state = agent.b_states[previous_time_step]
+                # Add this state for the current time step
+                agent.set_state_of_next_time_step(last_state)
+                agents_updated += 1
+                    
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
         if self.year_of_current_time_step < 2021:#before 2021, run non-disposable diffusion models only 
@@ -1156,14 +1188,30 @@ class SmokingModel(Model):
             self.current_time_step_of_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
         self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.set_ecig_diffusion_subgroups_of_agents(shuffle_population=True)
-        self.do_transformational_mechanisms()#compute Et of diffusion models
-        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
-        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=True, count_population_subgroups=False)#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
-        self.do_action_mechanisms() 
-        self.init_population_counts()#reset population counts to 0
-        ###kill some agents and count population subgroups
-        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=False, count_population_subgroups=True)        
-        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
+        self.do_transformational_mechanisms()  # compute Et of diffusion models
+        self.do_macro_macro_mechanisms()  # compute deltaEt of diffusion models; read in geographic regional smoking prevalence
+        
+        # Create e-cigarette users according to delta E[t]
+        # First call: Triggers behavioral mechanisms only (smoking transitions)
+        # In develop branch, this is the first of two calls to this method
+        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=True, count_population_subgroups=False)
+        self.do_action_mechanisms()
+        
+        # Reset population counts
+        self.init_population_counts()  # reset population counts to 0
+        
+        # Initialize the agents_to_kill set before running demographic mechanisms
+        self.agents_to_kill = set()
+        
+        # Second call: Triggers demographic mechanisms (mortality, aging) 
+        # This step was combined with population counting in develop branch
+        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=False, count_population_subgroups=False)
+        
+        # Third call: Performs population counting
+        # In develop branch, this was combined with demographic mechanisms in a single call
+        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=False, count_population_subgroups=True)
+        
+        # End of year subgroup population reporting
         if self.current_time_step == self.end_year_tick:
             self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
             self.file_initiation_imd.write(self.get_subgroups_of_ages_imd_for_initiation())
@@ -1172,6 +1220,9 @@ class SmokingModel(Model):
             g.initialise_global_variables_of_subgroups()     
         ###   
         self.size_of_population = self.get_size_of_population()
+        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())
+        
+        # Clean debug logging - only report on tick, population, behaviour, network
         if self.running_mode == 'debug':
             p = self.smoking_prevalence()
             self.smoking_prevalence_l.append(p)
@@ -1196,7 +1247,7 @@ class SmokingModel(Model):
             # Log network stats for all agents in our fixed sample at each tick
             if self.social_network is not None:
                 active_agents = {agent.get_id(): agent for agent in self.context.agents(agent_type=self.type) if hasattr(agent, 'is_active') and agent.is_active}
-                self.logfile.write("\n=== NETWORK STATISTICS FOR FIXED SAMPLE AGENTS (PER TICK) ===\n")
+                self.logfile.write(f"\n=== NETWORK STATISTICS (TICK {self.current_time_step}) ===\n")
                 logged_count = 0
                 for agent_id in self.fixed_agent_ids:
                     if agent_id in active_agents:
@@ -1209,14 +1260,29 @@ class SmokingModel(Model):
                                           f"active smoking alters={self.social_network.count_smoking_neighbours(agent)}, "
                                           f"state={state}\n")
                         logged_count += 1
-                self.logfile.write(f"Logged network stats for {logged_count} agents from our fixed sample at tick {self.current_time_step}\n")
-                
+                self.logfile.write(f"Logged network stats for {logged_count} agents from fixed sample\n")
+        
+        # End of year operations
+        if self.months_counter == 12:
+            # Kill agents at the end of the year - call kill_agents directly
+            deactivated_count = self.kill_agents()
+            
+            if self.running_mode == 'debug':
+                print('End of tick '+str(self.current_time_step)+', '+ str(deactivated_count)+' agents are deactivated, size of population: '+str(self.get_size_of_population()))
+                self.logfile.write('End of tick '+str(self.current_time_step)+', '+ str(deactivated_count)+' agents are deactivated, size of population: '+str(self.get_size_of_population())+'\n')
+
+        # Update tick counters for next year
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
+            
+        # Reset months counter at the end of the year
         if self.months_counter == 12:
             self.months_counter = 0
-        
+            self.logfile.write(f"\n\n=== THE NEXT TICK IS TICK {self.current_time_step + 1}, YEAR {self.year_of_current_time_step + 1} ===\n")
+        else:
+            self.logfile.write(f"\n\n=== THE NEXT TICK IS TICK {self.current_time_step + 1}, YEAR {self.year_of_current_time_step} ===\n")
+
     def init_schedule(self):
         '''
         schedule do_per_tick function to start at tick 1 and repeat every tick until the last tick.
@@ -1441,7 +1507,6 @@ class SmokingModel(Model):
                 if agent_id in active_agents:
                     agent = active_agents[agent_id]
                     state = agent.get_current_state()
-                    self.logfile.write(f"\n--- Network stats for agent {agent_id} (state: {state.name}) ---\n")
                     self.social_network.log_network_stats(agent)
                     logged_count += 1
             
