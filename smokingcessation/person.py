@@ -96,6 +96,23 @@ class Person(MicroAgent):
         self.p_varenicline_use.set_value(varenicline_use)
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
+        
+        # Age group dummy variables
+        self.c_age_group_30to44 = PersonalAttribute(name='cAgeGroup30To44')
+        self.c_age_group_45to64 = PersonalAttribute(name='cAgeGroup45To64')
+        self.c_age_group_65plus = PersonalAttribute(name='cAgeGroup65Plus')
+        self.m_age_group_30to44 = PersonalAttribute(name='mAgeGroup30To44')
+        self.m_age_group_45to64 = PersonalAttribute(name='mAgeGroup45To64')
+        self.m_age_group_65plus = PersonalAttribute(name='mAgeGroup65Plus')
+        
+        # Always calculate age group dummies based on age - ignore any pre-calculated values
+        self.c_age_group_30to44.set_value(1 if 30 <= age < 45 else 0)
+        self.c_age_group_45to64.set_value(1 if 45 <= age < 65 else 0)
+        self.c_age_group_65plus.set_value(1 if age >= 65 else 0)
+        self.m_age_group_30to44.set_value(1 if 30 <= age < 45 else 0)
+        self.m_age_group_45to64.set_value(1 if 45 <= age < 65 else 0)
+        self.m_age_group_65plus.set_value(1 if age >= 65 else 0)
+        
         self.eCig_diff_subgroup=None
         self.prequit_addiction_strength=None
         self.p_percentile = PersonalAttribute(name='pPercentile') 
@@ -156,6 +173,20 @@ class Person(MicroAgent):
             self.p_prescription_nrt.set_value(prescription_nrt)
             self.p_varenicline_use.add_level2_attribute(quit_maintenance_theory.level2_attributes['cVareniclineUse'])
             self.p_varenicline_use.set_value(varenicline_use)
+            
+            # Link age group dummies to the COMB models
+            if 'mAgeGroup30To44' in quit_attempt_theory.level2_attributes:
+                self.m_age_group_30to44.add_level2_attribute(quit_attempt_theory.level2_attributes['mAgeGroup30To44'])
+            if 'mAgeGroup45To64' in quit_attempt_theory.level2_attributes:
+                self.m_age_group_45to64.add_level2_attribute(quit_attempt_theory.level2_attributes['mAgeGroup45To64'])
+            if 'mAgeGroup65Plus' in quit_attempt_theory.level2_attributes:
+                self.m_age_group_65plus.add_level2_attribute(quit_attempt_theory.level2_attributes['mAgeGroup65Plus'])
+            if 'cAgeGroup30To44' in quit_maintenance_theory.level2_attributes:
+                self.c_age_group_30to44.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAgeGroup30To44'])
+            if 'cAgeGroup45To64' in quit_maintenance_theory.level2_attributes:
+                self.c_age_group_45to64.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAgeGroup45To64'])
+            if 'cAgeGroup65Plus' in quit_maintenance_theory.level2_attributes:
+                self.c_age_group_65plus.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAgeGroup65Plus'])
             
     def update_difficulty_of_access(self):
          #difficulty of access is 0 if agent's age >= age of sale and +1 for every year below.         
@@ -242,6 +273,51 @@ class Person(MicroAgent):
 
     def increment_age(self):
         self.p_age.set_value(self.p_age.get_value() + 1)
+        # Update age group dummies after age incrementation
+        self.update_age_group_dummies()
+
+    def update_age_group_dummies(self):
+        """
+        Update age group dummy variables based on the current age.
+        This method should be called whenever an agent's age changes.
+        """
+        current_age = self.p_age.get_value()
+        
+        # Store previous values for logging
+        if self.smoking_model.running_mode == 'debug':
+            old_c_30to44 = self.c_age_group_30to44.get_value()
+            old_c_45to64 = self.c_age_group_45to64.get_value()
+            old_c_65plus = self.c_age_group_65plus.get_value()
+            old_m_30to44 = self.m_age_group_30to44.get_value()
+            old_m_45to64 = self.m_age_group_45to64.get_value()
+            old_m_65plus = self.m_age_group_65plus.get_value()
+        
+        # Update c-prefixed age group dummies (for maintenance model)
+        self.c_age_group_30to44.set_value(1 if 30 <= current_age < 45 else 0)
+        self.c_age_group_45to64.set_value(1 if 45 <= current_age < 65 else 0)
+        self.c_age_group_65plus.set_value(1 if current_age >= 65 else 0)
+        
+        # Update m-prefixed age group dummies (for attempt model)
+        self.m_age_group_30to44.set_value(1 if 30 <= current_age < 45 else 0)
+        self.m_age_group_45to64.set_value(1 if 45 <= current_age < 65 else 0)
+        self.m_age_group_65plus.set_value(1 if current_age >= 65 else 0)
+        
+        # Log changes if there was an actual change and in debug mode
+        if self.smoking_model.running_mode == 'debug':
+            if (old_c_30to44 != self.c_age_group_30to44.get_value() or
+                old_c_45to64 != self.c_age_group_45to64.get_value() or
+                old_c_65plus != self.c_age_group_65plus.get_value() or
+                old_m_30to44 != self.m_age_group_30to44.get_value() or
+                old_m_45to64 != self.m_age_group_45to64.get_value() or
+                old_m_65plus != self.m_age_group_65plus.get_value()):
+                
+                self.smoking_model.logfile.write(f"Agent ID {self.get_id()} age group updated at age {current_age}: " +
+                    f"c30to44: {old_c_30to44}->{self.c_age_group_30to44.get_value()}, " +
+                    f"c45to64: {old_c_45to64}->{self.c_age_group_45to64.get_value()}, " +
+                    f"c65plus: {old_c_65plus}->{self.c_age_group_65plus.get_value()}, " +
+                    f"m30to44: {old_m_30to44}->{self.m_age_group_30to44.get_value()}, " +
+                    f"m45to64: {old_m_45to64}->{self.m_age_group_45to64.get_value()}, " +
+                    f"m65plus: {old_m_65plus}->{self.m_age_group_65plus.get_value()}\n")
 
     def get_current_theory_of_agent(self):
         return self.get_mediator().get_current_theory_of_agent(self)

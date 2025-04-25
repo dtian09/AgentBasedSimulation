@@ -5,7 +5,7 @@ ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" or "STPM" 
 quitting_behaviour: "COMB" #"COMB" or "STPM"
 # data_file: "data/data_synth20_03_2025_v2.csv" #the baseline synthetic population
-data_file: "data/data_synth_network_testing.csv" #the baseline synthetic population
+data_file: "data/data_synth_network_testing_with_agegroup.csv" 
 year_of_baseline: 2011 #year of the baseline sysnthetic popultion
 regional_prevalence: "data/regional_smoking_trends_data.csv" #monthly regional smoking prevalence data file
 # network_file: "data/calibrated_network/edgeList_46.csv" #social network edge list file
@@ -48,9 +48,9 @@ attempt.mEnjoymentOfSmoking.beta: -0.247523588
 attempt.mUseOfNRT.beta: 0.31473786
 attempt.mPositiveSmokerIdentity.beta: 0.005881472
 attempt.mSelfEfficacy.beta: 0.301120451
-#attempt.mAgeGroup30_44.beta: -0.193993099
-#attempt.mAgeGroup45_64.beta: -0.249374441
-#attempt.mAgeGroup_over65.beta: -0.135045093
+attempt.mAgeGroup30To44.beta: -0.193993099
+attempt.mAgeGroup45To64.beta: -0.249374441
+attempt.mAgeGroup65Plus.beta: -0.135045093
 attempt.mNumberOfRecentQuitAttempts.beta: 0.323579571
 
 attempt.C.beta: 1
@@ -67,9 +67,9 @@ maintenance.cEcigaretteUse.beta: 0.449275171
 #maintenance.cOverCounterNRTInAttempt.beta: -0.093049738
 ##maintenance.cCigConsumption.beta: -0.027442677 #cCigConsumption is missing in the synthetic population (has bCigConsumption)
 maintenance.cVareniclineUse.beta: 0.716465938
-#maintenance.cAgeGroup30_44.beta: 0.336242932
-#maintenance.cAgeGroup45_64.beta: 0.152239305
-#maintenance.cAgeGroup_over65.beta: 0.270517719
+maintenance.cAgeGroup30To44.beta: 0.336242932
+maintenance.cAgeGroup45To64.beta: 0.152239305
+maintenance.cAgeGroup65Plus.beta: 0.270517719
 maintenance.cMentalHealthConditions.beta: -0.14567991 
 maintenance.cCigAddictStrength.beta: -0.189854296
 #maintenance.cUseOfBehaviourSupportInAttempt.beta: 0.212600283
