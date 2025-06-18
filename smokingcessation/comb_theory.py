@@ -95,7 +95,16 @@ class COMBTheory(Theory):
         pass
 
     def do_action(self, agent: MicroAgent):
-        """run the action mechanism of the agent of this theory"""
+        """run the action mechanism of the agent of this theory
+        Reset the internal power accumulator at each time step so that the
+        logistic regression is computed using the current values only.
+        Without this reset the power term would grow every tick leading to
+        unrealistically extreme probabilities (e.g. everyone quitting in the
+        first month)."""
+        # Reset the power accumulator at the beginning of every tick
+        self.power = 0
+
+        # Re-compute the three COM-B components and the resulting behaviour
         self.make_comp_c()
         self.make_comp_o()
         self.make_comp_m()
@@ -113,8 +122,18 @@ class RegSmokeTheory(COMBTheory):
             agent.update_difficulty_of_access()
         #update oPrevalenceOfSmokingInGeographicLocality if the current year is between 2011 and 2019.
         if self.smoking_model.year_of_current_time_step >= 2011 and self.smoking_model.year_of_current_time_step <= 2019:
-            prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.p_region.get_value())
-            at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+            prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(
+                self.smoking_model.formatted_month,
+                agent.p_region.get_value())
+
+            # The prevalence values in the input data are percentages (e.g. 18.5) not
+            # proportions.  Convert to a proportion (0-1) to match the scale used
+            # when the model was calibrated.  Leaving them as percentages massively
+            # inflates the COM-B power term and results in near-certain quitting.
+            prev_val = float(prev)
+            prev_prop = prev_val / 100 if prev_val > 1 else prev_val
+
+            at_obj = Level2AttributeFloat(name='oPrevalenceOfSmokingInGeographicLocality', value=prev_prop)
             self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
 
     def do_learning(self):
@@ -204,8 +223,18 @@ class QuitAttemptTheory(COMBTheory):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user        
         #update oPrevalenceOfSmokingInGeographicLocality if the current year is between 2011 and 2019.
         if self.smoking_model.year_of_current_time_step >= 2011 and self.smoking_model.year_of_current_time_step <= 2019:
-            prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.p_region.get_value())
-            at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+            prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(
+                self.smoking_model.formatted_month,
+                agent.p_region.get_value())
+
+            # The prevalence values in the input data are percentages (e.g. 18.5) not
+            # proportions.  Convert to a proportion (0-1) to match the scale used
+            # when the model was calibrated.  Leaving them as percentages massively
+            # inflates the COM-B power term and results in near-certain quitting.
+            prev_val = float(prev)
+            prev_prop = prev_val / 100 if prev_val > 1 else prev_val
+
+            at_obj = Level2AttributeFloat(name='oPrevalenceOfSmokingInGeographicLocality', value=prev_prop)
             self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
         #update oReceiptOfGPAdvice        
         matched_row = self.smoking_model.attempt_exogenous_dynamics_data[
@@ -307,11 +336,13 @@ class QuitAttemptTheory(COMBTheory):
         self.power += self.smoking_model.attempt_betas['bias']
         self.power = -1 * self.power
         self.prob_behaviour = 1 / (1 + math.e ** self.power)
-        # for a smoker A, run the quit attempt theory to calculate the probability of making a quit attempt.
-        # If p >= threshold, { A transitions to a quitter at t+1} else {A stays as a smoker at t+1}
-        self.threshold = random.uniform(0, 1)
+        # for a smoker, run the quit attempt theory to calculate the probability of making a quit attempt;
+        # if p >= threshold {A transitions to a newquitter at t+1} else { A stays as smoker at t+1}
+        self.threshold = random.uniform(0, 1)  # threshold
         if self.prob_behaviour >= self.threshold:
+            # delete the agent's oldest behaviour (at 0th index) from the behaviour buffer
             agent.delete_oldest_behaviour()
+            # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.QUITATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.NEWQUITTER)
         else:
@@ -331,8 +362,18 @@ class QuitMaintenanceTheory(COMBTheory):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
         #update oPrevalenceOfSmokingInGeographicLocality if the current year is between 2011 and 2019.
         if self.smoking_model.year_of_current_time_step >= 2011 and self.smoking_model.year_of_current_time_step <= 2019:
-            prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.p_region.get_value())
-            at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+            prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(
+                self.smoking_model.formatted_month,
+                agent.p_region.get_value())
+
+            # The prevalence values in the input data are percentages (e.g. 18.5) not
+            # proportions.  Convert to a proportion (0-1) to match the scale used
+            # when the model was calibrated.  Leaving them as percentages massively
+            # inflates the COM-B power term and results in near-certain quitting.
+            prev_val = float(prev)
+            prev_prop = prev_val / 100 if prev_val > 1 else prev_val
+
+            at_obj = Level2AttributeFloat(name='oPrevalenceOfSmokingInGeographicLocality', value=prev_prop)
             self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
         if agent.get_current_state()==AgentState.NEWQUITTER:
             matched_row = self.smoking_model.maintenance_exogenous_dynamics_data[
