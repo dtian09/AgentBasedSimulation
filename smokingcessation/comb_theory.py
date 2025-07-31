@@ -246,9 +246,11 @@ class QuitAttemptTheory(COMBTheory):
         matched_row = pd.DataFrame(matched_row)
         #ipdb.set_trace()#debug break point
         if len(matched_row) > 0:
-             col_index = matched_row.columns.get_loc("oReceiptGPAdviceLodOdds")
+             # col_index = matched_row.columns.get_loc("oReceiptGPAdviceLodOdds")
+             col_index = matched_row.columns.get_loc("oReceiptGPAdvice")
              logodds = float(matched_row.iat[0, col_index])
-             col_index2 = matched_row.columns.get_loc("pNRTLogOdds")
+             # col_index2 = matched_row.columns.get_loc("pNRTLogOdds")
+             col_index2 = matched_row.columns.get_loc("pNRT")
              logodds2 = float(matched_row.iat[0, col_index2])
         else: 
              logodds = 0
@@ -385,13 +387,17 @@ class QuitMaintenanceTheory(COMBTheory):
             matched_row = pd.DataFrame(matched_row)
             #ipdb.set_trace()#debug break point
             if len(matched_row) > 0:
-                col_index = matched_row.columns.get_loc("pPrescriptionNRTLogOdds")
+                #col_index = matched_row.columns.get_loc("pPrescriptionNRTLogOdds")
+                col_index = matched_row.columns.get_loc("pPrescriptionNRT")
                 logodds_nrt = float(matched_row.iat[0, col_index])
-                col_index2 = matched_row.columns.get_loc("cUseOfBehaviourSupportLogOdds")
+                # col_index2 = matched_row.columns.get_loc("cUseOfBehaviourSupportLogOdds")
+                col_index2 = matched_row.columns.get_loc("cUseOfBehaviourSupport")
                 logodds_behaviour_support = float(matched_row.iat[0, col_index2])
-                col_index3 = matched_row.columns.get_loc("pVareniclineUseLogOdds")
+                # col_index3 = matched_row.columns.get_loc("pVareniclineUseLogOdds")
+                col_index3 = matched_row.columns.get_loc("pVareniclineUse")
                 logodds_varenicline = float(matched_row.iat[0, col_index3])
-                col_index4 = matched_row.columns.get_loc("pCytisineUseLogOdds")
+                # col_index4 = matched_row.columns.get_loc("pCytisineUseLogOdds")
+                col_index4 = matched_row.columns.get_loc("pCytisineUse")
                 logodds_cytisine = float(matched_row.iat[0, col_index4])         
             else:#no matched row, 0 logodds 
                 logodds_nrt = 0
