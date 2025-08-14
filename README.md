@@ -147,17 +147,3 @@ To deactivate the virtual environment, use the following command
 ```
 deactivate
 ```
-## Licenses
-
-This software is Copyright (C) 2024 The University of Sheffield (www.sheffield.ac.uk)
-
-This program is free software (software libre); you can redistribute it and/or modify it under
-the terms of the GNU General Public License (GPL) version 3 as published by the Free Software
-Foundation. Please review the following information to ensure the GNU Lesser General Public
-License version 3 requirements will be met: https://www.gnu.org/licenses/gpl-3.0.html.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-This software uses repast4py package, and their license is stated in LICENSE_Repast4Py.
