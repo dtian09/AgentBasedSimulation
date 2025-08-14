@@ -92,7 +92,7 @@ pip install numpy pandas
 4. Move into the repository directory.
 
 ```
-cd smokingABM
+cd AgentBasedSimulation
 ```
 
 4. Specify the behaviour model to use for initiating regular smoking, making a quit attempt and quitting successfully.
