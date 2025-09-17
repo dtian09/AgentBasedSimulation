@@ -1,5 +1,4 @@
 #parameter settings of the ABM and the input data files
-fixed_agent_ids: [200, 500, 800, 1500, 5086, 2042, 3000, 10001, 11000, 10007]
 seed: 1 #the random seed of the ABM
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
 regular_smoking_behaviour: "STPM" #"COMB" or "STPM" 
@@ -266,6 +265,17 @@ disp_diffusion_exsmoker_1961_1980.d: 0
 disp_diffusion_exsmoker_1981_1990.p: 0.006318259
 disp_diffusion_exsmoker_1981_1990.q: 0.097917356
 disp_diffusion_exsmoker_1981_1990.m: 0.147171933
+disp_diffusion_exsmoker_1981_1990.d: 0.000000000
+
+disp_diffusion_exsmoker_over1991.p: 0.006269040
+disp_diffusion_exsmoker_over1991.q: 0.205141921
+disp_diffusion_exsmoker_over1991.m: 0.195999719
+disp_diffusion_exsmoker_over1991.d: 0.000000000
+
+disp_diffusion_neversmoker_over1991.p: 0.016095829
+disp_diffusion_neversmoker_over1991.q: 0.006087049
+disp_diffusion_neversmoker_over1991.m: 0.194256200
+disp_diffusion_neversmoker_over1991.d: 0.000000000
 disp_diffusion_exsmoker_1981_1990.d: 0
 
 disp_diffusion_exsmoker_over1991.p: 0.00626904
@@ -281,6 +291,18 @@ disp_diffusion_neversmoker_over1991.d: 0
 disp_diffusion_smoker_1941_1960.p: 0.008604402
 disp_diffusion_smoker_1941_1960.q: 0.074490169
 disp_diffusion_smoker_1941_1960.m: 0.081410808
+disp_diffusion_smoker_1941_1960.d: 0.000000000
+
+disp_diffusion_smoker_1961_1980.p: 0.018051280
+disp_diffusion_smoker_1961_1980.q: 0.024889421
+disp_diffusion_smoker_1961_1980.m: 0.159047809
+disp_diffusion_smoker_1961_1980.d: 0.000000000
+
+disp_diffusion_smoker_1981_1990.p: 0.017467315
+disp_diffusion_smoker_1981_1990.q: 0.049051359
+disp_diffusion_smoker_1981_1990.m: 0.220577810
+disp_diffusion_smoker_1981_1990.d: 0.000000000
+=======
 disp_diffusion_smoker_1941_1960.d: 0
 
 disp_diffusion_smoker_1961_1980.p: 0.01805128
