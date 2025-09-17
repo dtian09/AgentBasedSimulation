@@ -9,6 +9,7 @@ from smokingcessation.smoking_model import SmokingModel
 from smokingcessation.attribute import PersonalAttribute
 from mbssm.micro_agent import MicroAgent
 import config.global_variables as g
+import pandas as pd
 
 class Person(MicroAgent):
     def __init__(self,
@@ -49,9 +50,12 @@ class Person(MicroAgent):
                  quit_attempt_theory=None,
                  quit_maintenance_theory=None,
                  regular_smoking_behaviour=None,#regular smoking COMB model or STPM intiation transition probabilities
-                 quitting_behaviour=None #quit attempt COMB model or STPM quitting transition probabilities
+                 quitting_behaviour=None, #quit attempt COMB model or STPM quitting transition probabilities
+                 entry_year: int = None  # Add entry_year parameter
                  ):
         super().__init__(id=id, type=type, rank=rank)
+        self.is_active = False  # Initialise agents and default to inactive
+        self.entry_year = entry_year  # Store entry year
         self.smoking_model = smoking_model        
         self.b_states = states #list of states. states[t] is the agent's state at time step t (t=0,1,...,current time step) with t=0 representing the beginning of the simulation.
         self.b_months_since_quit = months_since_quit #number of months of maintaining the quit behhaviour; only tracked for the ongoing quitter state.
@@ -59,7 +63,7 @@ class Person(MicroAgent):
         self.b_number_of_recent_quit_attempts = number_of_recent_quit_attempts
         self.b_years_since_quit = years_since_quit        
         self.months_counter_ex_smoker = 0  # count number of consecutive months when the self stays as an ex-smoker
-        self.init_behaviour_buffer() #initialize the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
+        self.init_behaviour_buffer() #initialise the behaviour buffer which stores the agent's behaviours (COMB and STPM behaviours) over the last 12 months                                           
         self.p_age = PersonalAttribute(name='pAge') 
         self.p_age.set_value(age)
         self.p_gender = PersonalAttribute(name='pGender')
@@ -92,6 +96,23 @@ class Person(MicroAgent):
         self.p_varenicline_use.set_value(varenicline_use)
         self.p_ecig_use = PersonalAttribute(name='pECigUse')
         self.p_ecig_use.set_value(ecig_use)
+        
+        # Age group dummy variables
+        self.c_age_group_30to44 = PersonalAttribute(name='cAgeGroup30To44')
+        self.c_age_group_45to64 = PersonalAttribute(name='cAgeGroup45To64')
+        self.c_age_group_65plus = PersonalAttribute(name='cAgeGroup65Plus')
+        self.m_age_group_30to44 = PersonalAttribute(name='mAgeGroup30To44')
+        self.m_age_group_45to64 = PersonalAttribute(name='mAgeGroup45To64')
+        self.m_age_group_65plus = PersonalAttribute(name='mAgeGroup65Plus')
+        
+        # Always calculate age group dummies based on age - ignore any pre-calculated values
+        self.c_age_group_30to44.set_value(1 if 30 <= age < 45 else 0)
+        self.c_age_group_45to64.set_value(1 if 45 <= age < 65 else 0)
+        self.c_age_group_65plus.set_value(1 if age >= 65 else 0)
+        self.m_age_group_30to44.set_value(1 if 30 <= age < 45 else 0)
+        self.m_age_group_45to64.set_value(1 if 45 <= age < 65 else 0)
+        self.m_age_group_65plus.set_value(1 if age >= 65 else 0)
+        
         self.eCig_diff_subgroup=None
         self.prequit_addiction_strength=None
         self.p_percentile = PersonalAttribute(name='pPercentile') 
@@ -153,6 +174,20 @@ class Person(MicroAgent):
             self.p_varenicline_use.add_level2_attribute(quit_maintenance_theory.level2_attributes['cVareniclineUse'])
             self.p_varenicline_use.set_value(varenicline_use)
             
+            # Link age group dummies to the COMB models
+            if 'mAgeGroup30To44' in quit_attempt_theory.level2_attributes:
+                self.m_age_group_30to44.add_level2_attribute(quit_attempt_theory.level2_attributes['mAgeGroup30To44'])
+            if 'mAgeGroup45To64' in quit_attempt_theory.level2_attributes:
+                self.m_age_group_45to64.add_level2_attribute(quit_attempt_theory.level2_attributes['mAgeGroup45To64'])
+            if 'mAgeGroup65Plus' in quit_attempt_theory.level2_attributes:
+                self.m_age_group_65plus.add_level2_attribute(quit_attempt_theory.level2_attributes['mAgeGroup65Plus'])
+            if 'cAgeGroup30To44' in quit_maintenance_theory.level2_attributes:
+                self.c_age_group_30to44.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAgeGroup30To44'])
+            if 'cAgeGroup45To64' in quit_maintenance_theory.level2_attributes:
+                self.c_age_group_45to64.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAgeGroup45To64'])
+            if 'cAgeGroup65Plus' in quit_maintenance_theory.level2_attributes:
+                self.c_age_group_65plus.add_level2_attribute(quit_maintenance_theory.level2_attributes['cAgeGroup65Plus'])
+            
     def update_difficulty_of_access(self):
          #difficulty of access is 0 if agent's age >= age of sale and +1 for every year below.         
          if self.p_age.get_value() >= self.smoking_model.age_of_sale:
@@ -172,7 +207,7 @@ class Person(MicroAgent):
         """
         The behaviour buffer stores this agent's 'quit attempt behaviours' (1) and 'not quit attempt behaviours' (0) over the last 12 months
         (12 ticks with each tick represents 1 month).
-        The behaviour buffer is initialized at t=0 as follows:
+        The behaviour buffer is initialised at t=0 as follows:
         X: number of quit attempts in past 12 months
         1. Generate a random permutation of indices 0,...,11
         2. Take first X indices of the permutation
@@ -217,13 +252,72 @@ class Person(MicroAgent):
             return self.b_states[0]
         
     def get_current_state(self):  # get the self's state at the current time step
-        return self.b_states[self.smoking_model.current_time_step]
+        current_time_step = self.smoking_model.current_time_step
+        
+        # If current_time_step is beyond our state history, this is an error
+        if current_time_step >= len(self.b_states):
+            raise IndexError(f"Trying to access state at time step {current_time_step} but agent only has states up to {len(self.b_states)-1}")
+        
+        # Get the current state
+        current_state = self.b_states[current_time_step]
+        
+        # If the state is NA, this indicates we're trying to access a state before the agent's entry year
+        # This shouldn't happen in normal operation
+        if current_state is pd.NA:
+            raise ValueError(f"Accessing NA state at time step {current_time_step} for agent {self.get_id()}. This suggests trying to access state before agent's entry year.")
+            
+        return current_state
 
     def get_current_time_step(self):
         return self.smoking_model.current_time_step
 
     def increment_age(self):
         self.p_age.set_value(self.p_age.get_value() + 1)
+        # Update age group dummies after age incrementation
+        self.update_age_group_dummies()
+
+    def update_age_group_dummies(self):
+        """
+        Update age group dummy variables based on the current age.
+        This method should be called whenever an agent's age changes.
+        """
+        current_age = self.p_age.get_value()
+        
+        # Store previous values for logging
+        if self.smoking_model.running_mode == 'debug':
+            old_c_30to44 = self.c_age_group_30to44.get_value()
+            old_c_45to64 = self.c_age_group_45to64.get_value()
+            old_c_65plus = self.c_age_group_65plus.get_value()
+            old_m_30to44 = self.m_age_group_30to44.get_value()
+            old_m_45to64 = self.m_age_group_45to64.get_value()
+            old_m_65plus = self.m_age_group_65plus.get_value()
+        
+        # Update c-prefixed age group dummies (for maintenance model)
+        self.c_age_group_30to44.set_value(1 if 30 <= current_age < 45 else 0)
+        self.c_age_group_45to64.set_value(1 if 45 <= current_age < 65 else 0)
+        self.c_age_group_65plus.set_value(1 if current_age >= 65 else 0)
+        
+        # Update m-prefixed age group dummies (for attempt model)
+        self.m_age_group_30to44.set_value(1 if 30 <= current_age < 45 else 0)
+        self.m_age_group_45to64.set_value(1 if 45 <= current_age < 65 else 0)
+        self.m_age_group_65plus.set_value(1 if current_age >= 65 else 0)
+        
+        # Log changes if there was an actual change and in debug mode
+        if self.smoking_model.running_mode == 'debug':
+            if (old_c_30to44 != self.c_age_group_30to44.get_value() or
+                old_c_45to64 != self.c_age_group_45to64.get_value() or
+                old_c_65plus != self.c_age_group_65plus.get_value() or
+                old_m_30to44 != self.m_age_group_30to44.get_value() or
+                old_m_45to64 != self.m_age_group_45to64.get_value() or
+                old_m_65plus != self.m_age_group_65plus.get_value()):
+                
+                self.smoking_model.logfile.write(f"Agent ID {self.get_id()} age group updated at age {current_age}: " +
+                    f"c30to44: {old_c_30to44}->{self.c_age_group_30to44.get_value()}, " +
+                    f"c45to64: {old_c_45to64}->{self.c_age_group_45to64.get_value()}, " +
+                    f"c65plus: {old_c_65plus}->{self.c_age_group_65plus.get_value()}, " +
+                    f"m30to44: {old_m_30to44}->{self.m_age_group_30to44.get_value()}, " +
+                    f"m45to64: {old_m_45to64}->{self.m_age_group_45to64.get_value()}, " +
+                    f"m65plus: {old_m_65plus}->{self.m_age_group_65plus.get_value()}\n")
 
     def get_current_theory_of_agent(self):
         return self.get_mediator().get_current_theory_of_agent(self)
