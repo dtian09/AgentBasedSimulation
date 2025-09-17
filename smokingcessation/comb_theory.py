@@ -105,12 +105,13 @@ class RegSmokeTheory(COMBTheory):
 
     def do_situation(self, agent: MicroAgent):        
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
-        if self.smoking_model.tick_counter == 12:
+        if self.smoking_model.months_counter == 12:
             agent.update_difficulty_of_access()
         #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
         #pPrescriptionNRT
         #pVareniclineUse
         #bCigConsumption
+        #oRecieptGPAdvice
         #oPrevalenceOfSmokingInGeographicLocality
         prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
         at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
@@ -264,7 +265,7 @@ class QuitAttemptTheory(COMBTheory):
             # append the agent's new behaviour to its behaviour buffer
             agent.add_behaviour(AgentBehaviour.NOQUITEATTEMPT)
             agent.set_state_of_next_time_step(state=AgentState.SMOKER)
-        agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
+        agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
 
 class QuitSuccessTheory(COMBTheory):
 
@@ -396,5 +397,5 @@ class QuitSuccessTheory(COMBTheory):
             agent.set_state_of_next_time_step(AgentState.SMOKER)
             agent.b_months_since_quit = 0
             self.level2_attributes['cCigAddictStrength'].set_value(agent.preQuitAddictionStrength)
-        agent.b_number_of_recent_quit_attempts=agent.count_behaviour(AgentBehaviour.QUITATTEMPT)
+        agent.b_number_of_recent_quit_attempts=agent.count_quit_attempt_behaviour()
 

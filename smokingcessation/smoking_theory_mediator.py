@@ -6,7 +6,6 @@ from mbssm.theory_mediator import TheoryMediator
 from mbssm.theory import Theory
 from mbssm.micro_agent import MicroAgent
 from smokingcessation.person import Person
-
 class SmokingTheoryMediator(TheoryMediator):
 
     def __init__(self, theory_list: List [Theory]):
@@ -20,29 +19,32 @@ class SmokingTheoryMediator(TheoryMediator):
             self.theory_map[theory.name] = theory
     
     def mediate_situation(self, agent: Person):
-        cstate = agent.get_current_state()
-        if cstate == AgentState.NEVERSMOKE:
-            self.theory_map[Theories.REGSMOKE].do_situation(agent)
-        elif cstate == AgentState.SMOKER:
-            self.theory_map[Theories.QUITATTEMPT].do_situation(agent)        
-        elif cstate == AgentState.NEWQUITTER:
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
-                        AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
-                        AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
-                        AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
-            self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
-        elif cstate == AgentState.EXSMOKER:
-            self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
-        else:
-            raise ValueError(f'{cstate} is not an acceptable agent state')
+        uid=agent.uid
+        self.theory_map[Theories.DemographicsSTPM].do_situation(agent)#this agent may be killed
+        if uid not in self.theory_map[Theories.DemographicsSTPM].smoking_model.agents_to_kill:#this agent is not to be killed
+            cstate = agent.get_current_state()
+            if cstate == AgentState.NEVERSMOKE:
+                self.theory_map[Theories.REGSMOKE].do_situation(agent)
+            elif cstate == AgentState.SMOKER:
+                self.theory_map[Theories.QUITATTEMPT].do_situation(agent)        
+            elif cstate == AgentState.NEWQUITTER:
+                self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
+            elif cstate in (AgentState.ONGOINGQUITTER1,AgentState.ONGOINGQUITTER2,AgentState.ONGOINGQUITTER3,
+                            AgentState.ONGOINGQUITTER4,AgentState.ONGOINGQUITTER5,AgentState.ONGOINGQUITTER6,
+                            AgentState.ONGOINGQUITTER7,AgentState.ONGOINGQUITTER8,AgentState.ONGOINGQUITTER9,
+                            AgentState.ONGOINGQUITTER10,AgentState.ONGOINGQUITTER11):
+                self.theory_map[Theories.QUITSUCCESS].do_situation(agent)
+            elif cstate == AgentState.EXSMOKER:
+                self.theory_map[Theories.RELAPSESSTPM].do_situation(agent)
+            else:
+                raise ValueError(f'{cstate} is not an acceptable agent state')
 
     def mediate_action(self, agent: Person):
         """
-        A smoker transitions to an ex-smoker after maintaining quit (abstinence) for 12 months.
+        A smoker transitions to an ex-smoker after making a quit attempt then, maintaining quit (abstinence) for 11 months.
         The sequence of the agent's behaviours when transitioning from smoker to ex-smoker:
-            quit attempt (at t=i, i > 0, state=smoker), quit success (at t=i+1, state=quitter),...,
-            quit success (at t=i+11, state=quitter), relapse or no relapse (at t=i+12, state=ex-smoker)
+            quit attempt (smoker), quit maintenance (new quitter),
+            quit maintenance (on going quitter1),...,quit maintenance (on going quitter11), relapse (ex-smoker)
         pseudocode of state transition model:
         At tick t:
             for a never smoker, 

@@ -47,6 +47,7 @@ class Theories(Enum):
     QUITATTEMPT = 2
     QUITSUCCESS = 3
     RELAPSESSTPM = 4
+    DemographicsSTPM = 5
 
 #class Regulators(Enum):
 #    """

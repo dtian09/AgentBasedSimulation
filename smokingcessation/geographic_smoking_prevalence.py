@@ -22,19 +22,20 @@ class GeographicSmokingPrevalence(MacroEntity):
 
     def getRegionalPrevalence(self,month,region):#get the smoking prevalence of this region for this month
         #format of month: Nov-06, Dec-10 etc.
-        #format of region:
-        #1 = North East
-        #2 = North West
-        #3 = Yorkshire and The Humber
-        #4 = East Midlands
-        #5 = West Midlands
-        #6 = East of England
-        #7 = London
-        #8 = South East
-        #9 = South West
+        #map region numbers (used by ABM) to region names (used by regional smoking prevalence data file):
+        hash_region={1: "North East",
+                     2: "North West",
+                     3: "Yorkshire and The Humber",
+                     4: "East Midlands",
+                     5: "West Midlands",
+                     6: "East of England",
+                     7: "London",
+                     8: "South East",
+                     9: "South West"}
+        
         smokprev=self.smoking_model.regionalSmokingPrevalence[self.smoking_model.regionalSmokingPrevalence['month']==month &
-                                                              self.smoking_model.regionalSmokingPrevalence['region']==region]
+                                                              self.smoking_model.regionalSmokingPrevalence['region']==hash_region[region]]
         if len(smokprev) > 0:
             return (float(smokprev.at[0,'prevalence']))
         else:
-            sys.exit('smoking prevalence of '+region+' for '+month+' is not found in regionalSmokingPrevalence dataframe.')
+            sys.exit('smoking prevalence of '+hash_region[region]+' for '+month+' is not found in regionalSmokingPrevalence dataframe.')
