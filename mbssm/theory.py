@@ -1,5 +1,7 @@
+'''
+definition of Theory abstract class
+'''
 from abc import abstractmethod, ABC
-
 
 class Theory(ABC):
     

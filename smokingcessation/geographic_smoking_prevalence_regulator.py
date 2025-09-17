@@ -1,10 +1,13 @@
+'''
+definition of GeographicSmokingPrevalenceRegulator class which is a subclass of Regulator abstract class.
+'''
 from mbssm.macro_entity import Regulator, MacroEntity
 from smokingcessation.smoking_model import SmokingModel
-from config.definitions import eCigType
+from config.definitions import eCigType, Regulators
 
 class GeographicSmokingPrevalenceRegulator(Regulator):
     def __init__(self, smoking_model : SmokingModel):
-        super().__init__('GeographicSmokingPrevalenceRegulator')
+        super().__init__(Regulators.geoSmokPrevReg)
         self.smoking_model=smoking_model
     
     def do_transformation(self, macro_entity: MacroEntity):

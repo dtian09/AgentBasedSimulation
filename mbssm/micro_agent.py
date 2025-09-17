@@ -1,3 +1,6 @@
+'''
+definition of MicroAgent class that extends repast4py.core.Agent
+'''
 from __future__ import annotations
 import repast4py
 

@@ -1,10 +1,11 @@
-
+'''
+definition of GeographicSmokingPrevalence class which is a subclass the MacroEntity class
+'''
 from mbssm.macro_entity import MacroEntity
 from smokingcessation.smoking_model import SmokingModel
-from smokingcessation.person import Person
-import numpy as np
-import random
+import pandas as pd
 import sys
+#import ipdb #python debugger
 
 class GeographicSmokingPrevalence(MacroEntity):
     def __init__(self, smoking_model : SmokingModel):
@@ -20,22 +21,29 @@ class GeographicSmokingPrevalence(MacroEntity):
         else:
             sys.exit('Smoking prevalences of regions for month: '+month+' are not found.')
 
-    def getRegionalPrevalence(self,month,region):#get the smoking prevalence of this region for this month
-        #format of month: Nov-06, Dec-10 etc.
-        #map region numbers (used by ABM) to region names (used by regional smoking prevalence data file):
+    def getRegionalPrevalence(self,month,region):
+        '''get the smoking prevalence of this region for this month
+           input: month e.g. Nov-06
+                  region e.g. 1
+           
+           map region numbers (used by ABM) to region names (used by regional smoking prevalence data file):
+        '''
         hash_region={1: "North East",
                      2: "North West",
-                     3: "Yorkshire and The Humber",
+                     3: "Yorkshire and the Humber",
                      4: "East Midlands",
                      5: "West Midlands",
                      6: "East of England",
                      7: "London",
                      8: "South East",
                      9: "South West"}
-        
-        smokprev=self.smoking_model.regionalSmokingPrevalence[self.smoking_model.regionalSmokingPrevalence['month']==month &
-                                                              self.smoking_model.regionalSmokingPrevalence['region']==hash_region[region]]
+       
+        smokprev=self.smoking_model.regionalSmokingPrevalence[(self.smoking_model.regionalSmokingPrevalence['month']==month) &
+                                                              (self.smoking_model.regionalSmokingPrevalence['region']==hash_region[region])]
+        smokprev = pd.DataFrame(smokprev)
+        #ipdb.set_trace()#debug break point
         if len(smokprev) > 0:
-            return (float(smokprev.at[0,'prevalence']))
+            col_index = smokprev.columns.get_loc('prevalence')
+            return (float(smokprev.iat[0,col_index]))
         else:
-            sys.exit('smoking prevalence of '+hash_region[region]+' for '+month+' is not found in regionalSmokingPrevalence dataframe.')
+            raise ValueError('smoking prevalence of '+hash_region[region]+' for '+month+' is not found in regionalSmokingPrevalence dataframe.')

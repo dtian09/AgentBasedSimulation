@@ -1,7 +1,14 @@
+'''
+defintion of the SmokingRegulatorMediator class which is a subclass of the RegulatorMediator abstract class.
+This class is responsible for mediating the transformation and macro-macro mechanisms of the eCigDiffusion and GeographicSmokingPrevalence macro entities.
+'''
+
 from mbssm.macro_entity import MacroEntity, RegulatorMediator, Regulator
 from typing import List
 from smokingcessation.ecig_diffusion import eCigDiffusion
 from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
+from config.definitions import Regulators
+
 class SmokingRegulatorMediator(RegulatorMediator):
     def __init__(self, regulator_list: List[Regulator]):
         super().__init__(regulator_list)
@@ -16,16 +23,16 @@ class SmokingRegulatorMediator(RegulatorMediator):
             
     def mediate_transformation(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
-            self.regulator_map['eCigDiffusionRegulator'].do_transformation(macroEntity)
+            self.regulator_map[Regulators.eCigDiffReg].do_transformation(macroEntity)
         elif isinstance(macroEntity, GeographicSmokingPrevalence):
-            self.regulator_map['GeographicSmokingPrevalenceRegulator'].do_transformation(macroEntity)
+            self.regulator_map[Regulators.geoSmokPrevReg].do_transformation(macroEntity)
         else:
             raise Exception('This macro entity is invalid.')
         
     def mediate_macro_macro(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
-            self.regulator_map['eCigDiffusionRegulator'].do_macro_macro(macroEntity)
+            self.regulator_map[Regulators.eCigDiffReg].do_macro_macro(macroEntity)
         elif isinstance(macroEntity, GeographicSmokingPrevalence):
-            self.regulator_map['GeographicSmokingPrevalenceRegulator'].do_macro_macro(macroEntity)
+            self.regulator_map[Regulators.geoSmokPrevReg].do_macro_macro(macroEntity)
         else:
             raise Exception('This macro entity is invalid.')

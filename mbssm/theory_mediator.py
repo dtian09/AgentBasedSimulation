@@ -1,3 +1,6 @@
+'''
+defining the abstract class TheoryMediator
+'''
 from typing import List
 from abc import abstractmethod, ABC
 

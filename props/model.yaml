@@ -1,76 +1,206 @@
+#parameter settings of the ABM and the input data files
 seed: 1 #the random seed of the ABM
 ABM_mode: "debug" #"debug" or "normal" (running mode of the ABM software)
-regular_smoking_behaviour: "STPM" #"COMB" 
-quitting_behaviour: "STPM" #"COMB" 
-data_file: "data/data_synth13_02_2025.csv"
-regional_prevalence: "data/regional_smoking_trends_data.csv" #monthly regional smoking prevalence
+regular_smoking_behaviour: "STPM" #"COMB" or "STPM" 
+quitting_behaviour: "COMB" #"COMB" or "STPM"
+data_file: "data/data_synth20_03_2025_v2.csv" #the baseline synthetic population
+year_of_baseline: 2011 #year of the baseline sysnthetic popultion
+regional_prevalence: "data/regional_smoking_trends_data.csv" #monthly regional smoking prevalence data file
 initiation_prob_file: "data/initiation_prob1month_STPM.csv" #STPM monthly initiation probability file
 relapse_prob_file: "data/relapse_prob1month_STPM.csv" #STPM monthly relapse probability file
 quit_prob_file: "data/quit_prob1month_STPM.csv" #STPM monthly quit probability file
-death_prob_file: "data/death_probs_abm_integer.csv"
-year_of_baseline: 2011 #year of the baseline popultion at t=0
-stop.at: 97 #year 2018. This is the stop time of ABM when tick 1 = Jan 2011
-#stop.at: 13 #January 2012 (for testing regional smoking prevalence)
-#stop.at: 109 #January 2020  (covers the time period (2011 to 2019) for reading in regional smoking prevalence) where tick 1 = Jan 2010. (2020 - 2011) * 12 + 1 = 109 
+death_prob_file: "data/death_probs_abm_integers.csv"
+attempt_exogenous_dynamics_file: "data/table_attempts_dynamic_extended_integers.csv"
+maintenance_exogenous_dynamics_file: "data/table_maintenance_dynamic_extended_integers.csv"
+cig_consumption_percentiles_file: "data/sts_cig_consumption_percentiles20_03_25.csv"
+sigma_propensity_GP_advice_attempt: 1 #sigma of N(0, sigma) for propensity of GP_advice in Quit Attempt
+sigma_propensity_NRT_attempt: 1 #sigma of N(0, sigma) for propensity of NRT in Quit Attempt
+sigma_propensity_NRT_maintenance: 1 #sigma of N(0, sigma) for propensity of NRT in Quit Maintenance
+sigma_propensity_behaviour_support_maintenance: 1 #sigma of N(0, sigma) for propensity of behaviour support in Quit Maintenance
+sigma_propensity_varenicline_maintenance: 1 #sigma of N(0, sigma) for propensity of varenicline use in Quit Maintenance
+sigma_propensity_cytisine_maintenance: 1 #sigma of N(0, sigma) for propensity of cytisine use in Quit Maintenance
+###stop.at sets the final tick (time step) of the simulation where tick 1=January of year_of_baseline e.g. 2011,..., tick 13=January of 2012 etc.
+#stop.at: 72 #December 2016
+stop.at: 288 #December 2034
 #set the starting time step of the monthly e-cigarette diffusion models in the timescale of ABM in order to synchronize the running of ABM and diffusion models
-difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions: -12 #for non-disposable diffusions start at January 2010 (i.e. -12) and year of baseline population = 2011. 
-difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions: 120 #for disposable diffusions start at January 2021 and year of baseline population = 2011. 12 x (2021-2011) = 120
-###cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = time length of a tick in weeks
+difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions: -12 #non-disposable diffusions start at January 2010 (i.e. -12) and year of baseline population = 2011. 
+difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions: 120 #disposable diffusions start at January 2021 and year of baseline population = 2011. 12 x (2021-2011) = 120
+###feedback loop###
+#cCigAddictStrength[t+1] = round (cCigAddictStrength[t] * exp(lambda*t)), where lambda = 0.0368 and t = time length of a tick in weeks
 lambda: 0.0368 
-tickInterval: 4.3 #time length of a tick in weeks (4.3 weeks is 1 month)
-#prob of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = time length of a tick in weeks
+tickInterval: 4.333333333333333 #time length of a tick (1 month) in weeks. In Python, a number has up to 15 decimal places by default.
+#probability of smoker self identity = 1/(1+alpha*(k*t)^beta) where alpha = 1.1312, beta = 0.500, k = no. of quit successes and t = time length of a tick in weeks
 alpha: 1.1312 
 beta: 0.500
-###formula of regular smoking theory###
-#this is the formula in the presentation slides "Latent_Composites_Draft_Analysis" of UCL 
-#the bias is set to a random value by the user as it is not provided in their slides
-#C=cAlcoholConsumption*beta1 + cEcigaretteUse*beta2 + cMentalHealthConditions*beta3
-#O=oSocialHousing*beta4 + oSEP *beta5 + oAge*beta6
-#probability of regular smoking = 1/(1+e^power) where power = -1 * (C*beta7 + O*beta8 + bias)
-uptake.cAlcoholConsumption.beta: 0.46
-uptake.cEcigaretteUse.beta: 2.2
-uptake.cMentalHealthConditions.beta: 0.59
-uptake.oSocialHousing.beta: 0.57
-uptake.oSEP.beta: 0.69
-uptake.oAge.beta: 0.2
-uptake.oDifficultyOfAccess.beta: 0.3
-uptake.C.beta: 0.79
-uptake.O.beta: 0.53
-uptake.bias: 1
-###formula of quit attempt theory###
-#this is the formula in the presentation slides "Latent_Composites_Draft_Analysis" of UCL 
-#the bias is set to a random value by the user as it is not provided in their slides
-#O=oSocialHousing*beta1
-#M=mIntentionToQuit*beta2 + mSpendingOnCig*beta3 + mEnjoymentOfSmoking*beta4 + mEnjoymentOfSmoking*beta5 + mAge*beta6
-#probability of quit attempt = 1/(1+e^power) where power = -1 * (O*beta7 + M*beta8 + bias) 
-attempt.oSocialHousing.beta: 0.18
-attempt.mIntentionToQuit.beta: 0.52
-attempt.mSpendingOnCig.beta: 0.02
-attempt.mEnjoymentOfSmoking.beta: -0.17
-attempt.mAge.beta: -0.04
-attempt.O.beta: 0.14
-attempt.M.beta: 0.61
-attempt.bias: 0.7
-###formula of quit success theory###
-#this is the formula in the presentation slides "Latent_Composites_Draft_Analysis" of UCL 
-#the bias is set to a random value by the user as it is not provided in their slides
-#C=cAlcoholConsumption*beta1 + cEcigaretteUse*beta2 + cVareniclineUse*beta3 + cCigAddictStrength*beta4
-#  + cMentalHealthConditions*beta5 + cPrescriptionNRT*beta6 + cCigConsumptionPrequit*beta7 + cAge*beta8
-#O=oSocialHousing*beta9 + oSEP*beta10
-#probability of quit success = 1/(1+e^power) where power = -1 * (C*beta11 + O*beta12 + bias) 
-success.cAlcoholConsumption.beta: 0.08
-success.cEcigaretteUse.beta: 0.02
-success.cVareniclineUse.beta: 0.88
-success.cCigAddictStrength.beta: -0.20
-success.cMentalHealthConditions.beta: -0.67
-success.cPrescriptionNRT.beta: -0.09
-success.cCigConsumptionPrequit.beta: -0.18
-success.cAge.beta: 0.04
-success.oSocialHousing.beta: -0.11
-success.oSEP.beta: -0.15
-success.C.beta: 0.55
-success.O.beta: 0.08
-success.bias: 0.3
+###setting of the betas of Level 2 attributes and Level 1 attributes (plus their biases) of the COM-B models for regular smoking uptake, quit attempt and quit maintenance
+#Final betas of the Level 2 attributes from "Attempts_SEM_Coefficents_Final.xlsx"
+attempt.oSocialHousing.beta: 0.066735105
+attempt.oPrevalenceOfSmokingInGeographicLocality.beta: 2.078483766
+attempt.oRecieptGPAdvice.beta: 0.075724434
+attempt.social_network.beta: 0.051438188
+attempt.mIntentionToQuit.beta: 0.193121478
+##attempt.mExpenditure.beta: 0.001549384 # mExpenditure is missing in the synthetic population (had pExpenditure)
+attempt.mEnjoymentOfSmoking.beta: -0.247523588
+attempt.mUseOfNRT.beta: 0.31473786
+attempt.mPositiveSmokerIdentity.beta: 0.005881472
+attempt.mSelfEfficacy.beta: 0.301120451
+#attempt.mAgeGroup30_44.beta: -0.193993099
+#attempt.mAgeGroup45_64.beta: -0.249374441
+#attempt.mAgeGroup_over65.beta: -0.135045093
+attempt.mNumberOfRecentQuitAttempts.beta: 0.323579571
+
+attempt.C.beta: 1
+attempt.O.beta: 1
+attempt.M.beta: 1
+attempt.bias: -2.168751546
+
+#Final betas of the Level 2 attributes from "Maintenance_SEM_Coefficients_Final.xlsx"
+#maintenance.cAlcoholConsumptionGroupHigherRisk.beta: 0.386397559
+#maintenance.cAlcoholConsumptionGroupIncreasingRisk.beta: 0.10960855
+#maintenance.cAlcoholConsumptionGroupLowerRisk.beta: 0.162246063
+maintenance.cEcigaretteUse.beta: 0.449275171
+#maintenance.cPrescriptionNRTInAttempt.beta: 0.279220704
+#maintenance.cOverCounterNRTInAttempt.beta: -0.093049738
+##maintenance.cCigConsumption.beta: -0.027442677 #cCigConsumption is missing in the synthetic population (has bCigConsumption)
+maintenance.cVareniclineUse.beta: 0.716465938
+#maintenance.cAgeGroup30_44.beta: 0.336242932
+#maintenance.cAgeGroup45_64.beta: 0.152239305
+#maintenance.cAgeGroup_over65.beta: 0.270517719
+maintenance.cMentalHealthConditions.beta: -0.14567991 
+maintenance.cCigAddictStrength.beta: -0.189854296
+#maintenance.cUseOfBehaviourSupportInAttempt.beta: 0.212600283
+maintenance.oSocialHousing.beta: -0.405163293
+maintenance.social_network.beta: -0.052154981
+#maintenance.oPrevalenceOfSmokingInGeographicLocality.beta: 0.784085375 #comment out to exclude this variable from the model 
+maintenance.oSEP.beta: -0.012062783
+maintenance.cCytisineUse.beta: 0.792992516
+
+maintenance.C.beta: 1
+maintenance.O.beta: 1
+maintenance.M.beta: 1
+maintenance.bias: 0.1 #0.1 is not the actual intercept.
+
+###Data Dictionary Level 2 attributes of Regular Smoking Uptake (initiation) COM-B Model ###
+# uptake.cAge.beta: 0.1
+# uptake.cMentalHealthConditions.beta: 0.1
+# uptake.cAlcoholConsumption.beta: 0.1
+# uptake.cPrescriptionNRT.beta: 0.1
+# uptake.cEcigaretteUse.beta: 0.1
+# uptake.cCigConsumptionPrequit.beta: 0.1
+# uptake.cVareniclineUse.beta: 0.1
+# uptake.cCigAddictStrength.beta: 0.1
+# #uptake.cUseOfBehaviouralSupport.beta: 0.1
+# uptake.cUnderstandingOfSmokingHarms.beta: 0.1
+# uptake.cCytisineUse.beta: 0.1
+
+# uptake.oAge.beta: 0.1
+# uptake.oEducationalLevel.beta: 0.1
+# uptake.oSEP.beta: 0.1
+# uptake.oSocialHousing.beta: 0.1
+# uptake.oPerceivedCostPerStick.beta: 0.1
+# uptake.oPrevalenceOfSmokingInGeographicLocality.beta: 0.1
+# #uptake.oDifficultyOfAccess.beta: 0.1
+# #uptake.oGPadvice.beta: 0.1
+# #uptake.oInteractionOfSmokersInSocialNetwork.beta: 0.1
+# uptake.oParentalSmoking.beta: 0.1
+
+# uptake.mAge.beta: 0.1
+# uptake.mGender.beta: 0.1
+# uptake.mUseOfNRT.beta: 0.1
+# uptake.mSpendingOnCig.beta: 0.1
+# uptake.mEnjoymentOfSmoking.beta: 0.1
+# uptake.mIntentionToQuit.beta: 0.1
+# uptake.mNumberOfRecentQuitAttempts.beta: 0.1
+# uptake.mNonSmokerSelfIdentity.beta: 0.1
+# uptake.mPositiveSmokerIdentity.beta: 0.1
+# uptake.mSelfEfficacy.beta: 0.1
+
+# #uptake.C.beta: 0.1
+# uptake.O.beta: 0.1
+# uptake.M.beta: 0.1
+# uptake.bias: 0.1
+
+###Data Dictionary Level 2 attributes of Quit Attempt COM-B Model###
+# attempt.cAge.beta: 0.1
+# attempt.cMentalHealthConditions.beta: 0.1
+# attempt.cAlcoholConsumption.beta: 0.1
+# attempt.cPrescriptionNRT.beta: 0.1
+# attempt.cEcigaretteUse.beta: 0.1
+# attempt.cCigConsumptionPrequit.beta: 0.1
+# attempt.cVareniclineUse.beta: 0.1
+# attempt.cCigAddictStrength.beta: 0.1
+# ##attempt.cUseOfBehaviouralSupport.beta: 0.1   #this variable is missing or has inconsistent name in the synthetic population
+# attempt.cUnderstandingOfSmokingHarms.beta: 0.1
+# attempt.cCytisineUse.beta: 0.1
+
+# attempt.oAge.beta: 0.1
+# attempt.oEducationalLevel.beta: 0.1
+# attempt.oSEP.beta: 0.1
+# attempt.oSocialHousing.beta: 0.1
+# attempt.oPerceivedCostPerStick.beta: 0.1
+# attempt.oPrevalenceOfSmokingInGeographicLocality.beta: 0.1 
+# ##attempt.oDifficultyOfAccess.beta: 0.1 #see above comment
+# ##attempt.oGPadvice.beta: 0.1
+# ##attempt.oInteractionOfSmokersInSocialNetwork.beta: 0.1
+# attempt.oParentalSmoking.beta: 0.1
+
+# attempt.mAge.beta: 0.1
+# attempt.mGender.beta: 0.1
+# attempt.mUseOfNRT.beta: 0.1
+# attempt.mSpendingOnCig.beta: 0.1
+# attempt.mEnjoymentOfSmoking.beta: 0.1
+# attempt.mIntentionToQuit.beta: 0.1
+# attempt.mNumberOfRecentQuitAttempts.beta: 0.1
+# attempt.mNonSmokerSelfIdentity.beta: 0.1
+# attempt.mPositiveSmokerIdentity.beta: 0.1
+# attempt.mSelfEfficacy.beta: 0.1
+
+# attempt.C.beta: 0.1
+# attempt.O.beta: 0.1
+# attempt.M.beta: 0.1
+# attempt.bias: 0.1
+
+# ###Data Dictionary Level 2 attributes of Quit Maintenance COM-B Model###
+
+# maintenance.cAge.beta: 0.1
+# maintenance.cMentalHealthConditions.beta: 0.1
+# maintenance.cAlcoholConsumption.beta: 0.1
+# maintenance.cPrescriptionNRT.beta: 0.1
+# maintenance.cEcigaretteUse.beta: 0.1
+# maintenance.cCigConsumptionPrequit.beta: 0.1
+# maintenance.cVareniclineUse.beta: 0.1
+# maintenance.cCigAddictStrength.beta: 0.1
+# ##maintenance.cUseOfBehaviouralSupport.beta: 0.1
+# maintenance.cUnderstandingOfSmokingHarms.beta: 0.1
+# maintenance.cCytisineUse.beta: 0.1
+
+# maintenance.oAge.beta: 0.1
+# maintenance.oEducationalLevel.beta: 0.1
+# maintenance.oSEP.beta: 0.1
+# maintenance.oSocialHousing.beta: 0.1
+# maintenance.oPerceivedCostPerStick.beta: 0.1
+# maintenance.oPrevalenceOfSmokingInGeographicLocality.beta: 0.1
+# ##maintenance.oDifficultyOfAccess.beta: 0.1
+# ##maintenance.oGPadvice.beta: 0.1
+# ##maintenance.oInteractionOfSmokersInSocialNetwork.beta: 0.1
+# maintenance.oParentalSmoking.beta: 0.1
+
+# maintenance.mAge.beta: 0.1
+# maintenance.mGender.beta: 0.1
+# maintenance.mUseOfNRT.beta: 0.1
+# maintenance.mSpendingOnCig.beta: 0.1
+# maintenance.mEnjoymentOfSmoking.beta: 0.1
+# maintenance.mIntentionToQuit.beta: 0.1
+# maintenance.mNumberOfRecentQuitAttempts.beta: 0.1
+# maintenance.mNonSmokerSelfIdentity.beta: 0.1
+# maintenance.mPositiveSmokerIdentity.beta: 0.1
+# maintenance.mSelfEfficacy.beta: 0.1
+
+# maintenance.C.beta: 0.1
+# maintenance.O.beta: 0.1
+# maintenance.M.beta: 0.1
+# maintenance.bias: 0.1
+
 ###parameters of non-disposable e-cigarette diffusion models
 
 nondisp_diffusion_exsmoker_less1940.p: 0.000804634
