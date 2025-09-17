@@ -1,7 +1,7 @@
 '''
 definition of the SmokingModel class which is a subclass of the Model abstract class
 SmokingModel class:
-    initializes the simulation enviroment of the ABM,
+    initialises the simulation enviroment of the ABM,
     schedules and executes the mechanisms of the ABM, 
     saves counts of population subgroups to csv files,
     saves e-cigarette diffusion results to csv files (in debug mode), 
@@ -20,6 +20,8 @@ import config.global_variables as g
 import os
 import random
 import gc
+# Import the SocialNetwork class
+from smokingcessation.social_network import SocialNetwork
 #import ipdb #python debugger https://wangchuan.github.io/coding/2017/07/12/ipdb-cheat-sheet.html#command-cheatsheet
 
 class SmokingModel(Model):
@@ -43,6 +45,7 @@ class SmokingModel(Model):
         self.props = params
         self.age_of_sale=18
         self.seed = self.props["seed"]
+        self.fixed_agent_ids = self.props["fixed_agent_ids"]
         random.seed(self.seed) #set the random seed of ABM
         self.data_file: str = self.props["data_file"]  #the baseline synthetic population
         self.regionalSmokingPrevalenceFile = self.props["regional_prevalence"]
@@ -146,6 +149,10 @@ class SmokingModel(Model):
                             eCigDiffSubGroup.Smoker_over1991:[],
                             eCigDiffSubGroup.Neversmoked_over1991:[]}
             
+        # Create social network object (just the object, not the connections yet)
+        self.social_network = SocialNetwork(self)
+        # Get fixed agent IDs from config, with default if not specified
+        self.fixed_agent_ids = self.props["fixed_agent_ids"]
     def format_month_and_year(self):
         '''
         convert the current month and current year of the ABM to the format: Nov-06, Dec-10 etc. used by regional smoking prevalence file
@@ -465,19 +472,35 @@ class SmokingModel(Model):
                                             ' formula')
                                     raise ValueError(level2attribute + sstr)
     def init_agents(self):
-        '''initialize the baseline agent population at tick 0'''
+        '''initialise the baseline agent population at tick 0'''
         from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
         from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitMaintenanceTheory
         from smokingcessation.stpm_theory import DemographicsSTPMTheory, RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
         from smokingcessation.person import Person
 
-        baseline_agents=self.data[self.data['year']==self.year_of_current_time_step]#the current year: year of baseline population 
+        # Load all potential agents from the data file, not just the baseline year
+        # the name baseline_agents is kept for consistency with the original code though it really is all agents
+        baseline_agents = self.data  
         (r, _) = baseline_agents.shape
         if r==0:
-            raise ValueError(F"An empty (size 0) baseline population is initialized at year: '{self.year_of_current_time_step}'\n")
+            raise ValueError(F"An empty (size 0) baseline population is initialised at year: '{self.year_of_current_time_step}'\n")
+            
+        if self.running_mode == 'debug':
+            self.logfile.write(f"Loading {r} potential agents from data file\n")
+            
+        # Track how many of each theory type we create
+        rsmoke_theories = 0
+        qattempt_theories = 0
+        qmaintenance_theories = 0
+            
         for i in range(r):
-            subgroup=None
+            subgroup = None
             init_state = baseline_agents.at[i, 'bState']
+            
+            # Extract agent ID and entry year from data
+            agent_id = baseline_agents.at[i, 'agentID']
+            entry_year = baseline_agents.at[i, 'year']
+            
             if init_state == 0:
                 states = [AgentState.NEVERSMOKE, AgentState.NEVERSMOKE]
                 if baseline_agents.at[i,'pGender']==1:#1=male
@@ -572,19 +595,26 @@ class SmokingModel(Model):
                 raise ValueError(f'{init_state} is not an acceptable agent state')
             if self.regular_smoking_behaviour=='COMB':
                 rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
+                rsmoke_theories += 1
             else:#STPM
                 rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
             if self.quitting_behaviour=='COMB':
                 qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
+                qattempt_theories += 1
                 qmaintenance_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
+                qmaintenance_theories += 1
             else:#STPM
                 qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
+                qattempt_theories += 1
                 qmaintenance_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
+                qmaintenance_theories += 1
             relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
             demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
-            self.context.add(Person(
+            
+            # Create the agent
+            agent = Person(
                     self,
-                    i,
+                    agent_id,  # Use the actual agent ID from the data file
                     self.type,
                     self.rank,
                     age=baseline_agents.at[i, 'pAge'],
@@ -620,11 +650,38 @@ class SmokingModel(Model):
                     quit_attempt_theory=qattempt_theory,
                     quit_maintenance_theory=qmaintenance_theory,
                     regular_smoking_behaviour=self.regular_smoking_behaviour,
-                    quitting_behaviour=self.quitting_behaviour))
+                    quitting_behaviour=self.quitting_behaviour,
+                    entry_year=entry_year  # Pass the entry year to the agent
+            )
+                    
+            # Add the agent to the context
+            self.context.add(agent)
+            
+            # Set up the theories as direct attributes on the agent
+            agent = self.context.agent((agent_id, self.type, self.rank))
+            # Set theories as direct attributes on the agent object
+            agent.quit_attempt_theory = qattempt_theory
+            agent.quit_maintenance_theory = qmaintenance_theory
+            
+            # Set up the mediator
             mediator = SmokingTheoryMediator([rsmoke_theory, qattempt_theory, qmaintenance_theory, relapse_stpm_theory, demographics_theory])
-            agent = self.context.agent((i, self.type, self.rank))
             agent.set_mediator(mediator)
-            self.population_counts[subgroup]+=1
+            
+            # Activate the agent if it's from the baseline year
+            if entry_year == self.year_of_current_time_step:
+                agent.is_active = True
+                self.population_counts[subgroup] += 1
+        
+        self.size_of_population = self.get_size_of_population()
+        
+        # At the end of the method, after all agents are created
+        if self.running_mode == 'debug':
+            # Count active agents for logging
+            active_agents = sum(1 for agent in self.context.agents() if agent.is_active)
+            self.logfile.write(f"Created {r} agents, {active_agents} active for baseline year {self.year_of_current_time_step}\n")
+            self.logfile.write(f"Created {rsmoke_theories} regular smoking theories\n")
+            self.logfile.write(f"Created {qattempt_theories} quit attempt theories\n")
+            self.logfile.write(f"Created {qmaintenance_theories} quit maintenance theories\n")
 
     def init_population_counts(self):
         subgroupsL=[SubGroup.NEVERSMOKERFEMALE,SubGroup.NEVERSMOKERMALE,SubGroup.SMOKERFEMALE,SubGroup.SMOKERMALE,\
@@ -634,7 +691,8 @@ class SmokingModel(Model):
             self.population_counts[subgroup]=0
 
     def get_size_of_population(self):#get the size of the current population
-        return (self.context.size()).get(-1)
+        # Count only active agents rather than all agents in the context
+        return sum(1 for agent in self.context.agents() if agent.is_active)
 
     def init_population(self):
         self.months_counter = 0
@@ -658,6 +716,11 @@ class SmokingModel(Model):
         self.file_quit_age_sex.write('Tick,Year,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-49M,N_smokers_endyear_25-49M,N_newquitters_endyear_25-49M,N_ongoingquitters_endyear_25-49M,N_dead_endyear_25-49M,N_smokers_ongoingquitters_newquitters_startyear_25-49F,N_smokers_endyear_25-49F,N_newquitters_endyear_25-49F,N_ongoingquitters_endyear_25-49F,N_dead_endyear_25-49F,N_smokers_ongoingquitters_newquitters_startyear_50-74M,N_smokers_endyear_50-74M,N_newquitters_endyear_50-74M,N_ongoingquitters_endyear_50-74M,N_dead_endyear_50-74M,N_smokers_ongoingquitters_newquitters_startyear_50-74F,N_smokers_endyear_50-74F,N_newquitters_endyear_50-74F,N_ongoingquitters_endyear_50-74F,N_dead_endyear_50-74F\n')
         self.file_quit_imd=open(f'{ROOT_DIR}/output/'+self.filename_quit_imd,'w')
         self.file_quit_imd.write('Tick,Year,Year_num,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD1,N_smokers_endyear_25-74_IMD1,N_newquitters_endyear_25-74_IMD1,N_ongoingquitters_endyear_25-74_IMD1,N_dead_endyear_25-74_IMD1,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD2,N_smokers_endyear_25-74_IMD2,N_newquitters_endyear_25-74_IMD2,N_ongoingquitters_endyear_25-74_IMD2,N_dead_endyear_25-74_IMD2,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD3,N_smokers_endyear_25-74_IMD3,N_newquitters_endyear_25-74_IMD3,N_ongoingquitters_endyear_25-74_IMD3,N_dead_endyear_25-74_IMD3,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD4,N_smokers_endyear_25-74_IMD4,N_newquitters_endyear_25-74_IMD4,N_ongoingquitters_endyear_25-74_IMD4,N_dead_endyear_25-74_IMD4,N_smokers_ongoingquitters_newquitters_startyear_25-74_IMD5,N_smokers_endyear_25-74_IMD5,N_newquitters_endyear_25-74_IMD5,N_ongoingquitters_endyear_25-74_IMD5,N_dead_endyear_25-74_IMD5\n')
+        
+        # Log all agent states to provide a complete view of population
+        if self.running_mode == 'debug':
+            self.log_all_agent_states()
+        
         if self.running_mode == 'debug':
             print('size of baseline population:', self.size_of_population)
             p = self.smoking_prevalence()
@@ -758,7 +821,8 @@ class SmokingModel(Model):
  
     def set_ecig_diffusion_subgroups_of_agents(self,shuffle_population=False):
         for agent in self.context.agents(agent_type=self.type,shuffle=shuffle_population):    
-            agent.set_ecig_diffusion_subgroup_of_agent()                                
+            if agent.is_active:  # Only process active agents
+                agent.set_ecig_diffusion_subgroup_of_agent()
 
     def do_transformational_mechanisms(self):
         '''
@@ -806,27 +870,26 @@ class SmokingModel(Model):
                                                                      count_population_subgroups=False):
         '''
         if do_smoking_behaviour_mechanisms = True, do situational mechanism of the behaviour model
-        if do_smoking_behaviour_mechanisms = False, do situational mechanism of DemographicsSTPMTheory i.e. if December, kill some agents and increase the ages of the surving ones etc.
+        if do_smoking_behaviour_mechanisms = False, do situational mechanism of DemographicsSTPMTheory i.e. if December, at the end of the year, add agents to the agents_to_kill set, deactivate them, and increase the ages of the surviving ones etc.
         '''
-        if do_smoking_behaviour_mechanisms==False:
-            self.agents_to_kill=set()
-        if count_population_subgroups==True:#do situational mechanisms of agents and count population subgroups
+        if count_population_subgroups:  # count population subgroups only
             for agent in self.context.agents(agent_type=self.type):
-                    agent.do_situation(do_smoking_behaviour_mechanisms=do_smoking_behaviour_mechanisms)
-                    agent.count_agent_for_whole_population_counts()
+                if agent.is_active:  # Only process active agents
                     agent.count_agent_for_initiation_subgroups_by_ages_sex()
                     agent.count_agent_for_initiation_subgroups_by_ages_imd()
                     agent.count_agent_for_quit_subgroups_by_ages_sex()
                     agent.count_agent_for_quit_subgroups_by_ages_imd() 
         else:#do situational mechanisms of agents only
             for agent in self.context.agents(agent_type=self.type):
+                if agent.is_active:  # Only process active agents
                     agent.do_situation(do_smoking_behaviour_mechanisms=do_smoking_behaviour_mechanisms)
-        if do_smoking_behaviour_mechanisms==False:
-            self.kill_agents()#delete the agents of agents_to_kill from the population         
+        # No longer calling kill_agents here
+        return 0
 
     def do_action_mechanisms(self,shuffle_population=False):  
         for agent in self.context.agents(agent_type=self.type,shuffle=shuffle_population):
-            agent.do_action()
+            if agent.is_active:  # Only process active agents
+                agent.do_action()
                   
     def smoking_prevalence(self):
         '''
@@ -834,7 +897,7 @@ class SmokingModel(Model):
         '''
         smokers = 0
         for agent in self.context.agents(agent_type=self.type):
-            if agent.get_current_state() == AgentState.SMOKER:
+            if agent.is_active and agent.get_current_state() == AgentState.SMOKER:
                 smokers += 1
         prevalence = np.round(smokers / self.size_of_population * 100, 2)  # percentage of smokers
         return prevalence
@@ -849,202 +912,269 @@ class SmokingModel(Model):
                     diffusion_model.allocateDiffusion(agent)
 
     def init_new_16_yrs_agents(self):
-        '''initialize new 16 years old agents in every January from 2012'''
-        from smokingcessation.smoking_theory_mediator import SmokingTheoryMediator, Theories
-        from smokingcessation.comb_theory import RegSmokeTheory, QuitAttemptTheory, QuitMaintenanceTheory
-        from smokingcessation.stpm_theory import DemographicsSTPMTheory, RelapseSTPMTheory, InitiationSTPMTheory, QuitSTPMTheory
-        from smokingcessation.person import Person
-    
-        new_agents=self.data[self.data['year']==self.year_of_current_time_step]#from 2012
-        new_agents.reset_index(drop=True, inplace=True)#reset row index to start from 0
-        (r, _) = new_agents.shape
-        if r==0:
-            print(F"There are no new agents initialized at year: '{self.year_of_current_time_step}'\n")
-        for i in range(r):
-            #the agents did not exist before the current tick, their states at previous ticks since tick 0 take dummy values e.g. NA
-            states=[]
-            t=0
-            while t < self.current_time_step:#assign the new agents with dummy states for the previous ticks
-                states.append(pd.NA)
-                t+=1
-            subgroup=None
-            init_state = new_agents.at[i, 'bState']
-            if init_state == 0:
-                states.append(AgentState.NEVERSMOKE)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.NEVERSMOKERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.NEVERSMOKERFEMALE
-            elif init_state == 1:
-                states.append(AgentState.EXSMOKER)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.EXSMOKERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.EXSMOKERFEMALE 
-            elif init_state == 4:
-                states.append(AgentState.SMOKER)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.SMOKERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.SMOKERFEMALE 
-            elif init_state == 2:
-                states.append(AgentState.NEWQUITTER)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.NEWQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.NEWQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 1:
-                states.append(AgentState.ONGOINGQUITTER1)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 2:
-                states.append(AgentState.ONGOINGQUITTER2)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 3:
-                states.append(AgentState.ONGOINGQUITTER3)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 4:
-                states.append(AgentState.ONGOINGQUITTER4)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE 
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 5:
-                states.append(AgentState.ONGOINGQUITTER5)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 6:
-                states.append(AgentState.ONGOINGQUITTER6)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 7:
-                states.append(AgentState.ONGOINGQUITTER7)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 8:
-                states.append(AgentState.ONGOINGQUITTER8)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 9:
-                states.append(AgentState.ONGOINGQUITTER9)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 10:
-                states.append(AgentState.ONGOINGQUITTER10)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE 
-            elif init_state == 3 and new_agents.at[i,'bMonthsSinceQuit'] == 11:
-                states.append(AgentState.ONGOINGQUITTER11)
-                if new_agents.at[i,'pGender']==1:#1=male
-                    subgroup=SubGroup.ONGOINGQUITTERMALE
-                elif new_agents.at[i,'pGender']==2:#2=female:
-                    subgroup=SubGroup.ONGOINGQUITTERFEMALE                        
-            else:
-                raise ValueError(f'{init_state} is not an acceptable agent state')
-            if self.regular_smoking_behaviour=='COMB':
-                rsmoke_theory = RegSmokeTheory(Theories.REGSMOKE, self, i)
-            else:#STPM
-                rsmoke_theory = InitiationSTPMTheory(Theories.REGSMOKE, self)
-            if self.quitting_behaviour=='COMB':
-                qattempt_theory = QuitAttemptTheory(Theories.QUITATTEMPT, self, i)
-                qmaintenance_theory = QuitMaintenanceTheory(Theories.QUITMAINTENANCE, self, i)
-            else:#STPM
-                qattempt_theory = QuitSTPMTheory(Theories.QUITATTEMPT, self)
-                qmaintenance_theory = QuitSTPMTheory(Theories.QUITMAINTENANCE, self)
-            relapse_stpm_theory = RelapseSTPMTheory(Theories.RELAPSESSTPM, self)
-            demographics_theory = DemographicsSTPMTheory(Theories.DemographicsSTPM, self)
-            id= self.size_of_population*random.randint(2,6) + random.randint(3, 1000) * random.randint(2, 1000) #generate an unique id for this agent
-            self.context.add(Person(
-                    self,
-                    id,
-                    self.type,
-                    self.rank,
-                    age=new_agents.at[i, 'pAge'],
-                    gender=new_agents.at[i, 'pGender'],
-                    cohort=new_agents.at[i, 'pCohort'],
-                    qimd=new_agents.at[i, 'pIMDquintile'],
-                    educational_level=new_agents.at[i, 'pEducationalLevel'],
-                    sep=new_agents.at[i, 'pSEP'],
-                    region=new_agents.at[i, 'pRegion'],
-                    social_housing=new_agents.at[i, 'pSocialHousing'],
-                    mental_health_conds=new_agents.at[i, 'pMentalHealthConditions'],
-                    alcohol=new_agents.at[i, 'pAlcoholConsumption'],
-                    expenditure=new_agents.at[i, 'pExpenditure'],
-                    prescription_nrt=new_agents.at[i, 'pPrescriptionNRT'],
-                    over_counter_nrt=new_agents.at[i, 'pOverCounterNRT'],
-                    use_of_nrt=new_agents.at[i, 'pUseOfNRT'],
-                    ecig_use=new_agents.at[i, 'pECigUse'],
-                    ecig_type=new_agents.at[i, 'pECigType'],                    
-                    varenicline_use=new_agents.at[i, 'pVareniclineUse'],
-                    cig_consumption=new_agents.at[i, 'bCigConsumption'],
-                    years_since_quit=new_agents.at[i, 'bYearsSinceQuit'],# number of years since quit smoking for an ex-smoker, None for quitter, never_smoker and smoker
-                    number_of_recent_quit_attempts=new_agents.at[i, 'bNumberOfRecentQuitAttempts'],
-                    months_since_quit=new_agents.at[i, 'bMonthsSinceQuit'],
-                    perc_num=new_agents.at[i,"perc_num"],
-                    propensity_receive_GP_advice_attempt=np.random.normal(0,self.sigma_propensity_GP_advice_attempt),
-                    propensity_NRT_attempt=np.random.normal(0,self.sigma_propensity_NRT_attempt),
-                    propensity_NRT_maintenance = np.random.normal(0,self.sigma_propensity_NRT_maintenance), 
-                    propensity_behaviour_support_maintenance = np.random.normal(0,self.sigma_propensity_behaviour_support_maintenance),
-                    propensity_varenicline_maintenance = np.random.normal(0,self.sigma_propensity_varenicline_maintenance),                    
-                    propensity_cytisine_maintenance = np.random.normal(0,self.sigma_propensity_cytisine_maintenance),                    
-                    states=states,
-                    reg_smoke_theory=rsmoke_theory,
-                    quit_attempt_theory=qattempt_theory,
-                    quit_maintenance_theory=qmaintenance_theory,
-                    regular_smoking_behaviour=self.regular_smoking_behaviour,
-                    quitting_behaviour=self.quitting_behaviour))
-            mediator = SmokingTheoryMediator([demographics_theory, rsmoke_theory, qattempt_theory, qmaintenance_theory, relapse_stpm_theory])
-            agent = self.context.agent((id, self.type, self.rank))
-            agent.set_mediator(mediator)
-            self.population_counts[subgroup]+=1
-        self.size_of_population = self.get_size_of_population()
-        return r #return no. of new agents initialized
+        '''
+        Activate agents with entry_year matching the current simulation year.
+        This is done at the beginning of January each year (after the year increment).
+        Returns the number of activated agents.
+        '''
+        # Start detailed logging for agent activation
+        if self.running_mode == 'debug':
+            self.logfile.write(f"\n=== POPULATION DYNAMICS: ACTIVATION PROCESS ===\n")
+            self.logfile.write(f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ===\n")
+            self.logfile.write(f"Looking for agents with entry_year={self.year_of_current_time_step} to activate\n")
+            
+        activated_count = 0
+        activated_by_subgroup = {}
+        activated_ids_by_subgroup = {}
+        
+        # Initialize dictionaries
+        for subgroup in SubGroup:
+            activated_by_subgroup[subgroup] = 0
+            activated_ids_by_subgroup[subgroup] = []
+        
+        # Find all inactive agents with matching entry_year for the current year
+        for agent in self.context.agents(agent_type=self.type):
+            if not agent.is_active and agent.entry_year == self.year_of_current_time_step:
+                # Re-initialize the agent's state history with NA values for past time steps
+                # and their initial state for the current time step
+                initial_state = agent.b_states[0] if agent.b_states else AgentState.NEVERSMOKE
+                
+                # Clear existing state history and fill with NA values for past time steps
+                agent.b_states = []
+                t = 0
+                while t < self.current_time_step:  # Fill with NA for all previous ticks
+                    agent.b_states.append(pd.NA)
+                    t += 1
+                
+                # Add the initial state for the current time step
+                agent.b_states.append(initial_state)
+                
+                # Get agent ID
+                agent_id = agent.get_id()
+                
+                # Activate the agent
+                agent.is_active = True
+                activated_count += 1
+                
+                # Determine the agent's subgroup and update population counts
+                gender = agent.p_gender.get_value()
+                current_state = agent.get_current_state()
+                
+                # Determine subgroup based on state and gender
+                subgroup = None
+                if current_state == AgentState.NEVERSMOKE:
+                    if gender == 1:  # male
+                        subgroup = SubGroup.NEVERSMOKERMALE
+                    elif gender == 2:  # female
+                        subgroup = SubGroup.NEVERSMOKERFEMALE
+                elif current_state == AgentState.EXSMOKER:
+                    if gender == 1:
+                        subgroup = SubGroup.EXSMOKERMALE
+                    elif gender == 2:
+                        subgroup = SubGroup.EXSMOKERFEMALE
+                elif current_state == AgentState.SMOKER:
+                    if gender == 1:
+                        subgroup = SubGroup.SMOKERMALE
+                    elif gender == 2:
+                        subgroup = SubGroup.SMOKERFEMALE
+                elif current_state == AgentState.NEWQUITTER:
+                    if gender == 1:
+                        subgroup = SubGroup.NEWQUITTERMALE
+                    elif gender == 2:
+                        subgroup = SubGroup.NEWQUITTERFEMALE
+                elif current_state in (AgentState.ONGOINGQUITTER1, AgentState.ONGOINGQUITTER2, 
+                                      AgentState.ONGOINGQUITTER3, AgentState.ONGOINGQUITTER4,
+                                      AgentState.ONGOINGQUITTER5, AgentState.ONGOINGQUITTER6,
+                                      AgentState.ONGOINGQUITTER7, AgentState.ONGOINGQUITTER8,
+                                      AgentState.ONGOINGQUITTER9, AgentState.ONGOINGQUITTER10,
+                                      AgentState.ONGOINGQUITTER11):
+                    if gender == 1:
+                        subgroup = SubGroup.ONGOINGQUITTERMALE
+                    elif gender == 2:
+                        subgroup = SubGroup.ONGOINGQUITTERFEMALE
+                
+                if subgroup:
+                    self.population_counts[subgroup] += 1
+                    activated_by_subgroup[subgroup] += 1
+                    activated_ids_by_subgroup[subgroup].append(agent_id)
+        
+        # Provide comprehensive logging of activation results
+        if self.running_mode == 'debug':
+            summary_header = f"=== POPULATION DYNAMICS: ACTIVATION SUMMARY ==="
+            summary_timing = f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ==="
+            summary_count = f"Total agents activated: {activated_count}"
+            
+            # Log to file
+            self.logfile.write(f"\n{summary_header}\n")
+            self.logfile.write(f"{summary_timing}\n")
+            self.logfile.write(f"{summary_count}\n\n")
+            
+            # Also print to terminal for visibility
+            print(f"{summary_header}")
+            print(f"{summary_timing}")
+            print(f"{summary_count}")
+            
+            # Log activated agents by subgroup with IDs
+            for subgroup, count in activated_by_subgroup.items():
+                if count > 0:
+                    self.logfile.write(f"Subgroup {subgroup.name}: {count} agents activated\n")
+                    ids = activated_ids_by_subgroup[subgroup]
+                    # Show all IDs if <= 10, otherwise show first 10
+                    if len(ids) <= 10:
+                        self.logfile.write(f"  Agent IDs: {ids}\n")
+                    else:
+                        self.logfile.write(f"  Agent IDs (first 10 of {len(ids)}): {ids[:10]}\n")
+            
+            self.logfile.write("=== END OF ACTIVATION SUMMARY ===\n\n")
+                
+        return activated_count  # Return the number of agents activated
     
     def kill_agents(self):
         '''
-        delete agents of agents_to_kill from the current population
+        Mark agents in agents_to_kill as inactive instead of removing them.
+        Provides detailed logging of which agents are deactivated.
+        
+        Returns:
+            int: Number of agents deactivated
         '''
+        # Check if there are any agents to kill, return early if none
+        if len(self.agents_to_kill) == 0:
+            return 0
+            
+        killed_count = 0
+        killed_ids = []
+        
+        # Group deactivated agents by subgroup if there are many
+        killed_by_subgroup = {}
+        killed_ids_by_subgroup = {}
+        # We don't remove from context anymore to preserve network structure
+            #self.context.remove(agent)
+            #del agent
+        # Instead, mark the agent as inactive
+
+        if self.running_mode == 'debug':
+            self.logfile.write(f"\n=== POPULATION DYNAMICS: DEACTIVATION PROCESS ===\n")
+            self.logfile.write(f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ===\n")
+            self.logfile.write(f"Looking for agents to deactivate\n")
+
+        # First pass - collect basic information
         for uid in self.agents_to_kill:
-            agent=self.context.agent(uid)
-            self.context.remove(agent)
-            del agent 
-            gc.collect()
+            agent = self.context.agent(uid)
+            if agent:
+                # Add to killed list
+                killed_count += 1
+                killed_ids.append(uid)
+                
+                # Try to get agent's subgroup for organization if there are many
+                try:
+                    gender = agent.p_gender.get_value()
+                    current_state = agent.get_current_state()
+                    
+                    # Simplified subgroup determination based on state and gender
+                    subgroup = None
+                    if gender == 1:  # male
+                        subgroup = "MALE"
+                    elif gender == 2:  # female
+                        subgroup = "FEMALE"
+                    
+                    # Initialize subgroup in dictionaries if not already present
+                    if subgroup not in killed_by_subgroup:
+                        killed_by_subgroup[subgroup] = 0
+                        killed_ids_by_subgroup[subgroup] = []
+                    
+                    # Update counts and lists
+                    killed_by_subgroup[subgroup] += 1
+                    killed_ids_by_subgroup[subgroup].append(uid)
+                except:
+                    pass  # If unable to determine subgroup, simply skip grouping
+                
+                # Mark as inactive instead of removing
+                agent.is_active = False
+        
+        # Log the deactivation data directly instead of storing it for do_per_tick
+        if self.running_mode == 'debug' and killed_count > 0:
+            # Log detailed information about deactivated agents
+            summary_header = f"=== POPULATION DYNAMICS: DEACTIVATION SUMMARY ==="
+            summary_timing = f"=== THE CURRENT TICK IS TICK {self.current_time_step}, YEAR {self.year_of_current_time_step} ==="
+            summary_count = f"Total agents deactivated: {killed_count}"
+            
+            # Log to file
+            self.logfile.write(f"\n{summary_header}\n")
+            self.logfile.write(f"{summary_timing}\n")
+            self.logfile.write(f"{summary_count}\n\n")
+            
+            # Also print to terminal for visibility
+            print(f"{summary_header}")
+            print(f"{summary_timing}")
+            print(f"{summary_count}")
+            
+            if killed_count <= 10:
+                # If 10 or fewer agents killed, log all IDs
+                self.logfile.write(f"All deactivated agent IDs: {killed_ids}\n")
+            else:
+                # If more than 10 killed, log by subgroup
+                for subgroup, count in killed_by_subgroup.items():
+                    self.logfile.write(f"Subgroup {subgroup}: {count} agents deactivated\n")
+                    ids = killed_ids_by_subgroup[subgroup]
+                    # Show first 10 IDs if more than 10
+                    if len(ids) <= 10:
+                        self.logfile.write(f"  Agent IDs: {ids}\n")
+                    else:
+                        self.logfile.write(f"  Agent IDs (first 10 of {len(ids)}): {ids[:10]}\n")
+                
+                # Add a summary of all deactivated IDs (first 10)
+                self.logfile.write(f"\nAll deactivated agent IDs (first 10 of {killed_count}): {killed_ids[:10]}\n")
+            
+            self.logfile.write("=== END OF DEACTIVATION SUMMARY ===\n\n")
+        
+        # Clear the agents_to_kill set for the next round
+        self.agents_to_kill.clear()
+        gc.collect()
+        
+        # Return the count of agents deactivated
+        return killed_count
 
     def do_per_tick(self):
         '''
         do_per_tick is executed at each tick from tick 1 to execute the mechanisms of the ABM.
         '''
+        # Store the previous time step before incrementing
+        previous_time_step = self.current_time_step
+        
+        # Increment time step first
         self.current_time_step += 1
         self.months_counter += 1
-        if self.current_time_step >= 13:
-            if self.months_counter == 1: #January from 2012 (tick 13)
-               self.year_of_current_time_step += 1
-               self.year_number += 1
-               new_agents=self.init_new_16_yrs_agents() #initialize new 16 years old agents in January of 2012,...,final year
-               if self.running_mode == 'debug':
-                    print('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents are initialized, size of population: '+str(self.get_size_of_population()))
-                    self.logfile.write('tick '+str(self.current_time_step)+', '+str(new_agents)+' new 16 years old agents initialized, size of population: '+str(self.get_size_of_population())+'\n')
+   
+        # Year change happens at the beginning of the year (January)
+        if self.months_counter == 1 and self.current_time_step >= 13:
+            self.year_of_current_time_step += 1
+            self.year_number += 1
+            
+            # Activate new 16-year-old agents at the beginning of January each year
+            activated_agents = self.init_new_16_yrs_agents()
+            
+            if self.running_mode == 'debug':
+                print('Beginning of tick '+str(self.current_time_step)+', '+str(activated_agents)+' new 16 years old agents are activated, size of population: '+str(self.get_size_of_population()))
+                self.logfile.write('Beginning of tick '+str(self.current_time_step)+', '+str(activated_agents)+' new 16 years old agents activated, size of population: '+str(self.get_size_of_population())+'\n')
+        
+        # Update month and year format
         self.format_month_and_year()
+        
+        # IMPORTANT: Ensure all active agents have a state for the current time step
+        # This must happen BEFORE any agent.get_current_state() is called
+        if self.running_mode == 'debug':
+            self.logfile.write(f"\n=== PREPARING AGENTS FOR TIME STEP {self.current_time_step}, YEAR {self.year_of_current_time_step}, MONTH {self.months_counter} ===\n")
+            
+        # Ensure all active agents have their state array extended to cover the current time step
+        agents_updated = 0
+        for agent in self.context.agents(agent_type=self.type):
+            if agent.is_active and len(agent.b_states) <= previous_time_step:
+                # Get the agent's last known state
+                last_state = agent.b_states[previous_time_step]
+                # Add this state for the current time step
+                agent.set_state_of_next_time_step(last_state)
+                agents_updated += 1
+                    
         self.current_time_step_of_non_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_non_disp_diffusions)       
         self.diffusion_models_of_this_tick={}
         if self.year_of_current_time_step < 2021:#before 2021, run non-disposable diffusion models only 
@@ -1058,22 +1188,41 @@ class SmokingModel(Model):
             self.current_time_step_of_disp_diffusions = max(0, self.current_time_step - self.difference_between_start_time_of_ABM_and_start_time_of_disp_diffusions)
         self.init_ecig_diffusion_subgroups()#reset subgroups to empty sets
         self.set_ecig_diffusion_subgroups_of_agents(shuffle_population=True)
-        self.do_transformational_mechanisms()#compute Et of diffusion models
-        self.do_macro_macro_mechanisms()#compute deltaEt of diffusion models; read in geographic regional smoking prevalence of this month for years 2011 and 2019 only.
-        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=True, count_population_subgroups=False)#create e-cigarette users according to delta E[t]. If 12 months have passed kill some agents based on mortality model and increment surviving agents' ages
-        self.do_action_mechanisms() 
-        self.init_population_counts()#reset population counts to 0
-        ###kill some agents and count population subgroups
-        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=False, count_population_subgroups=True)        
-        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())#write whole population counts to file
+        self.do_transformational_mechanisms()  # compute Et of diffusion models
+        self.do_macro_macro_mechanisms()  # compute deltaEt of diffusion models; read in geographic regional smoking prevalence
+        
+        # Create e-cigarette users according to delta E[t]
+        # First call: Triggers behavioral mechanisms only (smoking transitions)
+        # In develop branch, this is the first of two calls to this method
+        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=True, count_population_subgroups=False)
+        self.do_action_mechanisms()
+        
+        # Reset population counts
+        self.init_population_counts()  # reset population counts to 0
+        
+        # Initialize the agents_to_kill set before running demographic mechanisms
+        self.agents_to_kill = set()
+        
+        # Second call: Triggers demographic mechanisms (mortality, aging) 
+        # This step was combined with population counting in develop branch
+        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=False, count_population_subgroups=False)
+        
+        # Third call: Performs population counting
+        # In develop branch, this was combined with demographic mechanisms in a single call
+        self.do_situation_mechanisms_and_may_count_population_subgroups(do_smoking_behaviour_mechanisms=False, count_population_subgroups=True)
+        
+        # End of year subgroup population reporting
         if self.current_time_step == self.end_year_tick:
             self.file_initiation_sex.write(self.get_subgroups_of_ages_sex_for_initiation())#write subgroups counts to file
             self.file_initiation_imd.write(self.get_subgroups_of_ages_imd_for_initiation())
             self.file_quit_age_sex.write(self.get_subgroups_of_ages_sex_for_quit())
             self.file_quit_imd.write(self.get_subgroups_of_ages_imd_for_quit())
-            g.initialize_global_variables_of_subgroups()     
+            g.initialise_global_variables_of_subgroups()     
         ###   
         self.size_of_population = self.get_size_of_population()
+        self.file_whole_population_counts.write(self.calculate_counts_of_whole_population())
+        
+        # Clean debug logging - only report on tick, population, behaviour, network
         if self.running_mode == 'debug':
             p = self.smoking_prevalence()
             self.smoking_prevalence_l.append(p)
@@ -1084,18 +1233,56 @@ class SmokingModel(Model):
                     self.logfile.write('e-cigarette diffusion model: e-cig_type='+str(diff_model.ecig_type)+', subgroup='+str(subgroup)+', subgroup size='+str(len(self.ecig_diff_subgroups[subgroup]))+', Et='+str(diff_model.Et)+'\n')
                 self.logfile.write(F"e-cigarette prevalence of this subgroup of each tick: '{self.ecig_Et[subgroup]}'\n")
             #self.logfile.write(F"geographic regional smoking prevalence: '{self.geographicSmokingPrevalence.regionalSmokingPrevalence}'\n")
-            if self.months_counter == 12:
-                sstr='killed '+str(len(self.agents_to_kill))+' agents'
-                self.logfile.write(sstr+'\n')
-                print(sstr)
+            
+            # Remove the misleading "killed X agents" message - this info now comes from kill_agents directly
+            # if self.months_counter == 12:
+            #    sstr='killed '+str(len(self.agents_to_kill))+' agents'
+            #    self.logfile.write(sstr+'\n')
+            #    print(sstr)
+            
+            # Always show current population size
             self.logfile.write('size of population: '+str(self.size_of_population)+'\n')
             print('size of population: '+str(self.size_of_population))
+
+            # Log network stats for all agents in our fixed sample at each tick
+            if self.social_network is not None:
+                active_agents = {agent.get_id(): agent for agent in self.context.agents(agent_type=self.type) if hasattr(agent, 'is_active') and agent.is_active}
+                self.logfile.write(f"\n=== NETWORK STATISTICS (TICK {self.current_time_step}) ===\n")
+                logged_count = 0
+                for agent_id in self.fixed_agent_ids:
+                    if agent_id in active_agents:
+                        agent = active_agents[agent_id]
+                        state = agent.get_current_state()
+                        # Convert iterator to list to get length
+                        neighbours = list(self.social_network.get_neighbours(agent))
+                        self.logfile.write(f"Agent {agent_id} network stats: total alters={len(neighbours)}, "
+                                          f"active alters={self.social_network.count_active_neighbours(agent)}, "
+                                          f"active smoking alters={self.social_network.count_smoking_neighbours(agent)}, "
+                                          f"state={state}\n")
+                        logged_count += 1
+                self.logfile.write(f"Logged network stats for {logged_count} agents from fixed sample\n")
+        
+        # End of year operations
+        if self.months_counter == 12:
+            # Kill agents at the end of the year - call kill_agents directly
+            deactivated_count = self.kill_agents()
+            
+            if self.running_mode == 'debug':
+                print('End of tick '+str(self.current_time_step)+', '+ str(deactivated_count)+' agents are deactivated, size of population: '+str(self.get_size_of_population()))
+                self.logfile.write('End of tick '+str(self.current_time_step)+', '+ str(deactivated_count)+' agents are deactivated, size of population: '+str(self.get_size_of_population())+'\n')
+
+        # Update tick counters for next year
         if self.current_time_step == self.end_year_tick:
             self.start_year_tick = self.end_year_tick + 1
             self.end_year_tick = self.start_year_tick + 11
+            
+        # Reset months counter at the end of the year
         if self.months_counter == 12:
             self.months_counter = 0
-        
+            self.logfile.write(f"\n\n=== THE NEXT TICK IS TICK {self.current_time_step + 1}, YEAR {self.year_of_current_time_step + 1} ===\n")
+        else:
+            self.logfile.write(f"\n\n=== THE NEXT TICK IS TICK {self.current_time_step + 1}, YEAR {self.year_of_current_time_step} ===\n")
+
     def init_schedule(self):
         '''
         schedule do_per_tick function to start at tick 1 and repeat every tick until the last tick.
@@ -1144,13 +1331,185 @@ class SmokingModel(Model):
             self.logfile.close()
 
     def init(self):
-        '''initialize the ABM'''
+        '''initialise the ABM'''
+        if self.running_mode == 'debug':
+            self.logfile.write("Starting ABM initialisation\n")
+            
         self.init_ecig_diffusion_subgroups()
         self.init_ecig_diffusions()
         self.init_geographic_regional_prevalence()
-        self.init_population()      
+        
+        if self.running_mode == 'debug':
+            self.logfile.write("Initialising agent population\n")
+            
+        self.init_population()
+        
+        if self.running_mode == 'debug':
+            self.logfile.write(f"Population initialised with {self.size_of_population} agents\n")
+        
+        # Load the network structure after all agents are initialised
+        if "network_file" in self.props:
+            network_path = f'{ROOT_DIR}/{self.props["network_file"]}'
+            
+            if self.running_mode == 'debug':
+                self.logfile.write(f"Loading network from {network_path}\n")
+                
+            self.social_network.initialise_network(network_path)
+        else:
+            if self.running_mode == 'debug':
+                self.logfile.write("No network file specified in properties\n")
+        
+        # Update agent theories with network reference
+        if self.running_mode == 'debug':
+            self.logfile.write("Preparing to update agent theories with network reference\n")
+            
+        self.update_theories_with_network()
+        
+        if self.running_mode == 'debug':
+            self.logfile.write("Initialising schedule\n")
+            
         self.init_schedule()
+        
+        if self.running_mode == 'debug':
+            self.logfile.write("ABM initialisation complete\n")
 
     def run(self):
         self.runner.execute()
         self.collect_data()
+
+    def update_theories_with_network(self):
+        """Pass network reference to all potentially relevant agent theories."""
+        # Ensure the social network is actually created and initialised
+        if self.social_network is None or self.social_network.network is None:
+            if self.running_mode == 'debug':
+                self.logfile.write("Social network not initialised, skipping theory update.\n")
+            return
+
+        if self.running_mode == 'debug':
+            self.logfile.write("Updating agent theories with network reference...\n")
+            
+            # Count total agents in context
+            total_agents = sum(1 for _ in self.context.agents())
+            self.logfile.write(f"Total agents in context: {total_agents}\n")
+            
+            # Count how many agents have is_active attribute
+            has_is_active = sum(1 for agent in self.context.agents() if hasattr(agent, 'is_active'))
+            self.logfile.write(f"Agents with is_active attribute: {has_is_active}\n")
+            
+            # Count how many agents are active
+            active_agents = sum(1 for agent in self.context.agents() if hasattr(agent, 'is_active') and agent.is_active)
+            self.logfile.write(f"Active agents: {active_agents}\n")
+            
+            # Count how many agents have the theory attributes
+            has_quit_attempt = sum(1 for agent in self.context.agents() if hasattr(agent, 'quit_attempt_theory'))
+            has_quit_maintenance = sum(1 for agent in self.context.agents() if hasattr(agent, 'quit_maintenance_theory'))
+            self.logfile.write(f"Agents with quit_attempt_theory: {has_quit_attempt}\n")
+            self.logfile.write(f"Agents with quit_maintenance_theory: {has_quit_maintenance}\n")
+        
+        updated_count = 0
+        theory_missing_count = 0
+        inactive_count = 0
+        
+        for agent in self.context.agents():
+            # Ensure all agents have is_active attribute and are active
+            if not hasattr(agent, 'is_active'):
+                agent.is_active = True
+                if self.running_mode == 'debug':
+                    self.logfile.write(f"Added is_active attribute to agent {agent.get_id()}\n")
+            
+            # Even if agent is marked as inactive, we'll update its theories
+            # to ensure network data is collected
+            need_theory_update = False
+                
+            if hasattr(agent, 'quit_attempt_theory'):
+                agent.quit_attempt_theory.network = self.social_network
+                need_theory_update = True
+                
+            if hasattr(agent, 'quit_maintenance_theory'):
+                agent.quit_maintenance_theory.network = self.social_network
+                need_theory_update = True
+            
+            if need_theory_update:
+                updated_count += 1
+                # Debug log for each agent theory that was updated
+                if self.running_mode == 'debug' and self.rank == 0 and updated_count <= 5:  # Limit to first 5 to avoid flooding log
+                    self.logfile.write(f"Updated network for agent {agent.get_id()} theories\n")
+            else:
+                theory_missing_count += 1
+                if self.running_mode == 'debug' and theory_missing_count <= 5:
+                    self.logfile.write(f"Agent {agent.get_id()} is missing theories\n")
+            
+            # If agent was inactive, count it
+            if hasattr(agent, 'is_active') and not agent.is_active:
+                inactive_count += 1
+        
+        if self.running_mode == 'debug':
+            self.logfile.write(f"Found {theory_missing_count} agents missing theories\n")
+            self.logfile.write(f"Found {inactive_count} inactive agents\n")
+            self.logfile.write(f"Finished updating theories with network reference for {updated_count} agents.\n")
+            
+            # Log network stats for all agents
+            self.log_all_agent_network_stats()
+
+    def log_all_agent_states(self):
+        """
+        Log the states of all agents in the population, providing a complete picture
+        of the population composition at initialization (tick 0).
+        This ensures all agent states, including NEVERSMOKE and EXSMOKER, are visible in the logs.
+        """
+        if self.running_mode == 'debug':
+            self.logfile.write("\n=== COMPLETE POPULATION STATE DISTRIBUTION AT INITIALIZATION ===\n")
+            # Count states
+            state_counts = {state: 0 for state in AgentState}
+            
+            # First pass - count states
+            for agent in self.context.agents(agent_type=self.type):
+                state = agent.get_current_state()
+                state_counts[state] += 1
+            
+            # Log the counts
+            total = sum(state_counts.values())
+            for state, count in state_counts.items():
+                percentage = (count / total) * 100 if total > 0 else 0
+                self.logfile.write(f"{state.name}: {count} agents ({percentage:.2f}%)\n")
+                
+            # Log sample agents of each state (up to 5 per state)
+            self.logfile.write("\n=== SAMPLE AGENTS FROM EACH STATE ===\n")
+            state_samples = {state: [] for state in AgentState}
+            
+            # Second pass - collect sample agents
+            for agent in self.context.agents(agent_type=self.type):
+                state = agent.get_current_state()
+                if len(state_samples[state]) < 5:  # Limit to 5 samples per state
+                    state_samples[state].append(agent.get_id())
+            
+            # Log the samples
+            for state, agent_ids in state_samples.items():
+                if agent_ids:  # Only log states that have agents
+                    self.logfile.write(f"{state.name} agents (sample): {agent_ids}\n")
+            
+            self.logfile.write("=== END OF POPULATION STATE REPORT ===\n\n")
+
+    def log_all_agent_network_stats(self):
+        """
+        Log network statistics for a fixed set of agents.
+        Only logs when agents from our fixed sample are active.
+        """
+        if self.running_mode == 'debug' and self.current_time_step % 12 == 0:  # Only log once per year
+            self.logfile.write("\n=== NETWORK STATISTICS FOR FIXED SAMPLE AGENTS ===\n")
+            
+            # Get all active agents and their IDs for quick lookup
+            active_agents = {agent.get_id(): agent for agent in self.context.agents(agent_type=self.type) if agent.is_active}
+            
+            # Log stats for our fixed set of agents if they are active
+            logged_count = 0
+            for agent_id in self.fixed_agent_ids:
+                if agent_id in active_agents:
+                    agent = active_agents[agent_id]
+                    state = agent.get_current_state()
+                    self.social_network.log_network_stats(agent)
+                    logged_count += 1
+            
+            self.logfile.write(f"\nShowing {logged_count} agents from our fixed sample (IDs: {self.fixed_agent_ids})\n")
+            self.logfile.write(f"Current time step: {self.current_time_step} (Year: {self.year_of_current_time_step})\n")
+            self.logfile.write("=== END OF NETWORK STATISTICS ===\n\n")
