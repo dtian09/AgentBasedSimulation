@@ -1,7 +1,7 @@
 from mbssm.macro_entity import MacroEntity, RegulatorMediator, Regulator
 from typing import List
 from smokingcessation.ecig_diffusion import eCigDiffusion
-
+from smokingcessation.geographic_smoking_prevalence import GeographicSmokingPrevalence
 class SmokingRegulatorMediator(RegulatorMediator):
     def __init__(self, regulator_list: List[Regulator]):
         super().__init__(regulator_list)
@@ -17,11 +17,15 @@ class SmokingRegulatorMediator(RegulatorMediator):
     def mediate_transformation(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
             self.regulator_map['eCigDiffusionRegulator'].do_transformation(macroEntity)
+        elif isinstance(macroEntity, GeographicSmokingPrevalence):
+            self.regulator_map['GeographicSmokingPrevalenceRegulator'].do_transformation(macroEntity)
         else:
-            raise Exception('This macro entity is not eCigDiffusion.')
+            raise Exception('This macro entity is invalid.')
         
     def mediate_macro_macro(self, macroEntity : MacroEntity):
         if isinstance(macroEntity, eCigDiffusion):
             self.regulator_map['eCigDiffusionRegulator'].do_macro_macro(macroEntity)
+        elif isinstance(macroEntity, GeographicSmokingPrevalence):
+            self.regulator_map['GeographicSmokingPrevalenceRegulator'].do_macro_macro(macroEntity)
         else:
-            raise Exception('This macro entity is not eCigDiffusion.')
+            raise Exception('This macro entity is invalid.')

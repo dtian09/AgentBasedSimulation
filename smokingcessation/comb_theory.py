@@ -107,11 +107,15 @@ class RegSmokeTheory(COMBTheory):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
         if self.smoking_model.tick_counter == 12:
             agent.update_difficulty_of_access()
-        #update values of the dynamic variables (dynamic COM and personal attributes) of this agent
+        #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
         #pPrescriptionNRT
         #pVareniclineUse
-        #...
-        
+        #bCigConsumption
+        #oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+
     def do_learning(self):
         pass
 
@@ -182,17 +186,22 @@ class QuitAttemptTheory(COMBTheory):
 
     def do_situation(self, agent: MicroAgent):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user        
-        #update values of the dynamic variables (dynamic COM and personal attributes) of this agent
+        #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent
         #pPrescriptionNRT
         #pVareniclineUse
-        #... 
-        #update mUseofNRT = pOverCounterNRT or pPrescriptionNRT
+        #bCigConsumption
+        #oReceiptOfGPAdvice
+        #mUseofNRT = pOverCounterNRT or pPrescriptionNRT
         agent=self.smoking_model.context.agent((self.indx_of_agent, self.smoking_model.type, self.smoking_model.rank))
         if agent.pOverCounterNRT.get_value()==1 or agent.pPrescriptionNRT.get_value()==1:
            val = 1
         else:
            val = 0
         self.level2_attributes['mUseofNRT'].set_value(val)
+        #update oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
 
     def do_learning(self):
         pass
@@ -264,12 +273,17 @@ class QuitSuccessTheory(COMBTheory):
 
     def do_situation(self, agent: MicroAgent):
         self.smoking_model.allocateDiffusionToAgent(agent)#change this agent to an ecig user
-        #update values of the dynamic variables (dynamic COM and personal attributes) of this agent
-        #pVareniclineUse
+        #update values of the exogenous dynamic attributes and dynamic COM attributes of this agent        
         #pPrescriptionNRT
+        #pVareniclineUse        
+        #bCigConsumption
         #cUseOfBehaviourSupport
         #cCytisineUse
-        
+        #update oPrevalenceOfSmokingInGeographicLocality
+        prev=self.smoking_model.geographicSmokingPrevalence.getRegionalPrevalence(self.smoking_model.formatted_month, agent.pRegion)
+        at_obj = Level2AttributeInt(name='oPrevalenceOfSmokingInGeographicLocality', value=float(prev))
+        self.level2_attributes['oPrevalenceOfSmokingInGeographicLocality'] = at_obj 
+
     def do_learning(self):
         pass
 
